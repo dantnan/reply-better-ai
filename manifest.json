@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Reply Better AI",
+  "version": "1.0",
+  "description": "Improve your messages using AI. Features text improvement, custom prompts, and snippets for quick text expansion.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hi@antnan.com",
+      "strict_min_version": "109.0"
+    }
+  },
+  "icons": {
+    "512": "icons/icon.png"
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://openrouter.ai/*"
+  ],
+  "action": {
+    "default_icon": "icons/icon.png",
+    "default_title": "Reply Better AI",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "scripts": ["js/api-service.js", "js/background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "web_accessible_resources": [{
+    "resources": [
+      "icons/reply-better-16.png",
+      "icons/edit-icon.svg"
+    ],
+    "matches": ["<all_urls>"]
+  }]
+} 

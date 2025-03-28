@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    .info-container {
+      padding: 20px;
+      max-width: 400px;
+      font-family: Arial, sans-serif;
+    }
+    
+    .info-section {
+      margin-bottom: 20px;
+    }
+    
+    .info-section h2 {
+      color: #3498db;
+      margin-top: 0;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 5px;
+    }
+    
+    .info-section p {
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    
+    .info-section a {
+      color: #3498db;
+      text-decoration: none;
+    }
+    
+    .info-section a:hover {
+      text-decoration: underline;
+    }
+    
+    .developer-info {
+      display: flex;
+      align-items: center;
+      margin-top: 15px;
+    }
+    
+    .developer-info img {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      margin-right: 15px;
+    }
+    
+    .coffee-button {
+      display: inline-block;
+      margin-top: 10px;
+      background-color: #FFDD00;
+      color: #000000;
+      padding: 8px 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    
+    .coffee-button:hover {
+      background-color: #E5C700;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+    
+    .nav-button {
+      padding: 8px 15px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .nav-button:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="info-container">
+    <div class="info-section">
+      <h2>About Reply Better AI</h2>
+      <p>Reply Better AI is a browser extension that helps you improve your messages professionally using free AI models through OpenRouter.</p>
+      <p>Version: 1.0</p>
+      <p>License: MIT</p>
+    </div>
+    
+    <div class="info-section">
+      <h2>Features</h2>
+      <ul>
+        <li>Professional text improvement using AI</li>
+        <li>Multiple message types: Professional, Friendly, Customer Service, Concise</li>
+        <li>Custom prompt creation for personalized improvements</li>
+        <li>Text snippets feature for quick text expansion</li>
+        <li>Uses free AI models only - no subscription needed</li>
+      </ul>
+    </div>
+    
+    <div class="info-section">
+      <h2>Developer</h2>
+      <div class="developer-info">
+        <img src="https://i.imgur.com/placeholder.jpg" alt="Developer Profile">
+        <div>
+          <p><strong>Antnan</strong></p>
+          <p>Creator of Reply Better AI</p>
+          <a href="https://buymeacoffee.com/antnan" target="_blank" class="coffee-button">
+            ☕ Buy me a coffee
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <div class="info-section">
+      <h2>Privacy</h2>
+      <p>Your data stays private. API keys are stored locally in your browser, and messages are sent directly to OpenRouter API without being stored.</p>
+    </div>
+    
+    <div class="nav-buttons">
+      <button id="back-to-main" class="nav-button">Back to Main</button>
+    </div>
+  </div>
+  
+  <script src="info.js"></script>
+</body>
+</html> 

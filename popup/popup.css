@@ -1,0 +1,461 @@
+/* General Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  width: 500px;
+  padding: 15px;
+  background-color: #f9f9f9;
+  color: #333;
+  margin: 0;
+}
+
+/* Header with close button */
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.close-button {
+  width: 30px;
+  height: 30px;
+  font-size: 20px;
+  line-height: 20px;
+  background-color: #e0e0e0;
+  color: #333;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.close-button:hover {
+  background-color: #ccc;
+}
+
+.logo-title {
+  display: flex;
+  align-items: center;
+}
+
+.header-logo {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+}
+
+.header-container h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+h3 {
+  color: #3498db;
+  margin-top: 10px;
+  margin-bottom: 15px;
+}
+
+h4 {
+  color: #555;
+  margin-top: 15px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+/* Utility Classes */
+.hidden {
+  display: none;
+}
+
+/* Settings Panel */
+.settings-toggle {
+  text-align: right;
+  margin-bottom: 10px;
+}
+
+#settings-panel {
+  background-color: #f0f7ff;
+  border: 1px solid #c8e1ff;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 15px;
+  max-height: 500px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 20;
+}
+
+.setting-group {
+  margin-bottom: 15px;
+}
+
+/* Prompt Management */
+.prompt-management {
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+}
+
+.prompt-name-input {
+  margin-top: 10px;
+}
+
+.saved-prompts-list {
+  margin-top: 20px;
+}
+
+.prompts-list-container {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 5px;
+  background-color: white;
+}
+
+.prompt-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.prompt-item:last-child {
+  border-bottom: none;
+}
+
+.prompt-item-name {
+  font-weight: 500;
+}
+
+.prompt-item-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.prompt-item-actions button {
+  width: 30px;
+  padding: 3px;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* Form Elements */
+label {
+  display: block;
+  margin: 8px 0 4px;
+  font-weight: 500;
+  color: #555;
+}
+
+select, input, textarea, button {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+select {
+  background-color: white;
+}
+
+textarea {
+  height: 150px;
+  resize: vertical;
+  font-family: inherit;
+  min-height: 120px;
+}
+
+button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background-color: #2980b9;
+}
+
+/* Special Elements */
+.message-type, .editor, .actions {
+  margin-bottom: 15px;
+}
+
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 5px 0;
+}
+
+#char-count {
+  font-size: 12px;
+  color: #777;
+}
+
+#output-text {
+  background-color: #f0f7ff;
+  border: 1px solid #c8e1ff;
+}
+
+.output-actions {
+  text-align: right;
+  margin-top: 5px;
+}
+
+/* Footer */
+.footer {
+  padding: 10px;
+  font-size: 12px;
+  text-align: center;
+  color: #666;
+  border-top: 1px solid #eee;
+  margin-top: 20px;
+}
+
+.footer a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+.small-note {
+  font-size: 11px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.info-link {
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+/* First-time Setup */
+#first-time-setup {
+  background-color: #f0f7ff;
+  border: 1px solid #c8e1ff;
+  border-radius: 5px;
+  padding: 20px;
+}
+
+#first-time-setup ol {
+  margin-left: 20px;
+  padding-left: 0;
+}
+
+#first-time-setup li {
+  margin-bottom: 8px;
+}
+
+#first-time-setup a {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+#custom-prompt {
+  height: 100px;
+  min-height: 80px;
+}
+
+/* Saved Prompts */
+.prompt-selection {
+  margin-bottom: 15px;
+}
+
+.prompt-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.small-button {
+  width: auto;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.prompt-details {
+  background-color: #f0f7ff;
+  border: 1px solid #c8e1ff;
+  border-radius: 5px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.prompt-edit-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.add-new-prompt-section {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+#new-prompt-button {
+  background-color: #2ecc71;
+}
+
+#new-prompt-button:hover {
+  background-color: #27ae60;
+}
+
+#delete-saved-prompt {
+  background-color: #e74c3c;
+}
+
+#delete-saved-prompt:hover {
+  background-color: #c0392b;
+}
+
+/* Message Type Row */
+.message-type-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.message-type, .saved-prompts-quick-select {
+  flex: 1;
+}
+
+/* Inline Improvement Settings */
+.setting-description {
+  font-size: 13px;
+  color: #666;
+  margin: 5px 0 10px;
+}
+
+.checkbox-setting {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.checkbox-setting input[type="checkbox"] {
+  width: auto;
+  margin-right: 10px;
+}
+
+.inline-type-selector {
+  margin: 15px 0;
+}
+
+/* Snippets Management */
+.snippet-management {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ccc;
+}
+
+.snippet-input-row {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.snippet-trigger-input {
+  flex: 1;
+}
+
+.snippet-content-input {
+  flex: 3;
+}
+
+.snippet-trigger-input input,
+.snippet-content-input textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.snippet-content-input textarea {
+  min-height: 60px;
+}
+
+#save-snippet {
+  padding: 8px 15px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+#save-snippet:hover {
+  background-color: #2980b9;
+}
+
+.saved-snippets-list {
+  margin-top: 15px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+.snippet-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #eee;
+}
+
+.snippet-item:last-child {
+  border-bottom: none;
+}
+
+.snippet-item-trigger {
+  font-weight: bold;
+  flex: 1;
+}
+
+.snippet-item-content {
+  flex: 3;
+  color: #555;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0 10px;
+}
+
+.snippet-item-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0 5px;
+}
+
+.no-snippets {
+  color: #999;
+  text-align: center;
+  padding: 10px;
+} 
