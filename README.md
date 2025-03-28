@@ -106,4 +106,4 @@ If you enjoy using Reply Better AI and want to support the development, you can 
 ## Attributions
 
 ### Icons
-- <a href="https://www.flaticon.com/free-icons/robot" title="robot icons">Extension icon created by Flaticon</a> 
+- <a href="https://www.flaticon.com/free-icons/robot" title="robot icons">Extension icon created by Flaticon</a>
