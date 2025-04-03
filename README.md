@@ -1,18 +1,37 @@
 # Reply Better AI - Firefox Extension
 
-Reply Better AI is a Firefox extension that helps you improve your messages professionally using free AI models through OpenRouter.
+Transform your writing with AI! Professional emails, custom improvements, and quick snippets. Works everywhere, powered by free AI models.
+
+[![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
+[![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://go.screenpal.com/u/fOL1/ReplyBetterAIGuide)
+[![GitHub](https://img.shields.io/github/license/dantnan/reply-better-ai)](https://github.com/dantnan/reply-better-ai)
+
+## Quick Demo
+
+https://go.screenpal.com/u/fOL1/ReplyBetterAIGuide
 
 ## Features
 
-- Improve messages with AI assistance using free LLM models
-- Multiple improvement types: Professional, Friendly, Customer Service, Concise
-- Create custom prompts for personalized text improvements
-- Text snippets feature for quick text expansion (like TextBlaze)
-- Inline improvement button that appears only when actively typing
-- Save and reuse your frequently used prompts
-- Uses free AI models only - no subscription needed
-- Clean, intuitive interface
-- Copy improved messages with one click
+- 🚀 One-click text improvement with powerful AI models
+- 💡 Multiple styles: Professional, Friendly, Customer Service, Concise
+- ✨ Create custom prompts for personalized improvements
+- ⚡ Text snippets for quick responses (like TextBlaze)
+- 🔒 Privacy-focused: Your own API key, local storage only
+- 💬 Works on any website (Gmail, Twitter, LinkedIn, etc.)
+- 🆓 Uses free AI models only - no subscription needed
+
+## Quick Start
+
+1. [Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
+2. Get your free [OpenRouter API key](https://openrouter.ai/keys)
+3. Start writing better!
+
+## Supported Free Models
+
+The extension uses these powerful free models from OpenRouter:
+- DeepSeek V3 - Best overall performance with 131K context window
+- Gemini Pro - Google's advanced model with large context support
+- DeepSeek R1 - Open source model with excellent reasoning capabilities
 
 ## Installation Instructions
 
@@ -68,15 +87,6 @@ Icons are custom created for Reply Better AI.
 1. Create personalized improvement instructions in the Settings
 2. Give your prompt a name
 3. Your custom prompts become available in the dropdown menus
-
-## Supported Free Models
-
-The extension uses these free models from OpenRouter:
-- Llama 3 8B
-- Mistral 7B
-- Phi-3 Mini
-- Gemma 7B
-- Nous Hermes 2
 
 ## Privacy
 
