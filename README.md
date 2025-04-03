@@ -3,12 +3,12 @@
 Transform your writing with AI! Professional emails, custom improvements, and quick snippets. Works everywhere, powered by free AI models.
 
 [![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
-[![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://go.screenpal.com/u/fOL1/ReplyBetterAIGuide)
+[![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e)
 [![GitHub](https://img.shields.io/github/license/dantnan/reply-better-ai)](https://github.com/dantnan/reply-better-ai)
 
 ## Quick Demo
 
-https://go.screenpal.com/u/fOL1/ReplyBetterAIGuide
+https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e
 
 ## Features
 
