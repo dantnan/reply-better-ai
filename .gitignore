@@ -1,0 +1,13 @@
+# Build artifacts
+web-ext-artifacts/
+
+# Node modules
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db 
