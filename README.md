@@ -5,6 +5,7 @@ Transform your writing with AI! Professional emails, custom improvements, and qu
 [![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
 [![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e)
 [![GitHub](https://img.shields.io/github/license/dantnan/reply-better-ai)](https://github.com/dantnan/reply-better-ai)
+<a href="https://www.producthunt.com/posts/reply-better-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-reply&#0045;better&#0045;ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=949304&theme=light&t=1744102611792" alt="Reply&#0032;Better&#0032;AI - Transform&#0032;your&#0032;writing&#0032;with&#0032;AI | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 ## Quick Demo
 
