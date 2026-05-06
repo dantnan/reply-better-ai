@@ -5,8 +5,64 @@
   <title>Reply Better AI — Settings</title>
   <link rel="stylesheet" href="popup.css">
   <style>
-    body { width: 720px; max-width: 90vw; margin: 24px auto; }
-    .placeholder { padding: 24px; background: #f0f7ff; border: 1px solid #c8e1ff; border-radius: 6px; }
+    body { width: auto; max-width: 720px; margin: 32px auto; padding: 0 24px; }
+    .options-section {
+      background: white;
+      border: 1px solid #e1e8ed;
+      border-radius: 6px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .options-section h2 { margin-top: 0; color: #2c3e50; font-size: 18px; }
+    .options-section p { color: #4a5568; line-height: 1.6; }
+    .key-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+    .key-row input {
+      flex: 1;
+      margin: 0;
+    }
+    .key-row button {
+      width: auto;
+      padding: 10px 18px;
+      margin: 0;
+      flex-shrink: 0;
+    }
+    #options-status {
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    #options-status.success { background: #e8f8ee; color: #1e8449; border: 1px solid #abebc6; }
+    #options-status.error { background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1; }
+    .model-summary {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      background: #f0f7ff;
+      border: 1px solid #c8e1ff;
+      border-radius: 4px;
+    }
+    .model-summary > div { flex: 1; }
+    .model-summary button { width: auto; padding: 8px 16px; margin: 0; }
+    .links-row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .links-row a {
+      flex: 1;
+      min-width: 180px;
+      padding: 14px 16px;
+      background: #f0f7ff;
+      border: 1px solid #c8e1ff;
+      border-radius: 4px;
+      color: #2980b9;
+      text-decoration: none;
+      font-weight: 500;
+      text-align: center;
+    }
+    .links-row a:hover { background: #d6eaff; }
   </style>
 </head>
 <body>
@@ -17,11 +73,44 @@
     </div>
   </div>
 
-  <div class="placeholder">
-    <h3>Quick start</h3>
-    <p>Set your OpenRouter API key in the popup (click the toolbar icon → Settings).</p>
-    <p>The full settings page (model picker, prompt management, snippets) is coming in the next update.</p>
-    <p><a href="https://openrouter.ai/keys" target="_blank">Get your free OpenRouter API key →</a></p>
+  <div class="options-section">
+    <h2>OpenRouter API Key</h2>
+    <p>Required. Your key is stored locally in <code>storage.local</code> and only sent to <code>api.openrouter.ai</code>.</p>
+    <div class="key-row">
+      <input type="password" id="opt-api-key" placeholder="sk-or-v1-...">
+      <button id="opt-save-key" type="button">Save</button>
+    </div>
+    <div id="options-status" class="hidden"></div>
+    <p class="setting-description" style="margin-top: 12px;">
+      Don't have a key? <a href="https://openrouter.ai/keys" target="_blank">Get one for free at openrouter.ai/keys</a>.
+    </p>
+  </div>
+
+  <div class="options-section">
+    <h2>Default model</h2>
+    <p>The model used for inline rewrites and the popup's improve button.</p>
+    <div class="model-summary">
+      <div>
+        <div id="opt-model-name" style="font-weight: 600; color: #2c3e50;">Loading…</div>
+        <div id="opt-model-meta" class="model-meta"></div>
+      </div>
+      <button id="opt-pick-model" type="button">Choose model</button>
+    </div>
+    <div id="opt-picker-container" style="margin-top: 16px;"></div>
+  </div>
+
+  <div class="options-section">
+    <h2>Custom prompts &amp; text snippets</h2>
+    <p>Manage these in the toolbar popup (click the Reply Better AI icon → Settings).</p>
+  </div>
+
+  <div class="options-section">
+    <h2>Resources</h2>
+    <div class="links-row">
+      <a href="https://github.com/dantnan/reply-better-ai" target="_blank">GitHub repo</a>
+      <a href="https://openrouter.ai/models" target="_blank">Browse OpenRouter models</a>
+      <a href="https://buymeacoffee.com/antnan" target="_blank">Support the developer</a>
+    </div>
   </div>
 
   <script src="options.js"></script>
