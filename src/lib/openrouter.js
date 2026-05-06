@@ -51,15 +51,20 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
   return out;
 }
 
+// Returns a discriminated result so callers can distinguish "key is bad" from
+// "we couldn't reach OpenRouter" — otherwise users blame their working key on offline.
 export async function validateApiKey(apiKey) {
+  let response;
   try {
-    const response = await timeoutFetch(`${OPENROUTER_BASE}/auth/key`, {
+    response = await timeoutFetch(`${OPENROUTER_BASE}/auth/key`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     }, 10000);
-    return response.ok;
-  } catch {
-    return false;
+  } catch (e) {
+    return { ok: false, reason: e?.name === "AbortError" ? "timeout" : "network", error: e };
   }
+  if (response.status === 401 || response.status === 403) return { ok: false, reason: "invalid", status: response.status };
+  if (!response.ok) return { ok: false, reason: "provider", status: response.status };
+  return { ok: true };
 }
 
 export async function listModels() {

@@ -25,7 +25,9 @@ async function loadSettings() {
     if (Array.isArray(stored.savedPrompts)) settings.savedPrompts = stored.savedPrompts;
     if (Array.isArray(stored.snippets)) settings.snippets = stored.snippets;
   } catch (e) {
-    console.warn("[content] settings load failed:", e.message);
+    // Fail closed: a user who turned the inline button off shouldn't see it back when storage hiccups.
+    console.warn("[content] settings load failed; disabling inline UI:", e?.message);
+    settings.enableInlineButton = false;
   }
 }
 

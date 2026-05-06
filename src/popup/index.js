@@ -206,9 +206,13 @@ async function ensureModels() {
   try {
     const result = await getModels();
     modelsCache = result.models;
+    if (result.stale) {
+      showBanner("Showing a cached model list — couldn't reach OpenRouter.", "info");
+    }
     renderModelDisplay();
   } catch (err) {
-    console.warn("[popup] could not load models:", err.message);
+    console.warn("[popup] could not load models:", err?.message);
+    showBanner("Couldn't reach OpenRouter to load the model list.", "error");
   }
 }
 
@@ -329,8 +333,12 @@ elements.firstTimeSave.addEventListener("click", async () => {
   elements.firstTimeSave.disabled = true;
   elements.firstTimeSave.textContent = "Validating...";
   try {
-    const valid = await validateApiKey(apiKey);
-    if (!valid) throw new Error("API key invalid. Check at openrouter.ai/keys.");
+    const result = await validateApiKey(apiKey);
+    if (!result.ok) {
+      if (result.reason === "invalid") throw new Error("API key invalid. Check it at openrouter.ai/keys.");
+      if (result.reason === "timeout" || result.reason === "network") throw new Error("Couldn't reach OpenRouter. Saving the key anyway — try again later.");
+      throw new Error(`OpenRouter returned ${result.status}. Try again later.`);
+    }
     await storage.set({
       apiKey,
       model: currentModelId,
@@ -342,6 +350,13 @@ elements.firstTimeSave.addEventListener("click", async () => {
     showBanner("API key saved.", "success");
     ensureModels();
   } catch (e) {
+    // Network failure path: still save the key so the user isn't locked out offline.
+    if (/Couldn't reach OpenRouter/.test(e.message)) {
+      await storage.set({ apiKey, model: currentModelId, messageType: "professional" });
+      elements.firstTimeSetup.classList.add("hidden");
+      elements.mainInterface.classList.remove("hidden");
+      elements.apiKey.value = apiKey;
+    }
     showBanner(e.message, "error");
   } finally {
     elements.firstTimeSave.disabled = false;
@@ -357,18 +372,27 @@ elements.saveSettings.addEventListener("click", async () => {
   }
   elements.saveSettings.disabled = true;
   elements.saveSettings.textContent = "Saving...";
+  const persist = () => storage.set({
+    apiKey,
+    messageType: elements.messageTypeSelect.value,
+    customPrompt: elements.customPrompt.value,
+    enableInlineButton: elements.enableInlineButton.checked,
+    inlineMessageType: elements.inlineMessageType.value,
+    showTypeIndicator: elements.showTypeIndicator.checked,
+    snippets,
+  });
   try {
-    const valid = await validateApiKey(apiKey);
-    if (!valid) throw new Error("API key invalid. Check at openrouter.ai/keys.");
-    await storage.set({
-      apiKey,
-      messageType: elements.messageTypeSelect.value,
-      customPrompt: elements.customPrompt.value,
-      enableInlineButton: elements.enableInlineButton.checked,
-      inlineMessageType: elements.inlineMessageType.value,
-      showTypeIndicator: elements.showTypeIndicator.checked,
-      snippets,
-    });
+    const result = await validateApiKey(apiKey);
+    if (!result.ok) {
+      if (result.reason === "invalid") throw new Error("API key invalid. Check it at openrouter.ai/keys.");
+      if (result.reason === "timeout" || result.reason === "network") {
+        await persist();
+        showBanner("Couldn't reach OpenRouter — saved settings anyway.", "info");
+        return;
+      }
+      throw new Error(`OpenRouter returned ${result.status}. Try again later.`);
+    }
+    await persist();
     elements.settingsPanel.classList.add("hidden");
     showMainSections();
     showBanner("Settings saved.", "success");

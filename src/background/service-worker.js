@@ -55,10 +55,16 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(sendResponse)
       .catch(err => {
         console.error("[improveText] handler error:", err);
-        sendResponse({ error: err?.userMessage || err?.message || "Unknown error", code: err?.name });
+        sendResponse({
+          error: err?.userMessage || err?.message || "Unknown error",
+          code: err?.name,
+          status: err?.status,
+          model: err?.model,
+        });
       });
     return true;
   }
+  console.warn("[bg] unknown action:", message.action);
   sendResponse({ error: `Unknown action: ${message.action}` });
   return true;
 });
@@ -82,6 +88,11 @@ async function handleImproveText(message) {
     });
     return { improvedText };
   } catch (err) {
-    return { error: err.userMessage || err.message, code: err.name };
+    return {
+      error: err.userMessage || err.message,
+      code: err.name,
+      status: err.status,
+      model: err.model,
+    };
   }
 }

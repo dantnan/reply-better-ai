@@ -46,9 +46,11 @@ async function loadAll() {
   try {
     const result = await getModels();
     modelsCache = result.models;
+    if (result.stale) showStatus("Showing a cached model list — couldn't reach OpenRouter.", "info");
     renderModelDisplay();
   } catch (err) {
-    console.warn("[options] models load failed:", err.message);
+    console.warn("[options] models load failed:", err?.message);
+    showStatus("Couldn't reach OpenRouter to load the model list.", "error");
   }
 }
 
@@ -61,8 +63,16 @@ els.saveKey.addEventListener("click", async () => {
   els.saveKey.disabled = true;
   els.saveKey.textContent = "Validating…";
   try {
-    const valid = await validateApiKey(key);
-    if (!valid) throw new Error("API key invalid. Check at openrouter.ai/keys.");
+    const result = await validateApiKey(key);
+    if (!result.ok) {
+      if (result.reason === "invalid") throw new Error("API key invalid. Check it at openrouter.ai/keys.");
+      if (result.reason === "timeout" || result.reason === "network") {
+        await storage.set({ apiKey: key });
+        showStatus("Couldn't reach OpenRouter — saved the key anyway.", "info");
+        return;
+      }
+      throw new Error(`OpenRouter returned ${result.status}. Try again later.`);
+    }
     await storage.set({ apiKey: key });
     showStatus("API key saved.", "success");
   } catch (e) {

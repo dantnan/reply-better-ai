@@ -118,19 +118,41 @@ describe("improveText", () => {
 describe("validateApiKey", () => {
   beforeEach(() => { global.fetch = vi.fn(); });
 
-  it("returns true on 200", async () => {
+  it("returns ok=true on 200", async () => {
     global.fetch.mockResolvedValue({ ok: true });
-    expect(await validateApiKey("k")).toBe(true);
+    expect(await validateApiKey("k")).toEqual({ ok: true });
   });
 
-  it("returns false on 401", async () => {
+  it("flags 401 as reason=invalid (not as offline)", async () => {
     global.fetch.mockResolvedValue({ ok: false, status: 401 });
-    expect(await validateApiKey("bad")).toBe(false);
+    const result = await validateApiKey("bad");
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe("invalid");
+    expect(result.status).toBe(401);
   });
 
-  it("returns false on network error (no throw)", async () => {
+  it("flags 403 as reason=invalid", async () => {
+    global.fetch.mockResolvedValue({ ok: false, status: 403 });
+    expect((await validateApiKey("bad")).reason).toBe("invalid");
+  });
+
+  it("flags 5xx as reason=provider", async () => {
+    global.fetch.mockResolvedValue({ ok: false, status: 503 });
+    const result = await validateApiKey("k");
+    expect(result.reason).toBe("provider");
+    expect(result.status).toBe(503);
+  });
+
+  it("flags fetch rejection as reason=network (does not throw)", async () => {
     global.fetch.mockRejectedValue(new TypeError("offline"));
-    expect(await validateApiKey("k")).toBe(false);
+    expect((await validateApiKey("k")).reason).toBe("network");
+  });
+
+  it("flags AbortError as reason=timeout", async () => {
+    const abort = new Error("aborted");
+    abort.name = "AbortError";
+    global.fetch.mockRejectedValue(abort);
+    expect((await validateApiKey("k")).reason).toBe("timeout");
   });
 });
 

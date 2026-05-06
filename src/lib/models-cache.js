@@ -18,6 +18,7 @@ export async function getModels({ forceRefresh = false } = {}) {
   } catch (error) {
     const { [CACHE_KEY]: cached } = await storage.get([CACHE_KEY]);
     if (cached?.models?.length) {
+      console.warn("[models-cache] serving stale list, fetch failed:", error?.message);
       return { models: cached.models, stale: true, source: "stale", error };
     }
     throw error;
@@ -29,8 +30,11 @@ export async function validateSelectedModel({ currentId, fallback = DEFAULT_MODE
   let result;
   try {
     result = await getModels();
-  } catch {
-    return { valid: true, reason: "offline" };
+  } catch (error) {
+    // No live list and no cache: defer the verdict so a future startup can retry,
+    // rather than silently asserting the model is fine.
+    console.warn("[models-cache] validation deferred — no models available:", error?.message);
+    return { valid: true, deferred: true, reason: "offline" };
   }
   const exists = result.models.some(m => m.id === currentId);
   if (exists) return { valid: true };

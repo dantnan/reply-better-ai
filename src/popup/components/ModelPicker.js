@@ -37,7 +37,9 @@ export class ModelPicker {
       this.stale = result.stale;
     } catch (err) {
       this.error = err;
-      this.models = [];
+      // Keep the previous list if we have one — wiping it on a transient
+      // network blip is user-hostile, especially during a manual refresh.
+      if (this.models.length > 0) this.stale = true;
     } finally {
       this.loading = false;
       this.renderBody();
