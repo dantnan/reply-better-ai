@@ -90,6 +90,18 @@ src/
 manifests (`manifest.chrome.json`, `manifest.firefox.json`) into
 `dist/<browser>/`.
 
+### Coding standards
+
+Project conventions live in [`docs/coding-standards/`](./docs/coding-standards/):
+
+- [Architecture](./docs/coding-standards/architecture.md)
+- [JavaScript style](./docs/coding-standards/javascript-style.md)
+- [Error handling](./docs/coding-standards/error-handling.md)
+- [Security](./docs/coding-standards/security.md)
+- [Testing](./docs/coding-standards/testing.md)
+
+Read these before opening a PR.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
