@@ -1,6 +1,6 @@
 import browser from "../lib/browser.js";
 import { storage } from "../lib/storage.js";
-import { isTextInput, readText, writeText } from "./text-target.js";
+import { isTextInput, isImproveTarget, readText, writeText } from "./text-target.js";
 import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
 
@@ -96,6 +96,10 @@ function sendMessage(payload, timeoutMs = 5000) {
 
 function ensureButton(element) {
   if (!settings.enableInlineButton) return;
+  if (!isImproveTarget(element)) {
+    removeButtonFor(element);
+    return;
+  }
   const text = readText(element);
   if (!text.trim()) {
     removeButtonFor(element);
