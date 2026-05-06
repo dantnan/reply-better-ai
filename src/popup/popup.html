@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div id="first-time-setup" class="hidden">
+    <h2>Welcome to Reply Better AI!</h2>
+    <p>To get started, you need a free OpenRouter API key:</p>
+    <ol>
+      <li>Visit <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
+      <li>Create a free account</li>
+      <li>Generate an API key</li>
+      <li>Copy and paste it below</li>
+    </ol>
+    <label for="first-time-api-key">Your OpenRouter API Key:</label>
+    <input type="password" id="first-time-api-key">
+    <button id="first-time-save">Save API Key</button>
+  </div>
+
+  <div id="main-interface">
+    <div class="header-container">
+      <div class="logo-title">
+        <img src="icons/icon.png" alt="Reply Better AI Logo" class="header-logo">
+        <h2>Reply Better AI</h2>
+      </div>
+      <button id="close-popup" class="close-button" type="button" aria-label="Close">×</button>
+    </div>
+
+    <div class="settings-toggle">
+      <button id="show-settings" type="button">⚙️ Settings</button>
+      <button id="open-options" type="button">⚙️ Open full settings</button>
+    </div>
+
+    <div id="settings-panel" class="hidden">
+      <h3>Settings</h3>
+      <div class="setting-group">
+        <label for="api-key">OpenRouter API Key:</label>
+        <input type="password" id="api-key">
+      </div>
+
+      <div class="setting-group">
+        <label>Model:</label>
+        <div class="model-display">
+          <div id="model-display-info">
+            <div id="model-display-name">Loading…</div>
+            <div id="model-display-meta" class="model-meta"></div>
+          </div>
+          <button id="open-picker" type="button">Change</button>
+        </div>
+      </div>
+
+      <div class="setting-group">
+        <h4>Inline Text Improvement</h4>
+        <p class="setting-description">Controls the button that appears next to text fields on websites.</p>
+        <div class="checkbox-setting">
+          <input type="checkbox" id="enable-inline-button" checked>
+          <label for="enable-inline-button">Show improvement button on websites</label>
+        </div>
+        <div class="inline-type-selector">
+          <label for="inline-message-type">Default improvement type for inline button:</label>
+          <select id="inline-message-type">
+            <option value="professional">Professional Email</option>
+            <option value="friendly">Friendly Message</option>
+            <option value="customer">Customer Service</option>
+            <option value="concise">Concise Response</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-group prompt-management">
+        <h4>Custom Prompts Management</h4>
+        <label for="custom-prompt">Create Custom Prompt:</label>
+        <textarea id="custom-prompt" placeholder="Write your custom instructions here..."></textarea>
+        <label for="new-prompt-name">Prompt Name:</label>
+        <input type="text" id="new-prompt-name" placeholder="Enter a name for this prompt">
+        <button id="save-custom-prompt" type="button">Create Custom Prompt</button>
+        <h4>Your Saved Prompts</h4>
+        <div class="prompts-list-container"></div>
+      </div>
+
+      <div class="setting-group snippet-management">
+        <h4>Text Snippets</h4>
+        <p class="setting-description">Create shortcuts that expand into longer text. Type "/wel" → welcome message.</p>
+        <div class="snippet-input-row">
+          <div class="snippet-trigger-input">
+            <label for="new-snippet-trigger">Trigger:</label>
+            <input type="text" id="new-snippet-trigger" placeholder="/shortcut">
+          </div>
+          <div class="snippet-content-input">
+            <label for="new-snippet-content">Content:</label>
+            <textarea id="new-snippet-content" placeholder="Text that will replace the trigger"></textarea>
+          </div>
+        </div>
+        <button id="save-snippet" type="button">Create Snippet</button>
+        <h4>Your Saved Snippets</h4>
+        <div class="snippets-list-container"></div>
+      </div>
+
+      <button id="save-settings" type="button">Save Settings</button>
+    </div>
+
+    <div id="status-banner" class="hidden"></div>
+    <div id="model-fallback-banner" class="hidden"></div>
+
+    <div id="model-picker-container" class="hidden"></div>
+
+    <div class="message-type">
+      <label for="message-type-select">Message Type:</label>
+      <select id="message-type-select">
+        <option value="professional">Professional Email</option>
+        <option value="friendly">Friendly Message</option>
+        <option value="customer">Customer Service</option>
+        <option value="concise">Concise Response</option>
+      </select>
+    </div>
+
+    <div class="editor">
+      <textarea id="input-text" placeholder="Write your message here..."></textarea>
+      <div class="action-row">
+        <span id="char-count">0 characters</span>
+        <button id="improve-text" type="button">Improve Message</button>
+      </div>
+      <textarea id="output-text" placeholder="Improved message will appear here..." readonly></textarea>
+      <div class="output-actions">
+        <button id="copy-to-clipboard" type="button">Copy to Clipboard</button>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Powered by OpenRouter — <a href="https://openrouter.ai/" target="_blank">Learn more</a></p>
+      <p class="info-link"><a href="https://github.com/dantnan/reply-better-ai" target="_blank">GitHub</a> | <a href="https://buymeacoffee.com/antnan" target="_blank">Support the Developer</a></p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

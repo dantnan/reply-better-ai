@@ -1,121 +1,107 @@
-# Reply Better AI - Firefox Extension
+# Reply Better AI
 
-Transform your writing with AI! Professional emails, custom improvements, and quick snippets. Works everywhere, powered by free AI models.
+Improve your writing anywhere on the web with the AI model of your choice. Pick from 500+ models on OpenRouter — Claude, GPT, Gemini, DeepSeek, Llama, and more — with a searchable picker, free/paid filtering, and live pricing inside the extension.
 
 [![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
 [![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e)
 [![GitHub](https://img.shields.io/github/license/dantnan/reply-better-ai)](https://github.com/dantnan/reply-better-ai)
 
-<a href="https://www.producthunt.com/posts/reply-better-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_souce=badge-reply&#0045;better&#0045;ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=949304&theme=light&t=1744102611792" alt="Reply&#0032;Better&#0032;AI - Transform&#0032;your&#0032;writing&#0032;with&#0032;AI | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
-
-## Quick Demo
-
-https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e
-
 ## Features
 
-- 🚀 One-click text improvement with powerful AI models
-- 💡 Multiple styles: Professional, Friendly, Customer Service, Concise
-- ✨ Create custom prompts for personalized improvements
-- ⚡ Text snippets for quick responses (like TextBlaze)
-- 🔒 Privacy-focused: Your own API key, local storage only
-- 💬 Works on any website (Gmail, Twitter, LinkedIn, etc.)
-- 🆓 Uses free AI models only - no subscription needed
+- One-click text improvement on any website (Gmail, Twitter/X, LinkedIn, etc.)
+- Dynamic model picker: Popular / Free / All tabs, live pricing, context window, search, provider filter
+- Multiple writing styles: Professional, Friendly, Customer Service, Concise
+- Custom prompts and reusable text snippets (TextBlaze-style triggers)
+- Cross-browser: single source builds for Chrome and Firefox
+- Privacy-focused: API key stored in `storage.local`, traffic only goes to OpenRouter
 
-## Quick Start
+## Install
 
-1. [Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
-2. Get your free [OpenRouter API key](https://openrouter.ai/keys)
-3. Start writing better!
+### Firefox
 
-## Supported Free Models
+[Reply Better AI on AMO](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/) — install in one click.
 
-The extension uses these powerful free models from OpenRouter:
-- DeepSeek V3 - Best overall performance with 131K context window
-- Gemini Pro - Google's advanced model with large context support
-- DeepSeek R1 - Open source model with excellent reasoning capabilities
+### Chrome (developer load, Web Store coming)
 
-## Installation Instructions
+1. Run `npm install && npm run build` (or grab a `dist/chrome` zip from a release).
+2. Go to `chrome://extensions`, toggle **Developer mode** on.
+3. Click **Load unpacked** and pick the `dist/chrome/` folder.
 
-### From Firefox Add-ons Store
-1. Visit the Firefox Add-ons store page for Reply Better AI
-2. Click "Add to Firefox"
-3. Follow the installation prompts
+### Get your OpenRouter key
 
-### Development Mode
+1. Visit [openrouter.ai/keys](https://openrouter.ai/keys).
+2. Create a free account.
+3. Generate an API key.
+4. Paste it into the extension's settings.
 
-1. Clone or download this repository
-2. Open Firefox and go to `about:debugging`
-3. Click on "This Firefox" tab
-4. Click "Load Temporary Add-on"
-5. Select the `manifest.json` file in the extension directory
-
-### Icons
-
-The extension uses a single icon:
-- 512x512 pixels: `icons/icon.png`
-
-Icons are custom created for Reply Better AI.
-
-## Getting an OpenRouter API Key
-
-1. Visit [openrouter.ai/keys](https://openrouter.ai/keys)
-2. Create a free account
-3. Generate an API key
-4. Copy the API key and paste it in the extension settings
+OpenRouter has both free and paid models. Free models are flagged in the picker; paid models bill per-token directly to your OpenRouter account.
 
 ## Usage
 
-### Main Popup
-1. Click on the Reply Better AI icon in your Firefox toolbar
-2. Enter your message in the text area
-3. Select a message type
-4. Click "Improve Message"
-5. The improved message will appear in the output area
-6. Click "Copy to Clipboard" to copy the improved message
+**Popup:** click the toolbar icon → paste text → choose a style → **Improve Message**.
 
-### Inline Text Improvement
-1. Click on any text field on a webpage
-2. When actively typing, an improvement button (✍️) will appear
-3. Click the button to improve your text using your default settings
-4. The text will be automatically replaced with the improved version
+**Inline:** focus any text field on a webpage, an ✍️ button appears in the corner; click it to rewrite the field's content using your default style.
 
-### Text Snippets
-1. Go to Settings and create snippets with triggers (e.g., "/wel")
-2. When typing in any text field, enter your trigger
-3. The trigger will automatically expand to your defined content
+**Snippets:** in the popup's **Settings** panel, define triggers like `/welcome` that expand into longer text when typed.
 
-### Custom Prompts
-1. Create personalized improvement instructions in the Settings
-2. Give your prompt a name
-3. Your custom prompts become available in the dropdown menus
+## Develop
 
-## Privacy
+Requires Node 18+.
 
-- Your API key is stored locally in your browser
-- Messages are sent directly to OpenRouter API and are not stored by the extension
-- No data is collected or shared with third parties
-- Text snippets and custom prompts are stored locally in your browser
+```bash
+git clone https://github.com/dantnan/reply-better-ai
+cd reply-better-ai
+npm install
+npm run build         # produces dist/chrome and dist/firefox
+npm run watch         # rebuild on save
+npm test              # vitest unit tests
+npm run package       # zips both dists for store submission
+```
+
+### Layout
+
+```
+src/
+├── background/service-worker.js   # message handler, install/startup hooks
+├── content/                        # injected into web pages
+│   ├── index.js
+│   ├── button-injector.js          # inline ✍️ button DOM
+│   ├── snippet-expander.js
+│   └── text-target.js              # textarea/contentEditable helpers
+├── popup/                          # toolbar popup
+│   ├── index.js
+│   ├── popup.html / popup.css
+│   └── components/ModelPicker.js
+├── options/                        # full-tab settings page
+│   ├── index.js
+│   └── options.html
+├── lib/                            # shared modules
+│   ├── browser.js                  # webextension-polyfill re-export
+│   ├── storage.js                  # storage.local wrapper + migration
+│   ├── openrouter.js               # OpenRouter API client
+│   ├── models-cache.js             # 1h TTL list + validation + formatting
+│   ├── system-prompts.js           # default + custom prompt resolver
+│   ├── errors.js                   # typed error classes with userMessage
+│   └── constants.js
+└── data/popular-models.js          # curated "Popular" tab list
+```
+
+`build.mjs` bundles each entry with esbuild and emits per-browser
+manifests (`manifest.chrome.json`, `manifest.firefox.json`) into
+`dist/<browser>/`.
+
+### Coding standards
+
+Project conventions live in [`docs/coding-standards/`](./docs/coding-standards/):
+
+- [Architecture](./docs/coding-standards/architecture.md)
+- [JavaScript style](./docs/coding-standards/javascript-style.md)
+- [Error handling](./docs/coding-standards/error-handling.md)
+- [Security](./docs/coding-standards/security.md)
+- [Testing](./docs/coding-standards/testing.md)
+
+Read these before opening a PR.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-If you encounter any issues, please create an issue in the repository.
-
-## Sponsor
-
-If you enjoy using Reply Better AI and want to support the development, you can buy me a coffee!
-
-[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=antnan&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/antnan)
-
-## Attributions
-
-### Icons
-- <a href="https://www.flaticon.com/free-icons/robot" title="robot icons">Extension icon created by Flaticon</a>
+MIT — see [LICENSE](LICENSE).
