@@ -133,6 +133,8 @@ function handleResize() {
   }
 }
 
+const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "showTypeIndicator", "savedPrompts", "snippets"];
+
 async function init() {
   await loadSettings();
   injectStyles();
@@ -141,9 +143,18 @@ async function init() {
   document.addEventListener("input", handleInput, true);
   window.addEventListener("resize", handleResize);
 
-  browser.runtime.onMessage.addListener(message => {
-    if (message?.action === "updateSettings" && message.settings) {
-      Object.assign(settings, message.settings);
+  // React to settings changes from the popup/options without needing
+  // host_permissions for tabs.sendMessage broadcasting.
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local") return;
+    let touched = false;
+    for (const key of WATCHED_KEYS) {
+      if (key in changes) {
+        settings[key] = changes[key].newValue;
+        touched = true;
+      }
+    }
+    if (touched) {
       removeAllButtons();
       if (activeElement && readText(activeElement).trim()) ensureButton(activeElement);
     }

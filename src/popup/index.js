@@ -177,7 +177,6 @@ function renderSavedSnippets() {
       snippets.splice(index, 1);
       await storage.set({ snippets });
       renderSavedSnippets();
-      broadcastSettings();
     });
 
     actions.appendChild(editBtn);
@@ -189,24 +188,7 @@ function renderSavedSnippets() {
   });
 }
 
-async function broadcastSettings() {
-  const stored = await storage.get([
-    "enableInlineButton", "inlineMessageType", "showTypeIndicator", "savedPrompts", "snippets",
-  ]);
-  const payload = {
-    enableInlineButton: stored.enableInlineButton ?? true,
-    inlineMessageType: stored.inlineMessageType || "professional",
-    showTypeIndicator: stored.showTypeIndicator ?? true,
-    savedPrompts: stored.savedPrompts || [],
-    snippets: stored.snippets || [],
-  };
-  try {
-    const tabs = await browser.tabs.query({});
-    for (const tab of tabs) {
-      browser.tabs.sendMessage(tab.id, { action: "updateSettings", settings: payload }).catch(() => {});
-    }
-  } catch {/* tabs permission may not exist */}
-}
+// Content scripts pick up settings changes via storage.onChanged — no broadcast needed.
 
 function renderModelDisplay() {
   const model = modelsCache.find(m => m.id === currentModelId);
@@ -387,7 +369,6 @@ elements.saveSettings.addEventListener("click", async () => {
       showTypeIndicator: elements.showTypeIndicator.checked,
       snippets,
     });
-    broadcastSettings();
     elements.settingsPanel.classList.add("hidden");
     showMainSections();
     showBanner("Settings saved.", "success");
@@ -447,7 +428,6 @@ elements.saveSnippet.addEventListener("click", async () => {
   }
   await storage.set({ snippets });
   renderSavedSnippets();
-  broadcastSettings();
   elements.newSnippetTrigger.value = "";
   elements.newSnippetContent.value = "";
   showBanner("Snippet saved.", "success");
