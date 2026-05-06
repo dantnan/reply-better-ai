@@ -33,7 +33,7 @@ describe("improveText", () => {
     const result = await improveText({
       text: "hello",
       apiKey: "sk-test",
-      model: "anthropic/claude-haiku-4-5",
+      model: "anthropic/claude-haiku-4.5",
       systemPrompt: "be brief",
     });
 
@@ -45,8 +45,9 @@ describe("improveText", () => {
     expect(opts.headers["Content-Type"]).toBe("application/json");
     expect(opts.headers.Authorization).toBe("Bearer sk-test");
     expect(opts.headers["X-Title"]).toBe("Reply Better AI");
+    expect(opts.headers["HTTP-Referer"]).toBe("https://github.com/dantnan/reply-better-ai");
     const body = JSON.parse(opts.body);
-    expect(body.model).toBe("anthropic/claude-haiku-4-5");
+    expect(body.model).toBe("anthropic/claude-haiku-4.5");
     expect(body.messages).toEqual([
       { role: "system", content: "be brief" },
       { role: "user", content: "hello" },
