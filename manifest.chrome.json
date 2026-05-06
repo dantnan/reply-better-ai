@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Improve your messages using AI. Pick from 500+ OpenRouter models with search, pricing, and free filter.",
   "minimum_chrome_version": "109",
   "icons": {
@@ -23,8 +23,13 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],

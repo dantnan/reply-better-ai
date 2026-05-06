@@ -1,12 +1,18 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Improve your messages using AI. Pick from 500+ OpenRouter models with search, pricing, and free filter.",
   "browser_specific_settings": {
     "gecko": {
       "id": "hi@antnan.com",
-      "strict_min_version": "115.0"
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": [
+          "authenticationInfo",
+          "personalCommunications"
+        ]
+      }
     }
   },
   "icons": {
@@ -24,12 +30,19 @@
     "default_popup": "popup.html"
   },
   "background": {
-    "scripts": ["service-worker.js"]
+    "scripts": [
+      "service-worker.js"
+    ]
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
