@@ -68,7 +68,9 @@ export function formatContextLength(model) {
 }
 
 export function getProvider(model) {
-  return model?.id?.split("/")?.[0] ?? "";
+  const id = model?.id;
+  if (!id || !id.includes("/")) return "";
+  return id.split("/")[0];
 }
 
 export function uniqueProviders(models) {
