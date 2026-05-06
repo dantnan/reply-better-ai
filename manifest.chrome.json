@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Reply Better AI",
+  "version": "1.2.0",
+  "description": "Improve your messages using AI. Pick from 500+ OpenRouter models with search, pricing, and free filter.",
+  "minimum_chrome_version": "109",
+  "icons": {
+    "512": "icons/icon.png"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://openrouter.ai/*"
+  ],
+  "action": {
+    "default_icon": "icons/icon.png",
+    "default_title": "Reply Better AI",
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  }
+}

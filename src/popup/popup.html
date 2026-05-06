@@ -22,14 +22,15 @@
   <div id="main-interface">
     <div class="header-container">
       <div class="logo-title">
-        <img src="../icons/icon.png" alt="Reply Better AI Logo" class="header-logo">
+        <img src="icons/icon.png" alt="Reply Better AI Logo" class="header-logo">
         <h2>Reply Better AI</h2>
       </div>
-      <button id="close-popup" class="close-button">×</button>
+      <button id="close-popup" class="close-button" type="button" aria-label="Close">×</button>
     </div>
-    
+
     <div class="settings-toggle">
-      <button id="show-settings">⚙️ Settings</button>
+      <button id="show-settings" type="button">⚙️ Settings</button>
+      <button id="open-options" type="button">⚙️ Open full settings</button>
     </div>
 
     <div id="settings-panel" class="hidden">
@@ -38,25 +39,24 @@
         <label for="api-key">OpenRouter API Key:</label>
         <input type="password" id="api-key">
       </div>
-      
+
       <div class="setting-group">
-        <label for="model-select">Select Free Model:</label>
+        <label for="model-select">Model:</label>
         <select id="model-select">
-          <option value="deepseek/deepseek-chat:free">DeepSeek V3 (Free, Best Overall)</option>
-          <option value="google/gemini-pro:free">Gemini Pro (Free, Large Context)</option>
-          <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free, Open Source)</option>
+          <option value="anthropic/claude-haiku-4-5">Claude Haiku 4.5 (cheap, fast)</option>
+          <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6 (high quality)</option>
+          <option value="deepseek/deepseek-chat-v3:free">DeepSeek V3 (Free)</option>
         </select>
+        <p class="setting-description">A full searchable picker is in the next update.</p>
       </div>
-      
+
       <div class="setting-group">
         <h4>Inline Text Improvement</h4>
-        <p class="setting-description">This setting controls the button that appears next to text fields on websites.</p>
-        
+        <p class="setting-description">Controls the button that appears next to text fields on websites.</p>
         <div class="checkbox-setting">
           <input type="checkbox" id="enable-inline-button" checked>
           <label for="enable-inline-button">Show improvement button on websites</label>
         </div>
-        
         <div class="inline-type-selector">
           <label for="inline-message-type">Default improvement type for inline button:</label>
           <select id="inline-message-type">
@@ -64,41 +64,34 @@
             <option value="friendly">Friendly Message</option>
             <option value="customer">Customer Service</option>
             <option value="concise">Concise Response</option>
-            <!-- Custom prompts will be added here by JavaScript -->
           </select>
         </div>
-        
         <div class="checkbox-setting">
           <input type="checkbox" id="show-type-indicator" checked>
           <label for="show-type-indicator">Show improvement type next to button</label>
         </div>
       </div>
-      
+
       <div class="setting-group prompt-management">
         <h4>Custom Prompts Management</h4>
-        
         <div id="custom-prompt-container">
           <label for="custom-prompt">Create Custom Prompt:</label>
-          <textarea id="custom-prompt" placeholder="Write your custom instructions here... Example: Make this message more persuasive and fix grammar errors."></textarea>
+          <textarea id="custom-prompt" placeholder="Write your custom instructions here..."></textarea>
           <div class="prompt-name-input">
             <label for="new-prompt-name">Prompt Name:</label>
             <input type="text" id="new-prompt-name" placeholder="Enter a name for this prompt">
           </div>
-          <button id="save-custom-prompt">Create Custom Prompt</button>
+          <button id="save-custom-prompt" type="button">Create Custom Prompt</button>
         </div>
-        
         <div id="saved-prompts-list" class="saved-prompts-list">
           <h4>Your Saved Prompts</h4>
-          <div class="prompts-list-container">
-            <!-- Will be populated by JavaScript -->
-          </div>
+          <div class="prompts-list-container"></div>
         </div>
       </div>
-      
+
       <div class="setting-group snippet-management">
         <h4>Text Snippets</h4>
-        <p class="setting-description">Create shortcuts that expand into longer text when you type them in text fields. For example, type "/wel" to insert a welcome message.</p>
-        
+        <p class="setting-description">Create shortcuts that expand into longer text. Type "/wel" → welcome message.</p>
         <div id="snippet-container">
           <div class="snippet-input-row">
             <div class="snippet-trigger-input">
@@ -110,20 +103,19 @@
               <textarea id="new-snippet-content" placeholder="Text that will replace the trigger"></textarea>
             </div>
           </div>
-          <button id="save-snippet">Create Snippet</button>
+          <button id="save-snippet" type="button">Create Snippet</button>
         </div>
-        
         <div id="saved-snippets-list" class="saved-snippets-list">
           <h4>Your Saved Snippets</h4>
-          <div class="snippets-list-container">
-            <!-- Will be populated by JavaScript -->
-          </div>
+          <div class="snippets-list-container"></div>
         </div>
       </div>
-      
-      <button id="save-settings">Save Settings</button>
+
+      <button id="save-settings" type="button">Save Settings</button>
     </div>
-    
+
+    <div id="status-banner" class="hidden"></div>
+
     <div class="message-type">
       <label for="message-type-select">Message Type:</label>
       <select id="message-type-select">
@@ -131,32 +123,27 @@
         <option value="friendly">Friendly Message</option>
         <option value="customer">Customer Service</option>
         <option value="concise">Concise Response</option>
-        <!-- Custom prompts will be added here by JavaScript -->
       </select>
     </div>
-    
+
     <div class="editor">
       <textarea id="input-text" placeholder="Write your message here..."></textarea>
       <div class="action-row">
-        <span id="char-count">0/0 characters</span>
-        <button id="improve-text">Improve Message</button>
+        <span id="char-count">0 characters</span>
+        <button id="improve-text" type="button">Improve Message</button>
       </div>
       <textarea id="output-text" placeholder="Improved message will appear here..." readonly></textarea>
       <div class="output-actions">
-        <button id="copy-to-clipboard">Copy to Clipboard</button>
+        <button id="copy-to-clipboard" type="button">Copy to Clipboard</button>
       </div>
     </div>
-    
+
     <div class="footer">
-      <p>Using free AI models via OpenRouter - <a href="https://openrouter.ai/" target="_blank">Learn more</a></p>
-      <p class="small-note">Note: Free models may have usage limits imposed by OpenRouter</p>
-      <p class="info-link"><a href="info.html">About Reply Better AI</a> | <a href="https://buymeacoffee.com/antnan" target="_blank">Support the Developer</a></p>
+      <p>Powered by OpenRouter — <a href="https://openrouter.ai/" target="_blank">Learn more</a></p>
+      <p class="info-link"><a href="https://github.com/dantnan/reply-better-ai" target="_blank">GitHub</a> | <a href="https://buymeacoffee.com/antnan" target="_blank">Support the Developer</a></p>
     </div>
   </div>
-  
-  <!-- Load API Service first -->
-  <script src="../js/api-service.js"></script>
-  <!-- Then load the popup script -->
+
   <script src="popup.js"></script>
 </body>
-</html> 
+</html>
