@@ -46,7 +46,6 @@ async function buildBrowser(browser) {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
 
-  // Bundle all entry points
   for (const bundle of BUNDLES) {
     const entryPath = join(SRC, bundle.entry);
     if (!existsSync(entryPath)) {
@@ -70,13 +69,11 @@ async function buildBrowser(browser) {
     });
   }
 
-  // Copy manifest
   await copyFile(
     join(ROOT, `manifest.${browser}.json`),
     join(outDir, "manifest.json"),
   );
 
-  // Copy static files
   for (const f of STATIC_FILES) {
     const src = join(SRC, f.from);
     if (!existsSync(src)) {
@@ -86,7 +83,6 @@ async function buildBrowser(browser) {
     await copyFile(src, join(outDir, f.to));
   }
 
-  // Copy icons folder
   const iconsSrc = join(ROOT, "icons");
   if (existsSync(iconsSrc)) {
     await copyDir(iconsSrc, join(outDir, "icons"));

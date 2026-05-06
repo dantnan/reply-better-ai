@@ -3,7 +3,6 @@ import { CUSTOM_PROMPT_PREFIX } from "../lib/constants.js";
 
 const BUTTON_CLASS = "reply-better-button";
 const TOOLTIP_CLASS = "reply-better-tooltip";
-const INDICATOR_CLASS = "reply-better-type-indicator";
 
 const buttons = [];
 
@@ -31,11 +30,6 @@ export function injectStyles() {
       pointer-events: none; white-space: nowrap;
     }
     .${BUTTON_CLASS}:hover + .${TOOLTIP_CLASS} { opacity: 1; }
-    .${INDICATOR_CLASS} {
-      position: absolute; background-color: #34495e; color: white;
-      padding: 3px 6px; border-radius: 3px; font-size: 10px;
-      z-index: 99998; white-space: nowrap; letter-spacing: -0.5px;
-    }
     .reply-better-toast {
       position: fixed; top: 20px; right: 20px;
       background-color: #2c3e50; color: white;
@@ -62,7 +56,7 @@ function getTypeLabel(type, savedPrompts) {
   return TYPE_LABELS[type] || "Pro";
 }
 
-function positionElements(textElement, button, tooltip, indicator) {
+function positionElements(textElement, button, tooltip) {
   const rect = textElement.getBoundingClientRect();
   const sx = window.pageXOffset || document.documentElement.scrollLeft;
   const sy = window.pageYOffset || document.documentElement.scrollTop;
@@ -70,10 +64,6 @@ function positionElements(textElement, button, tooltip, indicator) {
   button.style.left = `${rect.right + sx - 35}px`;
   tooltip.style.top = `${rect.top + sy - 25}px`;
   tooltip.style.left = `${rect.right + sx - 80}px`;
-  if (indicator) {
-    indicator.style.top = `${rect.top + sy + 5}px`;
-    indicator.style.left = `${rect.right + sx - 65}px`;
-  }
 }
 
 export function createButton(textElement, settings, onClick) {
@@ -89,16 +79,7 @@ export function createButton(textElement, settings, onClick) {
   tooltip.textContent = `Improve text (${getTypeLabel(settings.inlineMessageType, settings.savedPrompts || [])})`;
   document.body.appendChild(tooltip);
 
-  let indicator = null;
-  if (settings.showTypeIndicator) {
-    indicator = document.createElement("div");
-    indicator.className = INDICATOR_CLASS;
-    indicator.textContent = getTypeLabel(settings.inlineMessageType, settings.savedPrompts || []);
-    indicator.style.display = "none";
-    document.body.appendChild(indicator);
-  }
-
-  positionElements(textElement, button, tooltip, indicator);
+  positionElements(textElement, button, tooltip);
 
   button.addEventListener("mousedown", e => e.preventDefault());
   button.addEventListener("click", e => {
@@ -107,8 +88,8 @@ export function createButton(textElement, settings, onClick) {
     onClick(textElement, button);
   });
 
-  buttons.push({ button, tooltip, indicator, textElement });
-  return { button, tooltip, indicator };
+  buttons.push({ button, tooltip, textElement });
+  return { button, tooltip };
 }
 
 export function findButtonFor(textElement) {
@@ -121,7 +102,6 @@ export function removeButtonFor(textElement) {
   const entry = buttons[idx];
   entry.button?.remove();
   entry.tooltip?.remove();
-  entry.indicator?.remove();
   buttons.splice(idx, 1);
 }
 
@@ -130,7 +110,6 @@ export function removeAllButtons() {
     const entry = buttons.pop();
     entry.button?.remove();
     entry.tooltip?.remove();
-    entry.indicator?.remove();
   }
 }
 

@@ -31,7 +31,6 @@ const elements = {
   charCount: $("char-count"),
   enableInlineButton: $("enable-inline-button"),
   inlineMessageType: $("inline-message-type"),
-  showTypeIndicator: $("show-type-indicator"),
   newSnippetTrigger: $("new-snippet-trigger"),
   newSnippetContent: $("new-snippet-content"),
   saveSnippet: $("save-snippet"),
@@ -47,7 +46,7 @@ const elements = {
 let savedPrompts = [];
 let snippets = [];
 let currentModelId = DEFAULT_MODEL;
-let modelsCache = []; // last fetched list, used to render the model display chip
+let modelsCache = [];
 let picker = null;
 
 function showBanner(message, type = "info") {
@@ -188,7 +187,6 @@ function renderSavedSnippets() {
   });
 }
 
-// Content scripts pick up settings changes via storage.onChanged — no broadcast needed.
 
 function renderModelDisplay() {
   const model = modelsCache.find(m => m.id === currentModelId);
@@ -280,7 +278,7 @@ async function loadAll() {
   await migrateFromSync();
   const data = await storage.get([
     "apiKey", "model", "messageType", "customPrompt", "savedPrompts", "snippets",
-    "enableInlineButton", "inlineMessageType", "showTypeIndicator",
+    "enableInlineButton", "inlineMessageType",
   ]);
   savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
   snippets = Array.isArray(data.snippets) ? data.snippets : [];
@@ -305,7 +303,6 @@ async function loadAll() {
   if (data.customPrompt) elements.customPrompt.value = data.customPrompt;
   if (data.enableInlineButton !== undefined) elements.enableInlineButton.checked = data.enableInlineButton;
   if (data.inlineMessageType) elements.inlineMessageType.value = data.inlineMessageType;
-  if (data.showTypeIndicator !== undefined) elements.showTypeIndicator.checked = data.showTypeIndicator;
 }
 
 elements.closePopup.addEventListener("click", () => window.close());
@@ -378,7 +375,6 @@ elements.saveSettings.addEventListener("click", async () => {
     customPrompt: elements.customPrompt.value,
     enableInlineButton: elements.enableInlineButton.checked,
     inlineMessageType: elements.inlineMessageType.value,
-    showTypeIndicator: elements.showTypeIndicator.checked,
     snippets,
   });
   try {

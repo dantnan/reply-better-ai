@@ -7,7 +7,6 @@ import { tryExpandSnippet } from "./snippet-expander.js";
 const settings = {
   enableInlineButton: true,
   inlineMessageType: "professional",
-  showTypeIndicator: true,
   savedPrompts: [],
   snippets: [],
 };
@@ -17,11 +16,10 @@ let activeElement = null;
 async function loadSettings() {
   try {
     const stored = await storage.get([
-      "enableInlineButton", "inlineMessageType", "showTypeIndicator", "savedPrompts", "snippets",
+      "enableInlineButton", "inlineMessageType", "savedPrompts", "snippets",
     ]);
     if (stored.enableInlineButton !== undefined) settings.enableInlineButton = stored.enableInlineButton;
     if (stored.inlineMessageType) settings.inlineMessageType = stored.inlineMessageType;
-    if (stored.showTypeIndicator !== undefined) settings.showTypeIndicator = stored.showTypeIndicator;
     if (Array.isArray(stored.savedPrompts)) settings.savedPrompts = stored.savedPrompts;
     if (Array.isArray(stored.snippets)) settings.snippets = stored.snippets;
   } catch (e) {
@@ -137,11 +135,10 @@ function handleResize() {
   }
 }
 
-const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "showTypeIndicator", "savedPrompts", "snippets"];
+const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "savedPrompts", "snippets"];
 const DEFAULT_SETTINGS = {
   enableInlineButton: true,
   inlineMessageType: "professional",
-  showTypeIndicator: true,
   savedPrompts: [],
   snippets: [],
 };

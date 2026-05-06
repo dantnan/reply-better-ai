@@ -229,7 +229,6 @@ button:disabled { background-color: #95a5a6; cursor: not-allowed; }
   padding: 10px;
 }
 
-/* Model display chip in settings */
 .model-display {
   display: flex;
   align-items: center;
@@ -262,7 +261,6 @@ button:disabled { background-color: #95a5a6; cursor: not-allowed; }
   flex-shrink: 0;
 }
 
-/* Model picker */
 .model-picker {
   background: #fff;
   border: 1px solid #c8e1ff;

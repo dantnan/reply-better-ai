@@ -252,9 +252,4 @@ export class ModelPicker {
     row.addEventListener("click", () => this.onSelect?.(model));
     return row;
   }
-
-  setCurrentModel(id) {
-    this.currentModelId = id;
-    this.renderBody();
-  }
 }
