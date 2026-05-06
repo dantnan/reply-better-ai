@@ -102,6 +102,10 @@ Project conventions live in [`docs/coding-standards/`](./docs/coding-standards/)
 
 Read these before opening a PR.
 
+## Privacy
+
+Reply Better AI runs no servers and ships zero telemetry. Your API key, prompts, and snippets stay in your browser; the only network traffic is to OpenRouter when you ask for an improvement. See [docs/privacy.md](./docs/privacy.md) for the full policy.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
