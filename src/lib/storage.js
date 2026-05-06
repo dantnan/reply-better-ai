@@ -11,26 +11,58 @@ const MIGRATABLE_KEYS = [
   "enableInlineButton", "inlineMessageType", "showTypeIndicator", "customPrompt",
 ];
 
-// One-time migration from storage.sync (old) to storage.local (new, more secure for credentials).
-// Safe to call repeatedly: only copies keys that don't already exist locally.
+// API key was stored in storage.sync; move it to local so it doesn't roam across devices.
 export async function migrateFromSync() {
+  let syncData;
+  let localData;
   try {
-    const [syncData, localData] = await Promise.all([
+    [syncData, localData] = await Promise.all([
       browser.storage.sync.get(null),
       browser.storage.local.get(null),
     ]);
-    const toCopy = {};
-    for (const k of MIGRATABLE_KEYS) {
-      if (syncData[k] !== undefined && localData[k] === undefined) {
-        toCopy[k] = syncData[k];
-      }
+  } catch (e) {
+    console.error("[storage] migration: could not read storage:", e);
+    await browser.storage.local.set({
+      migrationError: { phase: "read", message: e?.message ?? String(e), at: Date.now() },
+    }).catch(() => {});
+    return;
+  }
+
+  const toCopy = {};
+  for (const k of MIGRATABLE_KEYS) {
+    if (syncData[k] !== undefined && localData[k] === undefined) {
+      toCopy[k] = syncData[k];
     }
-    if (Object.keys(toCopy).length > 0) {
+  }
+
+  // Detect leftover sync keys from a previous partial migration so we can re-clean.
+  const leftoverInSync = MIGRATABLE_KEYS.filter(k => syncData[k] !== undefined);
+  if (Object.keys(toCopy).length === 0 && leftoverInSync.length === 0) return;
+
+  if (Object.keys(toCopy).length > 0) {
+    try {
       await browser.storage.local.set(toCopy);
-      await browser.storage.sync.remove(MIGRATABLE_KEYS);
+    } catch (e) {
+      console.error("[storage] migration: local.set failed:", e);
+      await browser.storage.local.set({
+        migrationError: { phase: "write", message: e?.message ?? String(e), at: Date.now() },
+      }).catch(() => {});
+      return;
+    }
+  }
+
+  // local.set succeeded (or wasn't needed) — now strip sync. If this fails the
+  // credentials are stranded in sync; flag it so the next startup retries.
+  try {
+    await browser.storage.sync.remove(MIGRATABLE_KEYS);
+    await browser.storage.local.remove(["migrationError", "migrationCleanupPending"]);
+    if (Object.keys(toCopy).length > 0) {
       console.log("[storage] migrated from sync→local:", Object.keys(toCopy));
     }
   } catch (e) {
-    console.warn("[storage] migration skipped:", e.message);
+    console.error("[storage] migration: sync.remove failed (will retry next startup):", e);
+    await browser.storage.local.set({
+      migrationCleanupPending: { keys: leftoverInSync.length ? leftoverInSync : Object.keys(toCopy), at: Date.now() },
+    }).catch(() => {});
   }
 }
