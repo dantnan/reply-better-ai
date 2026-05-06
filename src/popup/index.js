@@ -3,6 +3,8 @@ import { storage, migrateFromSync } from "../lib/storage.js";
 import { validateApiKey, improveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL } from "../lib/constants.js";
+import { getModels, formatPrice, formatContextLength } from "../lib/models-cache.js";
+import { ModelPicker } from "./components/ModelPicker.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -16,7 +18,6 @@ const elements = {
   firstTimeSave: $("first-time-save"),
   firstTimeApiKey: $("first-time-api-key"),
   apiKey: $("api-key"),
-  modelSelect: $("model-select"),
   messageTypeSelect: $("message-type-select"),
   customPrompt: $("custom-prompt"),
   newPromptName: $("new-prompt-name"),
@@ -36,10 +37,18 @@ const elements = {
   saveSnippet: $("save-snippet"),
   snippetsList: document.querySelector(".snippets-list-container"),
   statusBanner: $("status-banner"),
+  modelDisplayName: $("model-display-name"),
+  modelDisplayMeta: $("model-display-meta"),
+  openPicker: $("open-picker"),
+  pickerContainer: $("model-picker-container"),
+  modelFallbackBanner: $("model-fallback-banner"),
 };
 
 let savedPrompts = [];
 let snippets = [];
+let currentModelId = DEFAULT_MODEL;
+let modelsCache = []; // last fetched list, used to render the model display chip
+let picker = null;
 
 function showBanner(message, type = "info") {
   elements.statusBanner.textContent = message;
@@ -199,6 +208,88 @@ async function broadcastSettings() {
   } catch {/* tabs permission may not exist */}
 }
 
+function renderModelDisplay() {
+  const model = modelsCache.find(m => m.id === currentModelId);
+  if (model) {
+    elements.modelDisplayName.textContent = model.name || model.id;
+    elements.modelDisplayMeta.textContent = `${model.id} · ${formatContextLength(model)} · ${formatPrice(model)}`;
+  } else {
+    elements.modelDisplayName.textContent = currentModelId || DEFAULT_MODEL;
+    elements.modelDisplayMeta.textContent = modelsCache.length === 0 ? "Tap Change to load model list" : "(not in current list)";
+  }
+}
+
+async function ensureModels() {
+  if (modelsCache.length > 0) return;
+  try {
+    const result = await getModels();
+    modelsCache = result.models;
+    renderModelDisplay();
+  } catch (err) {
+    console.warn("[popup] could not load models:", err.message);
+  }
+}
+
+async function showFallbackBannerIfNeeded() {
+  const { modelFallbackNotice } = await storage.get(["modelFallbackNotice"]);
+  if (!modelFallbackNotice) return;
+  const banner = elements.modelFallbackBanner;
+  banner.replaceChildren();
+  const text = document.createElement("div");
+  text.textContent = `Selected model "${modelFallbackNotice.from}" is no longer available. Switched to "${modelFallbackNotice.to}".`;
+  banner.appendChild(text);
+  const dismiss = document.createElement("button");
+  dismiss.type = "button";
+  dismiss.textContent = "Dismiss";
+  dismiss.addEventListener("click", async () => {
+    await storage.remove("modelFallbackNotice");
+    banner.classList.add("hidden");
+  });
+  banner.appendChild(dismiss);
+  banner.classList.remove("hidden");
+}
+
+function openPicker() {
+  elements.pickerContainer.classList.remove("hidden");
+  hideMainSections();
+  picker = new ModelPicker({
+    container: elements.pickerContainer,
+    currentModelId,
+    onSelect: async (model) => {
+      currentModelId = model.id;
+      await storage.set({ model: model.id });
+      closePicker();
+      renderModelDisplay();
+      showBanner(`Model set to ${model.name || model.id}`, "success");
+      setTimeout(hideBanner, 2000);
+    },
+    onClose: () => closePicker(),
+  });
+  picker.open();
+}
+
+function closePicker() {
+  elements.pickerContainer.classList.add("hidden");
+  elements.pickerContainer.replaceChildren();
+  picker = null;
+  showMainSections();
+}
+
+function hideMainSections() {
+  document.querySelector(".message-type")?.classList.add("hidden");
+  document.querySelector(".editor")?.classList.add("hidden");
+  document.querySelector(".footer")?.classList.add("hidden");
+  document.querySelector(".settings-toggle")?.classList.add("hidden");
+  elements.settingsPanel.classList.add("hidden");
+}
+
+function showMainSections() {
+  document.querySelector(".message-type")?.classList.remove("hidden");
+  document.querySelector(".editor")?.classList.remove("hidden");
+  document.querySelector(".footer")?.classList.remove("hidden");
+  document.querySelector(".settings-toggle")?.classList.remove("hidden");
+}
+
 async function loadAll() {
   await migrateFromSync();
   const data = await storage.get([
@@ -207,9 +298,13 @@ async function loadAll() {
   ]);
   savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
   snippets = Array.isArray(data.snippets) ? data.snippets : [];
+  currentModelId = data.model || DEFAULT_MODEL;
   renderSavedPrompts();
   renderSavedSnippets();
   refreshPromptsDropdowns();
+  renderModelDisplay();
+  ensureModels();
+  showFallbackBannerIfNeeded();
 
   if (!data.apiKey) {
     elements.firstTimeSetup.classList.remove("hidden");
@@ -220,11 +315,6 @@ async function loadAll() {
   elements.mainInterface.classList.remove("hidden");
   elements.apiKey.value = data.apiKey;
 
-  if (data.model) {
-    if ([...elements.modelSelect.options].some(o => o.value === data.model)) {
-      elements.modelSelect.value = data.model;
-    }
-  }
   if (data.messageType) elements.messageTypeSelect.value = data.messageType;
   if (data.customPrompt) elements.customPrompt.value = data.customPrompt;
   if (data.enableInlineButton !== undefined) elements.enableInlineButton.checked = data.enableInlineButton;
@@ -237,6 +327,8 @@ elements.closePopup.addEventListener("click", () => window.close());
 elements.openOptions.addEventListener("click", () => {
   browser.runtime.openOptionsPage().catch(err => showBanner(`Cannot open options: ${err.message}`, "error"));
 });
+
+elements.openPicker.addEventListener("click", openPicker);
 
 elements.showSettings.addEventListener("click", () => {
   elements.settingsPanel.classList.remove("hidden");
@@ -259,13 +351,14 @@ elements.firstTimeSave.addEventListener("click", async () => {
     if (!valid) throw new Error("API key invalid. Check at openrouter.ai/keys.");
     await storage.set({
       apiKey,
-      model: elements.modelSelect.value || DEFAULT_MODEL,
+      model: currentModelId,
       messageType: "professional",
     });
     elements.firstTimeSetup.classList.add("hidden");
     elements.mainInterface.classList.remove("hidden");
     elements.apiKey.value = apiKey;
     showBanner("API key saved.", "success");
+    ensureModels();
   } catch (e) {
     showBanner(e.message, "error");
   } finally {
@@ -287,7 +380,6 @@ elements.saveSettings.addEventListener("click", async () => {
     if (!valid) throw new Error("API key invalid. Check at openrouter.ai/keys.");
     await storage.set({
       apiKey,
-      model: elements.modelSelect.value,
       messageType: elements.messageTypeSelect.value,
       customPrompt: elements.customPrompt.value,
       enableInlineButton: elements.enableInlineButton.checked,
@@ -297,10 +389,7 @@ elements.saveSettings.addEventListener("click", async () => {
     });
     broadcastSettings();
     elements.settingsPanel.classList.add("hidden");
-    document.querySelector(".message-type")?.classList.remove("hidden");
-    document.querySelector(".editor")?.classList.remove("hidden");
-    document.querySelector(".footer")?.classList.remove("hidden");
-    document.querySelector(".settings-toggle")?.classList.remove("hidden");
+    showMainSections();
     showBanner("Settings saved.", "success");
     setTimeout(hideBanner, 2000);
   } catch (e) {
@@ -389,7 +478,7 @@ elements.improveText.addEventListener("click", async () => {
     const improved = await improveText({
       text,
       apiKey: data.apiKey,
-      model: data.model || elements.modelSelect.value || DEFAULT_MODEL,
+      model: data.model || currentModelId,
       systemPrompt,
     });
     elements.outputText.value = improved;

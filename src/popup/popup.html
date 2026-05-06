@@ -41,13 +41,14 @@
       </div>
 
       <div class="setting-group">
-        <label for="model-select">Model:</label>
-        <select id="model-select">
-          <option value="anthropic/claude-haiku-4-5">Claude Haiku 4.5 (cheap, fast)</option>
-          <option value="anthropic/claude-sonnet-4-6">Claude Sonnet 4.6 (high quality)</option>
-          <option value="deepseek/deepseek-chat-v3:free">DeepSeek V3 (Free)</option>
-        </select>
-        <p class="setting-description">A full searchable picker is in the next update.</p>
+        <label>Model:</label>
+        <div class="model-display">
+          <div id="model-display-info">
+            <div id="model-display-name">Loading…</div>
+            <div id="model-display-meta" class="model-meta"></div>
+          </div>
+          <button id="open-picker" type="button">Change</button>
+        </div>
       </div>
 
       <div class="setting-group">
@@ -115,6 +116,9 @@
     </div>
 
     <div id="status-banner" class="hidden"></div>
+    <div id="model-fallback-banner" class="hidden"></div>
+
+    <div id="model-picker-container" class="hidden"></div>
 
     <div class="message-type">
       <label for="message-type-select">Message Type:</label>

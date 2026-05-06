@@ -3,6 +3,7 @@ import { storage, migrateFromSync } from "../lib/storage.js";
 import { improveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, MAX_INPUT_LENGTH } from "../lib/constants.js";
+import { validateSelectedModel } from "../lib/models-cache.js";
 
 browser.runtime.onInstalled.addListener(async details => {
   await migrateFromSync();
@@ -14,10 +15,30 @@ browser.runtime.onInstalled.addListener(async details => {
     if (Object.keys(defaults).length > 0) await storage.set(defaults);
     browser.runtime.openOptionsPage().catch(err => console.warn("openOptionsPage:", err.message));
   }
+  await runStartupValidation();
 });
 
 if (browser.runtime.onStartup) {
-  browser.runtime.onStartup.addListener(() => { migrateFromSync(); });
+  browser.runtime.onStartup.addListener(async () => {
+    await migrateFromSync();
+    await runStartupValidation();
+  });
+}
+
+async function runStartupValidation() {
+  try {
+    const { model } = await storage.get(["model"]);
+    const result = await validateSelectedModel({ currentId: model });
+    if (!result.valid) {
+      await storage.set({
+        model: result.fallback,
+        modelFallbackNotice: { from: model || "(none)", to: result.fallback, at: Date.now() },
+      });
+      console.log(`[startup] model "${model}" missing → switched to "${result.fallback}"`);
+    }
+  } catch (err) {
+    console.warn("[startup] validation skipped:", err.message);
+  }
 }
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
