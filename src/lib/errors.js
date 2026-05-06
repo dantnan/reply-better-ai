@@ -1,9 +1,8 @@
 export class OpenRouterError extends Error {
-  constructor(message, { status, code } = {}) {
+  constructor(message, { status } = {}) {
     super(message);
     this.name = "OpenRouterError";
     this.status = status;
-    this.code = code;
   }
   get userMessage() { return this.message; }
 }
@@ -14,7 +13,7 @@ export class InvalidKeyError extends OpenRouterError {
     this.name = "InvalidKeyError";
   }
   get userMessage() {
-    return "API key geçersiz veya yetkisiz. Ayarlardan yeni bir key gir.";
+    return "Your API key was rejected. Open settings and check it.";
   }
 }
 
@@ -25,7 +24,7 @@ export class ModelUnavailableError extends OpenRouterError {
     this.model = model;
   }
   get userMessage() {
-    return `Seçili model artık kullanılamıyor${this.model ? ` (${this.model})` : ""}. Modeli değiştir.`;
+    return `The selected model isn't available${this.model ? ` (${this.model})` : ""}. Pick another from the picker.`;
   }
 }
 
@@ -35,7 +34,7 @@ export class RateLimitError extends OpenRouterError {
     this.name = "RateLimitError";
   }
   get userMessage() {
-    return "Çok hızlı istek attın, biraz bekle ve tekrar dene.";
+    return "Too many requests in a row. Wait a moment and try again.";
   }
 }
 
@@ -45,7 +44,7 @@ export class ProviderError extends OpenRouterError {
     this.name = "ProviderError";
   }
   get userMessage() {
-    return "Sağlayıcı taraflı geçici hata. Birazdan tekrar dene.";
+    return "OpenRouter or the upstream provider is having a hiccup. Try again in a bit.";
   }
 }
 
@@ -55,7 +54,7 @@ export class NetworkError extends OpenRouterError {
     this.name = "NetworkError";
   }
   get userMessage() {
-    return "Bağlantı hatası. İnternetini kontrol et ve tekrar dene.";
+    return "Couldn't reach OpenRouter. Check your connection and try again.";
   }
 }
 

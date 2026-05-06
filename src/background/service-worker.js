@@ -26,18 +26,35 @@ if (browser.runtime.onStartup) {
 }
 
 async function runStartupValidation() {
+  let model;
   try {
-    const { model } = await storage.get(["model"]);
-    const result = await validateSelectedModel({ currentId: model });
-    if (!result.valid) {
-      await storage.set({
-        model: result.fallback,
-        modelFallbackNotice: { from: model || "(none)", to: result.fallback, at: Date.now() },
-      });
-      console.log(`[startup] model "${model}" missing → switched to "${result.fallback}"`);
-    }
+    ({ model } = await storage.get(["model"]));
   } catch (err) {
-    console.warn("[startup] validation skipped:", err.message);
+    console.warn("[startup] could not read model setting:", err?.message);
+    return;
+  }
+  // First-run / cleared storage: silently set the default. No fallback notice
+  // because the user never chose anything to begin with.
+  if (!model) {
+    await storage.set({ model: DEFAULT_MODEL }).catch(err => console.warn("[startup] could not set default model:", err?.message));
+    return;
+  }
+  let result;
+  try {
+    result = await validateSelectedModel({ currentId: model });
+  } catch (err) {
+    console.warn("[startup] validation threw unexpectedly:", err);
+    return;
+  }
+  if (result.valid) return;
+  try {
+    await storage.set({
+      model: result.fallback,
+      modelFallbackNotice: { from: model, to: result.fallback, at: Date.now() },
+    });
+    console.log(`[startup] model "${model}" missing → switched to "${result.fallback}"`);
+  } catch (err) {
+    console.error("[startup] failed to persist fallback:", err);
   }
 }
 
@@ -71,12 +88,12 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 async function handleImproveText(message) {
   const { text } = message;
-  if (typeof text !== "string" || !text.trim()) return { error: "Boş metin." };
+  if (typeof text !== "string" || !text.trim()) return { error: "No text to improve." };
   if (text.length > MAX_INPUT_LENGTH) {
-    return { error: `Metin çok uzun (max ${MAX_INPUT_LENGTH} karakter).` };
+    return { error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` };
   }
   const settings = await storage.get(["apiKey", "model", "messageType", "savedPrompts"]);
-  if (!settings.apiKey) return { error: "API key tanımlı değil. Ayarlardan key ekle.", code: "NoApiKey" };
+  if (!settings.apiKey) return { error: "No API key set. Open the extension settings.", code: "NoApiKey" };
   const messageType = message.messageType || settings.messageType || "professional";
   const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
   try {

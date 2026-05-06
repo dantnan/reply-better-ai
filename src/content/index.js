@@ -52,23 +52,25 @@ async function improve(textElement, button) {
     } else if (response?.error) {
       button.classList.add("error");
       showToast(response.error, { type: "error" });
+      setTimeout(() => button.classList.remove("error"), 2000);
     } else {
       button.classList.add("error");
-      showToast("Boş yanıt alındı.", { type: "error" });
+      showToast("Empty response from the model. Try again.", { type: "error" });
+      setTimeout(() => button.classList.remove("error"), 2000);
     }
   } catch (err) {
     console.error("[content] improve failed:", err);
     button.classList.add("error");
-    let msg = err.message || "Beklenmeyen hata.";
+    let msg = err.message || "Unexpected error.";
     if (msg.includes("Receiving end does not exist")) {
-      msg = "Eklenti yeniden yükleniyor olabilir. Sayfayı yenile ve tekrar dene.";
+      msg = "The extension may be reloading. Refresh this page and try again.";
     } else if (msg.includes("timed out")) {
-      msg = "İstek zaman aşımına uğradı. AI servisi meşgul olabilir, tekrar dene.";
+      msg = "Request timed out. The model is busy — try again in a moment.";
     }
     showToast(msg, { type: "error" });
+    setTimeout(() => button.classList.remove("error"), 2000);
   } finally {
     button.classList.remove("processing");
-    setTimeout(() => button.classList.remove("error"), 2000);
   }
 }
 
@@ -136,6 +138,13 @@ function handleResize() {
 }
 
 const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "showTypeIndicator", "savedPrompts", "snippets"];
+const DEFAULT_SETTINGS = {
+  enableInlineButton: true,
+  inlineMessageType: "professional",
+  showTypeIndicator: true,
+  savedPrompts: [],
+  snippets: [],
+};
 
 async function init() {
   await loadSettings();
@@ -145,16 +154,17 @@ async function init() {
   document.addEventListener("input", handleInput, true);
   window.addEventListener("resize", handleResize);
 
-  // React to settings changes from the popup/options without needing
-  // host_permissions for tabs.sendMessage broadcasting.
+  // storage.onChanged avoids needing tabs.sendMessage host_permissions.
   browser.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     let touched = false;
     for (const key of WATCHED_KEYS) {
-      if (key in changes) {
-        settings[key] = changes[key].newValue;
-        touched = true;
-      }
+      if (!(key in changes)) continue;
+      const newValue = changes[key].newValue;
+      // newValue is undefined when a key was removed; fall back to the default
+      // rather than letting "boolean turns into undefined" silently flip behaviour.
+      settings[key] = newValue !== undefined ? newValue : DEFAULT_SETTINGS[key];
+      touched = true;
     }
     if (touched) {
       removeAllButtons();

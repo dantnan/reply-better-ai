@@ -2,7 +2,7 @@ import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { validateApiKey, improveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
-import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL } from "../lib/constants.js";
+import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, MAX_INPUT_LENGTH } from "../lib/constants.js";
 import { getModels, formatPrice, formatContextLength } from "../lib/models-cache.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 
@@ -466,6 +466,10 @@ elements.improveText.addEventListener("click", async () => {
   const text = elements.inputText.value.trim();
   if (!text) {
     showBanner("Please enter a message to improve.", "error");
+    return;
+  }
+  if (text.length > MAX_INPUT_LENGTH) {
+    showBanner(`Text is too long (max ${MAX_INPUT_LENGTH} characters).`, "error");
     return;
   }
   const data = await storage.get(["apiKey", "model", "savedPrompts"]);
