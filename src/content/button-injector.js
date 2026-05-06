@@ -67,7 +67,6 @@ function positionElements(textElement, button, tooltip) {
 }
 
 export function createButton(textElement, settings, onClick) {
-  if (!settings.enableInlineButton) return null;
   const button = document.createElement("button");
   button.className = BUTTON_CLASS;
   button.textContent = "✍️";
@@ -89,7 +88,6 @@ export function createButton(textElement, settings, onClick) {
   });
 
   buttons.push({ button, tooltip, textElement });
-  return { button, tooltip };
 }
 
 export function findButtonFor(textElement) {

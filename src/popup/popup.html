@@ -71,41 +71,31 @@
 
       <div class="setting-group prompt-management">
         <h4>Custom Prompts Management</h4>
-        <div id="custom-prompt-container">
-          <label for="custom-prompt">Create Custom Prompt:</label>
-          <textarea id="custom-prompt" placeholder="Write your custom instructions here..."></textarea>
-          <div class="prompt-name-input">
-            <label for="new-prompt-name">Prompt Name:</label>
-            <input type="text" id="new-prompt-name" placeholder="Enter a name for this prompt">
-          </div>
-          <button id="save-custom-prompt" type="button">Create Custom Prompt</button>
-        </div>
-        <div id="saved-prompts-list" class="saved-prompts-list">
-          <h4>Your Saved Prompts</h4>
-          <div class="prompts-list-container"></div>
-        </div>
+        <label for="custom-prompt">Create Custom Prompt:</label>
+        <textarea id="custom-prompt" placeholder="Write your custom instructions here..."></textarea>
+        <label for="new-prompt-name">Prompt Name:</label>
+        <input type="text" id="new-prompt-name" placeholder="Enter a name for this prompt">
+        <button id="save-custom-prompt" type="button">Create Custom Prompt</button>
+        <h4>Your Saved Prompts</h4>
+        <div class="prompts-list-container"></div>
       </div>
 
       <div class="setting-group snippet-management">
         <h4>Text Snippets</h4>
         <p class="setting-description">Create shortcuts that expand into longer text. Type "/wel" → welcome message.</p>
-        <div id="snippet-container">
-          <div class="snippet-input-row">
-            <div class="snippet-trigger-input">
-              <label for="new-snippet-trigger">Trigger:</label>
-              <input type="text" id="new-snippet-trigger" placeholder="/shortcut">
-            </div>
-            <div class="snippet-content-input">
-              <label for="new-snippet-content">Content:</label>
-              <textarea id="new-snippet-content" placeholder="Text that will replace the trigger"></textarea>
-            </div>
+        <div class="snippet-input-row">
+          <div class="snippet-trigger-input">
+            <label for="new-snippet-trigger">Trigger:</label>
+            <input type="text" id="new-snippet-trigger" placeholder="/shortcut">
           </div>
-          <button id="save-snippet" type="button">Create Snippet</button>
+          <div class="snippet-content-input">
+            <label for="new-snippet-content">Content:</label>
+            <textarea id="new-snippet-content" placeholder="Text that will replace the trigger"></textarea>
+          </div>
         </div>
-        <div id="saved-snippets-list" class="saved-snippets-list">
-          <h4>Your Saved Snippets</h4>
-          <div class="snippets-list-container"></div>
-        </div>
+        <button id="save-snippet" type="button">Create Snippet</button>
+        <h4>Your Saved Snippets</h4>
+        <div class="snippets-list-container"></div>
       </div>
 
       <button id="save-settings" type="button">Save Settings</button>

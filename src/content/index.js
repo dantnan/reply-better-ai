@@ -4,12 +4,15 @@ import { isTextInput, readText, writeText } from "./text-target.js";
 import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
 
-const settings = {
+import { DEFAULT_MESSAGE_TYPE } from "../lib/constants.js";
+
+const DEFAULT_SETTINGS = Object.freeze({
   enableInlineButton: true,
-  inlineMessageType: "professional",
+  inlineMessageType: DEFAULT_MESSAGE_TYPE,
   savedPrompts: [],
   snippets: [],
-};
+});
+const settings = { ...DEFAULT_SETTINGS };
 
 let activeElement = null;
 
@@ -74,13 +77,12 @@ async function improve(textElement, button) {
 
 function sendMessage(payload, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
-    const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const timer = setTimeout(() => reject(new Error(`Message ${id} timed out after ${timeoutMs}ms`)), timeoutMs);
-    browser.runtime.sendMessage({ ...payload, _id: id })
+    const timer = setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs}ms`)), timeoutMs);
+    browser.runtime.sendMessage(payload)
       .then(response => {
         clearTimeout(timer);
         if (response === undefined || response === null) {
-          reject(new Error(`Empty response for message ${id}`));
+          reject(new Error("Empty response from background"));
         } else {
           resolve(response);
         }
@@ -136,12 +138,6 @@ function handleResize() {
 }
 
 const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "savedPrompts", "snippets"];
-const DEFAULT_SETTINGS = {
-  enableInlineButton: true,
-  inlineMessageType: "professional",
-  savedPrompts: [],
-  snippets: [],
-};
 
 async function init() {
   await loadSettings();

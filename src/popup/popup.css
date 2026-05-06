@@ -140,7 +140,7 @@ button {
 button:hover { background-color: #2980b9; }
 button:disabled { background-color: #95a5a6; cursor: not-allowed; }
 
-.message-type, .editor, .actions { margin-bottom: 15px; }
+.message-type, .editor { margin-bottom: 15px; }
 .action-row {
   display: flex;
   justify-content: space-between;

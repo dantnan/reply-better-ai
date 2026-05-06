@@ -2,9 +2,10 @@ import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { validateApiKey, improveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
-import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, MAX_INPUT_LENGTH } from "../lib/constants.js";
-import { getModels, formatPrice, formatContextLength } from "../lib/models-cache.js";
+import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, DEFAULT_MESSAGE_TYPE, MAX_INPUT_LENGTH } from "../lib/constants.js";
+import { getModels } from "../lib/models-cache.js";
 import { ModelPicker } from "./components/ModelPicker.js";
+import { renderModelChip } from "./components/model-chip.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -189,14 +190,13 @@ function renderSavedSnippets() {
 
 
 function renderModelDisplay() {
-  const model = modelsCache.find(m => m.id === currentModelId);
-  if (model) {
-    elements.modelDisplayName.textContent = model.name || model.id;
-    elements.modelDisplayMeta.textContent = `${model.id} · ${formatContextLength(model)} · ${formatPrice(model)}`;
-  } else {
-    elements.modelDisplayName.textContent = currentModelId || DEFAULT_MODEL;
-    elements.modelDisplayMeta.textContent = modelsCache.length === 0 ? "Tap Change to load model list" : "(not in current list)";
-  }
+  renderModelChip({
+    nameEl: elements.modelDisplayName,
+    metaEl: elements.modelDisplayMeta,
+    models: modelsCache,
+    currentModelId,
+    emptyHint: "Tap Change to load model list",
+  });
 }
 
 async function ensureModels() {
@@ -339,7 +339,7 @@ elements.firstTimeSave.addEventListener("click", async () => {
     await storage.set({
       apiKey,
       model: currentModelId,
-      messageType: "professional",
+      messageType: DEFAULT_MESSAGE_TYPE,
     });
     elements.firstTimeSetup.classList.add("hidden");
     elements.mainInterface.classList.remove("hidden");
@@ -349,7 +349,7 @@ elements.firstTimeSave.addEventListener("click", async () => {
   } catch (e) {
     // Network failure path: still save the key so the user isn't locked out offline.
     if (/Couldn't reach OpenRouter/.test(e.message)) {
-      await storage.set({ apiKey, model: currentModelId, messageType: "professional" });
+      await storage.set({ apiKey, model: currentModelId, messageType: DEFAULT_MESSAGE_TYPE });
       elements.firstTimeSetup.classList.add("hidden");
       elements.mainInterface.classList.remove("hidden");
       elements.apiKey.value = apiKey;

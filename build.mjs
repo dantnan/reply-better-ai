@@ -24,7 +24,6 @@ const STATIC_FILES = [
   { from: "popup/popup.html", to: "popup.html" },
   { from: "popup/popup.css", to: "popup.css" },
   { from: "options/options.html", to: "options.html" },
-  { from: "options/options.css", to: "options.css", optional: true },
 ];
 
 async function copyDir(src, dest) {
@@ -77,7 +76,7 @@ async function buildBrowser(browser) {
   for (const f of STATIC_FILES) {
     const src = join(SRC, f.from);
     if (!existsSync(src)) {
-      if (!f.optional) console.warn(`[${browser}] missing static: ${f.from}`);
+      console.warn(`[${browser}] missing static: ${f.from}`);
       continue;
     }
     await copyFile(src, join(outDir, f.to));

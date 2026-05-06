@@ -1,7 +1,8 @@
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { validateApiKey } from "../lib/openrouter.js";
-import { getModels, formatPrice, formatContextLength } from "../lib/models-cache.js";
+import { getModels } from "../lib/models-cache.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
+import { renderModelChip } from "../popup/components/model-chip.js";
 import { DEFAULT_MODEL } from "../lib/constants.js";
 
 const $ = (id) => document.getElementById(id);
@@ -27,14 +28,13 @@ function showStatus(message, type = "success") {
 }
 
 function renderModelDisplay() {
-  const model = modelsCache.find(m => m.id === currentModelId);
-  if (model) {
-    els.modelName.textContent = model.name || model.id;
-    els.modelMeta.textContent = `${model.id} · ${formatContextLength(model)} · ${formatPrice(model)}`;
-  } else {
-    els.modelName.textContent = currentModelId || DEFAULT_MODEL;
-    els.modelMeta.textContent = modelsCache.length === 0 ? "Click Choose model to load list" : "(not in current list)";
-  }
+  renderModelChip({
+    nameEl: els.modelName,
+    metaEl: els.modelMeta,
+    models: modelsCache,
+    currentModelId,
+    emptyHint: "Click Choose model to load list",
+  });
 }
 
 async function loadAll() {
