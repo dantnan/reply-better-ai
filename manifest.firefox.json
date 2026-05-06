@@ -1,18 +1,21 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Improve your messages using AI. Pick from 500+ OpenRouter models with search, pricing, and free filter.",
   "browser_specific_settings": {
     "gecko": {
       "id": "hi@antnan.com",
-      "strict_min_version": "115.0",
+      "strict_min_version": "140.0",
       "data_collection_permissions": {
         "required": [
           "authenticationInfo",
           "personalCommunications"
         ]
       }
+    },
+    "gecko_android": {
+      "strict_min_version": "142.0"
     }
   },
   "icons": {
