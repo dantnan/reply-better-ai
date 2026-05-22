@@ -1,4 +1,4 @@
-import { storage, migrateFromSync } from "../lib/storage.js";
+import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey } from "../lib/openrouter.js";
 import { getModels } from "../lib/models-cache.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
@@ -90,7 +90,7 @@ els.pickModel.addEventListener("click", () => {
     currentModelId,
     onSelect: async (model) => {
       currentModelId = model.id;
-      await storage.set({ model: model.id });
+      await setSelectedModel(model.id);
       els.pickerContainer.replaceChildren();
       renderModelDisplay();
       showStatus(`Default model set to ${model.name || model.id}`, "success");

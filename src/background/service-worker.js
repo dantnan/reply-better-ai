@@ -46,7 +46,13 @@ async function runStartupValidation() {
     console.warn("[startup] validation threw unexpectedly:", err);
     return;
   }
-  if (result.valid) return;
+  if (result.valid) {
+    // The saved model resolved — wipe any leftover fallback notice so the
+    // popup doesn't keep re-showing the banner after the user has already
+    // moved on to a working model.
+    await storage.remove("modelFallbackNotice").catch(() => {});
+    return;
+  }
   try {
     await storage.set({
       model: result.fallback,

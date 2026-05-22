@@ -1,5 +1,5 @@
 import browser from "../lib/browser.js";
-import { storage, migrateFromSync } from "../lib/storage.js";
+import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, improveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, DEFAULT_MESSAGE_TYPE, MAX_INPUT_LENGTH } from "../lib/constants.js";
@@ -241,7 +241,8 @@ function openPicker() {
     currentModelId,
     onSelect: async (model) => {
       currentModelId = model.id;
-      await storage.set({ model: model.id });
+      await setSelectedModel(model.id);
+      elements.modelFallbackBanner.classList.add("hidden");
       closePicker();
       renderModelDisplay();
       showBanner(`Model set to ${model.name || model.id}`, "success");

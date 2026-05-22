@@ -6,6 +6,14 @@ export const storage = {
   remove(keys) { return browser.storage.local.remove(keys); },
 };
 
+// Picking a new model implicitly dismisses any stale "model unavailable"
+// notice — otherwise the banner sticks around even after the user has
+// already moved on to a working model.
+export async function setSelectedModel(id) {
+  await browser.storage.local.set({ model: id });
+  await browser.storage.local.remove("modelFallbackNotice");
+}
+
 const MIGRATABLE_KEYS = [
   "apiKey", "model", "messageType", "savedPrompts", "snippets",
   "enableInlineButton", "inlineMessageType", "customPrompt",
