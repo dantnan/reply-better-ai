@@ -2,14 +2,24 @@
    Reply Better AI — content-script injected styles
    ----------------------------------------------------------------------------
    Injected as a <style> block into arbitrary third-party pages by
-   button-injector.js. Self-contained: hard-coded values (no --rb-* tokens),
-   namespaced .reply-better-*, highest z-index, explicit defensive reset
-   (never `all: revert` — on a host page that rolls back to the site's own
-   UA/user styles, which we can't predict). Theme-independent by design.
+   button-injector.js. RULES:
+     • Everything namespaced .reply-better-*  (keep .reply-better-button,
+       .reply-better-toast — JS depends on them).
+     • Highest z-index so host stacking contexts can't bury it.
+     • Self-contained: does NOT use the --rb-* tokens (those live in the popup
+       document, not here). Values are hard-coded so the button looks identical
+       on any site, light or dark. Dark mode does NOT touch these styles.
+     • Defensive: reset inherited host properties on our roots; never assume a
+       CSS reset exists on the page.
    ========================================================================== */
 
+/* — defensive root reset (explicit, self-contained — never use `all: revert`
+   here: on a host page `revert` rolls back to THAT page's UA/user styles,
+   which we can't predict. Reset only the properties that actually leak in.) — */
 .reply-better-button,
 .reply-better-button *,
+.reply-better-panel,
+.reply-better-panel *,
 .reply-better-toast,
 .reply-better-toast * {
   box-sizing: border-box !important;
@@ -61,8 +71,12 @@
   opacity: 1 !important;
   transform: scale(1) !important;
 }
-.reply-better-button:hover { background: #4f5bc4 !important; }
-.reply-better-button:active { transform: scale(0.94); }
+.reply-better-button:hover {
+  background: #4f5bc4 !important;
+}
+.reply-better-button:active {
+  transform: scale(0.94);
+}
 .reply-better-button svg {
   width: 18px !important;
   height: 18px !important;
@@ -70,9 +84,13 @@
   stroke: #ffffff !important;
   fill: none !important;
 }
-.reply-better-button.reply-better-loading { pointer-events: none; }
-.reply-better-button.reply-better-loading svg { display: none !important; }
 .reply-better-button.reply-better-error { background: #cf3a3f !important; }
+.reply-better-button.reply-better-loading {
+  pointer-events: none;
+}
+.reply-better-button.reply-better-loading svg {
+  display: none !important;
+}
 .reply-better-button .reply-better-spin {
   display: none;
   width: 16px !important;
@@ -82,10 +100,168 @@
   border-radius: 50% !important;
   animation: reply-better-spin 0.7s linear infinite;
 }
-.reply-better-button.reply-better-loading .reply-better-spin { display: block; }
-@keyframes reply-better-spin { to { transform: rotate(360deg); } }
+.reply-better-button.reply-better-loading .reply-better-spin {
+  display: block;
+}
+@keyframes reply-better-spin {
+  to { transform: rotate(360deg); }
+}
 
-/* — Toast notifications (with optional action, e.g. Undo) — */
+/* — Result panel (streamed preview + diff + regenerate + insert) — */
+.reply-better-panel {
+  position: absolute !important;
+  z-index: 2147483647 !important;
+  width: 360px;
+  max-width: calc(100vw - 24px);
+  background: #ffffff !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 32px rgba(16, 24, 40, 0.18), 0 4px 8px rgba(16, 24, 40, 0.1) !important;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.99);
+  transform-origin: top right;
+  transition: opacity 0.14s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.14s cubic-bezier(0.2, 0, 0, 1) !important;
+  pointer-events: none;
+  overflow: hidden;
+}
+.reply-better-panel.reply-better-open {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+  pointer-events: auto !important;
+}
+.reply-better-panel-head {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px !important;
+  border-bottom: 1px solid #eef0f2 !important;
+}
+.reply-better-panel-mark {
+  width: 22px; height: 22px;
+  border-radius: 6px !important;
+  background: #eef0ff !important;
+  color: #5e6ad2 !important;
+  display: inline-flex !important;
+  align-items: center; justify-content: center;
+  flex: none;
+}
+.reply-better-panel-mark svg { width: 14px !important; height: 14px !important; stroke: #5e6ad2 !important; fill: none !important; }
+.reply-better-panel-title { font-size: 13px !important; font-weight: 600 !important; color: #16191d !important; }
+.reply-better-panel-tone {
+  font-size: 11px !important; font-weight: 600 !important;
+  color: #5e6ad2 !important; background: #eef0ff !important;
+  border: 1px solid #e0e3ff !important; border-radius: 999px !important;
+  padding: 2px 8px !important;
+}
+.reply-better-panel-close {
+  margin-left: auto !important;
+  width: 26px; height: 26px;
+  border: 0 !important; background: transparent !important;
+  color: #868e96 !important; cursor: pointer !important;
+  border-radius: 6px !important;
+  display: inline-flex !important; align-items: center; justify-content: center; flex: none;
+}
+.reply-better-panel-close:hover { background: #f1f3f5 !important; color: #343a40 !important; }
+.reply-better-panel-close svg { width: 14px !important; height: 14px !important; stroke: currentColor !important; fill: none !important; }
+
+/* style chips */
+.reply-better-styles {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 11px 13px 0 !important;
+}
+.reply-better-chip {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #495057 !important;
+  background: #f1f3f5 !important;
+  border: 1px solid transparent !important;
+  border-radius: 999px !important;
+  padding: 5px 11px !important;
+  cursor: pointer !important;
+}
+.reply-better-chip:hover { background: #e9ecef !important; }
+.reply-better-chip.reply-better-active {
+  background: #eef0ff !important;
+  color: #4f5bc4 !important;
+  border-color: #c6ccff !important;
+}
+
+/* segmented Result / Changes */
+.reply-better-seg {
+  display: inline-flex !important;
+  gap: 2px;
+  padding: 2px !important;
+  margin: 11px 13px 0 !important;
+  background: #f1f3f5 !important;
+  border-radius: 8px !important;
+}
+.reply-better-seg button {
+  border: 0 !important; background: transparent !important;
+  font-size: 12px !important; font-weight: 500 !important;
+  color: #868e96 !important; cursor: pointer !important;
+  padding: 4px 12px !important; border-radius: 6px !important;
+}
+.reply-better-seg button.reply-better-active {
+  background: #ffffff !important; color: #16191d !important;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.08) !important;
+}
+
+.reply-better-panel-body { padding: 11px 13px !important; }
+.reply-better-preview,
+.reply-better-diff-box {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  color: #343a40 !important;
+  white-space: pre-wrap !important;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.reply-better-diff-box { display: none; }
+.reply-better-panel.reply-better-mode-diff .reply-better-preview { display: none; }
+.reply-better-panel.reply-better-mode-diff .reply-better-diff-box { display: block; }
+.reply-better-ins { background: #e9f7ee !important; color: #1a7434 !important; border-radius: 3px !important; padding: 0 1px !important; }
+.reply-better-del { background: #fdecec !important; color: #cf3a3f !important; text-decoration: line-through !important; border-radius: 3px !important; padding: 0 1px !important; }
+.reply-better-preview.reply-better-streaming { caret-color: transparent; }
+.reply-better-cursor {
+  display: inline-block !important;
+  width: 7px; height: 14px;
+  margin-left: 1px;
+  background: #5e6ad2 !important;
+  border-radius: 1px !important;
+  vertical-align: text-bottom;
+  animation: reply-better-blink 1s steps(2) infinite;
+}
+@keyframes reply-better-blink { 50% { opacity: 0; } }
+
+.reply-better-panel-foot {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 13px !important;
+  border-top: 1px solid #eef0f2 !important;
+}
+.reply-better-pbtn {
+  display: inline-flex !important;
+  align-items: center; justify-content: center; gap: 6px;
+  font-size: 13px !important; font-weight: 600 !important;
+  border-radius: 8px !important;
+  padding: 8px 14px !important;
+  cursor: pointer !important;
+  border: 1px solid transparent !important;
+}
+.reply-better-pbtn svg { width: 15px !important; height: 15px !important; stroke: currentColor !important; fill: none !important; }
+.reply-better-pbtn-primary { background: #5e6ad2 !important; color: #ffffff !important; flex: 1 1 auto; }
+.reply-better-pbtn-primary:hover { background: #4f5bc4 !important; }
+.reply-better-pbtn-secondary { background: #ffffff !important; color: #495057 !important; border-color: #dee2e6 !important; }
+.reply-better-pbtn-secondary:hover { background: #f1f3f5 !important; }
+.reply-better-pbtn:disabled { opacity: 0.55 !important; cursor: not-allowed !important; }
+.reply-better-panel-foot .reply-better-vari { font-size: 11px !important; color: #adb5bd !important; margin-left: auto; }
+
+/* — Toast notifications — */
 .reply-better-toast {
   position: fixed !important;
   z-index: 2147483647 !important;
@@ -120,11 +296,27 @@
   border-radius: 7px !important;
   flex: none;
 }
-.reply-better-toast.reply-better-success .reply-better-toast-icon { background: rgba(45, 161, 78, 0.22) !important; color: #6fd98c !important; }
-.reply-better-toast.reply-better-error .reply-better-toast-icon { background: rgba(229, 72, 77, 0.22) !important; color: #ff8a8d !important; }
-.reply-better-toast.reply-better-info .reply-better-toast-icon { background: rgba(130, 141, 240, 0.22) !important; color: #aab2f5 !important; }
-.reply-better-toast .reply-better-toast-icon svg { width: 14px !important; height: 14px !important; stroke: currentColor !important; fill: none !important; }
-.reply-better-toast .reply-better-toast-text { flex: 1 1 auto; }
+.reply-better-toast.reply-better-success .reply-better-toast-icon {
+  background: rgba(45, 161, 78, 0.22) !important;
+  color: #6fd98c !important;
+}
+.reply-better-toast.reply-better-error .reply-better-toast-icon {
+  background: rgba(229, 72, 77, 0.22) !important;
+  color: #ff8a8d !important;
+}
+.reply-better-toast.reply-better-info .reply-better-toast-icon {
+  background: rgba(130, 141, 240, 0.22) !important;
+  color: #aab2f5 !important;
+}
+.reply-better-toast .reply-better-toast-icon svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
+.reply-better-toast .reply-better-toast-text {
+  flex: 1 1 auto;
+}
 .reply-better-toast .reply-better-toast-action {
   flex: none;
   background: rgba(255, 255, 255, 0.12) !important;
@@ -136,7 +328,9 @@
   padding: 5px 11px !important;
   cursor: pointer !important;
 }
-.reply-better-toast .reply-better-toast-action:hover { background: rgba(255, 255, 255, 0.2) !important; }
+.reply-better-toast .reply-better-toast-action:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
 .reply-better-toast .reply-better-toast-close {
   background: transparent !important;
   border: 0 !important;
@@ -146,11 +340,20 @@
   display: inline-flex !important;
   flex: none;
 }
-.reply-better-toast .reply-better-toast-close:hover { color: #f1f3f5 !important; }
-.reply-better-toast .reply-better-toast-close svg { width: 14px !important; height: 14px !important; stroke: currentColor !important; fill: none !important; }
+.reply-better-toast .reply-better-toast-close:hover {
+  color: #f1f3f5 !important;
+}
+.reply-better-toast .reply-better-toast-close svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .reply-better-button,
+  .reply-better-panel,
   .reply-better-toast { transition-duration: 0.001ms !important; }
   .reply-better-button .reply-better-spin { animation-duration: 1.6s; }
+  .reply-better-cursor { animation: none; }
 }

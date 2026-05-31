@@ -147,13 +147,16 @@ async function saveKey() {
 async function init() {
   await migrateFromSync();
   const data = await storage.get([
-    "apiKey", "model", "savedPrompts", "snippets", "enableInlineButton", "inlineMessageType",
+    "apiKey", "model", "savedPrompts", "snippets", "enableInlineButton", "inlineMessageType", "inlineClickMode",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
   state.snippets = Array.isArray(data.snippets) ? data.snippets : [];
   state.currentModelId = data.model || DEFAULT_MODEL;
   if (data.apiKey) els.apiKey.value = data.apiKey;
   els.enableInline.checked = data.enableInlineButton !== false;
+  const clickMode = data.inlineClickMode || "panel";
+  const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
+  if (clickRadio) clickRadio.checked = true;
   fillStyleSelect(els.inlineStyle, state.savedPrompts, data.inlineMessageType || DEFAULT_STYLE);
   renderPrompts();
   renderSnippets();
@@ -183,6 +186,9 @@ async function init() {
   els.modal.addEventListener("click", e => { if (e.target === els.modal) closePicker(); });
   els.enableInline.addEventListener("change", () => { storage.set({ enableInlineButton: els.enableInline.checked }); flashSaved(); });
   els.inlineStyle.addEventListener("change", () => { storage.set({ inlineMessageType: els.inlineStyle.value }); flashSaved(); });
+  for (const radio of document.querySelectorAll('#inline-click-mode input[name="click-mode"]')) {
+    radio.addEventListener("change", () => { if (radio.checked) { storage.set({ inlineClickMode: radio.value }); flashSaved(); } });
+  }
 
   els.saveCustomPrompt.addEventListener("click", async () => {
     const name = els.newPromptName.value.trim();

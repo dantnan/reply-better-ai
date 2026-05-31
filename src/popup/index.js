@@ -305,7 +305,7 @@ async function init() {
   await migrateFromSync();
   const data = await storage.get([
     "apiKey", "model", "messageType", "savedPrompts", "snippets",
-    "enableInlineButton", "inlineMessageType",
+    "enableInlineButton", "inlineMessageType", "inlineClickMode",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
   state.snippets = Array.isArray(data.snippets) ? data.snippets : [];
@@ -314,6 +314,9 @@ async function init() {
   fillStyleSelect(els.styleSelect, state.savedPrompts, data.messageType || DEFAULT_STYLE);
   fillStyleSelect(els.inlineStyle, state.savedPrompts, data.inlineMessageType || DEFAULT_STYLE);
   els.enableInline.checked = data.enableInlineButton !== false;
+  const clickMode = data.inlineClickMode || "panel";
+  const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
+  if (clickRadio) clickRadio.checked = true;
   renderPrompts();
   renderSnippets();
   refreshChip();
@@ -354,6 +357,9 @@ async function init() {
   els.openPicker.addEventListener("click", openPicker);
   els.enableInline.addEventListener("change", () => storage.set({ enableInlineButton: els.enableInline.checked }));
   els.inlineStyle.addEventListener("change", () => storage.set({ inlineMessageType: els.inlineStyle.value }));
+  for (const radio of document.querySelectorAll('#inline-click-mode input[name="click-mode"]')) {
+    radio.addEventListener("change", () => { if (radio.checked) storage.set({ inlineClickMode: radio.value }); });
+  }
 
   els.saveCustomPrompt.addEventListener("click", async () => {
     const name = els.newPromptName.value.trim();

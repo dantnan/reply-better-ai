@@ -1,9 +1,36 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
-import { improveText } from "../lib/openrouter.js";
+import { improveText, streamImproveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
 import { validateSelectedModel } from "../lib/models-cache.js";
+
+// Streaming relay for the inline panel: the content script opens a port and we
+// stream the rewrite back chunk by chunk. The API key never leaves the worker.
+browser.runtime.onConnect.addListener(port => {
+  if (port.name !== "rb-improve-stream") return;
+  port.onMessage.addListener(async msg => {
+    if (!msg || msg.action !== "stream") return;
+    try {
+      const text = typeof msg.text === "string" ? msg.text : "";
+      if (!text.trim()) { port.postMessage({ error: "No text to improve." }); return; }
+      if (text.length > MAX_INPUT_LENGTH) { port.postMessage({ error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` }); return; }
+      const settings = await storage.get(["apiKey", "model", "savedPrompts"]);
+      if (!settings.apiKey) { port.postMessage({ error: "No API key set. Open the extension settings.", code: "NoApiKey" }); return; }
+      const systemPrompt = resolveSystemPrompt(msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
+      const full = await streamImproveText({
+        text,
+        apiKey: settings.apiKey,
+        model: settings.model || DEFAULT_MODEL,
+        systemPrompt,
+        onChunk: delta => { try { port.postMessage({ delta }); } catch { /* port closed */ } },
+      });
+      port.postMessage({ done: true, full });
+    } catch (err) {
+      port.postMessage({ error: err?.userMessage || err?.message || "Something went wrong", code: err?.name });
+    }
+  });
+});
 
 browser.runtime.onInstalled.addListener(async details => {
   await migrateFromSync();

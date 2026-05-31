@@ -3,12 +3,14 @@ import { storage } from "../lib/storage.js";
 import { isTextInput, isImproveTarget, readText, writeText } from "./text-target.js";
 import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast, setButtonLoading } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
+import { openPanel } from "./panel.js";
 
-import { DEFAULT_STYLE } from "../lib/constants.js";
+import { DEFAULT_STYLE, DEFAULT_CLICK_MODE } from "../lib/constants.js";
 
 const DEFAULT_SETTINGS = Object.freeze({
   enableInlineButton: true,
   inlineMessageType: DEFAULT_STYLE,
+  inlineClickMode: DEFAULT_CLICK_MODE,
   savedPrompts: [],
   snippets: [],
 });
@@ -19,10 +21,11 @@ let activeElement = null;
 async function loadSettings() {
   try {
     const stored = await storage.get([
-      "enableInlineButton", "inlineMessageType", "savedPrompts", "snippets",
+      "enableInlineButton", "inlineMessageType", "inlineClickMode", "savedPrompts", "snippets",
     ]);
     if (stored.enableInlineButton !== undefined) settings.enableInlineButton = stored.enableInlineButton;
     if (stored.inlineMessageType) settings.inlineMessageType = stored.inlineMessageType;
+    if (stored.inlineClickMode) settings.inlineClickMode = stored.inlineClickMode;
     if (Array.isArray(stored.savedPrompts)) settings.savedPrompts = stored.savedPrompts;
     if (Array.isArray(stored.snippets)) settings.snippets = stored.snippets;
   } catch (e) {
@@ -32,7 +35,33 @@ async function loadSettings() {
   }
 }
 
-async function improve(textElement, button) {
+// Click handler: open the review panel (default) or improve instantly.
+function improve(textElement, button) {
+  if (settings.inlineClickMode === "instant") return improveInstant(textElement, button);
+  return improveViaPanel(textElement, button);
+}
+
+function improveViaPanel(textElement, button) {
+  const text = readText(textElement);
+  if (!text.trim()) return;
+  const previous = text;
+  openPanel({
+    anchorButton: button,
+    inputText: text,
+    settings,
+    onInsert: result => {
+      writeText(textElement, result);
+      textElement.focus();
+      showToast("Inserted.", {
+        type: "success",
+        duration: 6000,
+        action: { label: "Undo", fn: () => { writeText(textElement, previous); textElement.focus(); } },
+      });
+    },
+  });
+}
+
+async function improveInstant(textElement, button) {
   const text = readText(textElement);
   if (!text.trim()) return;
 
@@ -151,7 +180,7 @@ function handleResize() {
   }
 }
 
-const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "savedPrompts", "snippets"];
+const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "inlineClickMode", "savedPrompts", "snippets"];
 
 async function init() {
   await loadSettings();

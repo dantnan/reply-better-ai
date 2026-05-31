@@ -1,5 +1,6 @@
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
 export const DEFAULT_STYLE = "improve";
+export const DEFAULT_CLICK_MODE = "panel"; // inline button: "panel" | "instant"
 export const RATE_LIMIT_MS = 1000;
 export const MAX_INPUT_LENGTH = 50000;
 export const MODELS_CACHE_TTL_MS = 60 * 60 * 1000;

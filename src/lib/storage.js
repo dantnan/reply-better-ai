@@ -16,7 +16,7 @@ export async function setSelectedModel(id) {
 
 const MIGRATABLE_KEYS = [
   "apiKey", "model", "messageType", "savedPrompts", "snippets",
-  "enableInlineButton", "inlineMessageType", "customPrompt",
+  "enableInlineButton", "inlineMessageType", "inlineClickMode", "customPrompt",
 ];
 
 // API key was stored in storage.sync; move it to local so it doesn't roam across devices.

@@ -84,6 +84,25 @@
             </label>
           </div>
           <div style="margin-top:var(--rb-space-4);">
+            <span class="rb-label">When you click the button</span>
+            <div class="rb-radio-group" id="inline-click-mode">
+              <label class="rb-radio">
+                <input type="radio" name="click-mode" value="panel" checked />
+                <span class="rb-radio-body">
+                  <span class="rb-radio-title">Show options panel</span>
+                  <span class="rb-radio-desc">Pick a style, preview the result and changes, then insert.</span>
+                </span>
+              </label>
+              <label class="rb-radio">
+                <input type="radio" name="click-mode" value="instant" />
+                <span class="rb-radio-body">
+                  <span class="rb-radio-title">Improve instantly</span>
+                  <span class="rb-radio-desc">Rewrite and insert right away using your default style, with an Undo.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:var(--rb-space-4);">
             <label class="rb-label" for="inline-message-type">Default style</label>
             <select class="rb-select" id="inline-message-type"></select>
           </div>
