@@ -4,113 +4,158 @@
   <meta charset="utf-8">
   <title>Reply Better AI — Settings</title>
   <link rel="stylesheet" href="popup.css">
-  <style>
-    body { width: auto; max-width: 720px; margin: 32px auto; padding: 0 24px; }
-    .options-section {
-      background: white;
-      border: 1px solid #e1e8ed;
-      border-radius: 6px;
-      padding: 20px 24px;
-      margin-bottom: 16px;
-    }
-    .options-section h2 { margin-top: 0; color: #2c3e50; font-size: 18px; }
-    .options-section p { color: #4a5568; line-height: 1.6; }
-    .key-row {
-      display: flex;
-      gap: 8px;
-      align-items: stretch;
-    }
-    .key-row input {
-      flex: 1;
-      margin: 0;
-    }
-    .key-row button {
-      width: auto;
-      padding: 10px 18px;
-      margin: 0;
-      flex-shrink: 0;
-    }
-    #options-status {
-      padding: 10px 12px;
-      border-radius: 4px;
-      margin-top: 12px;
-      font-size: 13px;
-    }
-    #options-status.success { background: #e8f8ee; color: #1e8449; border: 1px solid #abebc6; }
-    #options-status.error { background: #fdecea; color: #c0392b; border: 1px solid #f5b7b1; }
-    #options-status.info { background: #e8f4fd; color: #2c5f86; border: 1px solid #aed6f1; }
-    .model-summary {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      padding: 16px;
-      background: #f0f7ff;
-      border: 1px solid #c8e1ff;
-      border-radius: 4px;
-    }
-    .model-summary > div { flex: 1; }
-    .model-summary button { width: auto; padding: 8px 16px; margin: 0; }
-    .links-row { display: flex; gap: 16px; flex-wrap: wrap; }
-    .links-row a {
-      flex: 1;
-      min-width: 180px;
-      padding: 14px 16px;
-      background: #f0f7ff;
-      border: 1px solid #c8e1ff;
-      border-radius: 4px;
-      color: #2980b9;
-      text-decoration: none;
-      font-weight: 500;
-      text-align: center;
-    }
-    .links-row a:hover { background: #d6eaff; }
-  </style>
+  <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="header-container">
-    <div class="logo-title">
-      <img src="icons/icon.png" alt="" class="header-logo">
-      <h2>Reply Better AI — Settings</h2>
-    </div>
-  </div>
-
-  <div class="options-section">
-    <h2>OpenRouter API Key</h2>
-    <p>Required. Your key is stored locally in <code>storage.local</code> and only sent to <code>openrouter.ai</code>.</p>
-    <div class="key-row">
-      <input type="password" id="opt-api-key" placeholder="sk-or-v1-...">
-      <button id="opt-save-key" type="button">Save</button>
-    </div>
-    <div id="options-status" class="hidden"></div>
-    <p class="setting-description" style="margin-top: 12px;">
-      Don't have a key? <a href="https://openrouter.ai/keys" target="_blank">Get one for free at openrouter.ai/keys</a>.
-    </p>
-  </div>
-
-  <div class="options-section">
-    <h2>Default model</h2>
-    <p>The model used for inline rewrites and the popup's improve button.</p>
-    <div class="model-summary">
-      <div>
-        <div id="opt-model-name" style="font-weight: 600; color: #2c3e50;">Loading…</div>
-        <div id="opt-model-meta" class="model-meta"></div>
+  <div class="opt-page">
+    <div class="opt-topbar">
+      <div class="opt-topbar-inner">
+        <span class="rb-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 16.2h5"/></svg>
+        </span>
+        <h1>Reply Better AI — Settings</h1>
+        <span class="opt-saved" id="opt-saved">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Saved
+        </span>
       </div>
-      <button id="opt-pick-model" type="button">Choose model</button>
     </div>
-    <div id="opt-picker-container" style="margin-top: 16px;"></div>
+
+    <div class="opt-layout">
+      <nav class="opt-nav" id="opt-nav">
+        <a href="#card-key" data-target="card-key" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 1-7.1 7.1 5 5 0 0 1 7.1-7.1zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3"/></svg> API key</a>
+        <a href="#card-model" data-target="card-model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg> Model</a>
+        <a href="#card-inline" data-target="card-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Inline button</a>
+        <a href="#card-prompts" data-target="card-prompts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg> Custom prompts</a>
+        <a href="#card-snippets" data-target="card-snippets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg> Snippets</a>
+        <a href="#card-about" data-target="card-about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg> About</a>
+      </nav>
+
+      <div class="opt-content">
+        <!-- API key -->
+        <section class="opt-card" id="card-key">
+          <div class="opt-card-head">
+            <h2>OpenRouter API key</h2>
+            <p>Required. Stored locally in your browser and only sent to OpenRouter.</p>
+          </div>
+          <div class="rb-key-field">
+            <input class="rb-input" id="api-key" type="password" placeholder="sk-or-v1-…" aria-label="OpenRouter API key" />
+            <button class="rb-key-toggle" id="key-toggle" type="button" aria-label="Show key">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="rb-add-row">
+            <button class="rb-btn rb-btn-primary rb-btn-sm" id="save-key" type="button">Save key</button>
+            <a class="rb-btn rb-btn-ghost rb-btn-sm" href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get a free key →</a>
+          </div>
+          <div class="rb-banner error" id="key-error" role="alert" style="margin-top:var(--rb-space-3);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+            <span id="key-error-text"></span>
+          </div>
+        </section>
+
+        <!-- Model -->
+        <section class="opt-card" id="card-model">
+          <div class="opt-card-head">
+            <h2>Default model</h2>
+            <p>Used for inline rewrites and the popup's Improve button.</p>
+          </div>
+          <div class="rb-model-chip">
+            <span class="rb-model-avatar" id="chip-avatar">··</span>
+            <span class="rb-model-meta">
+              <span id="model-display-name">Loading…</span>
+              <span class="rb-model-sub" id="model-display-meta"></span>
+            </span>
+            <button class="rb-btn rb-btn-secondary rb-btn-sm" id="open-picker" type="button">Change</button>
+          </div>
+        </section>
+
+        <!-- Inline button -->
+        <section class="opt-card" id="card-inline">
+          <div class="opt-card-head">
+            <h2>Inline button</h2>
+            <p>The ✍️ button next to long text fields on any website. Clicking it rewrites the field instantly, with an Undo afterwards.</p>
+          </div>
+          <div class="rb-toggle-row">
+            <span class="rb-toggle-label">Show button on websites</span>
+            <label class="rb-switch">
+              <input type="checkbox" id="enable-inline-button" checked />
+              <span class="rb-track"></span><span class="rb-thumb"></span>
+            </label>
+          </div>
+          <div style="margin-top:var(--rb-space-4);">
+            <span class="rb-label">When you click the button</span>
+            <div class="rb-radio-group" id="inline-click-mode">
+              <label class="rb-radio">
+                <input type="radio" name="click-mode" value="panel" checked />
+                <span class="rb-radio-body">
+                  <span class="rb-radio-title">Show options panel</span>
+                  <span class="rb-radio-desc">Pick a style, preview the result and changes, then insert.</span>
+                </span>
+              </label>
+              <label class="rb-radio">
+                <input type="radio" name="click-mode" value="instant" />
+                <span class="rb-radio-body">
+                  <span class="rb-radio-title">Improve instantly</span>
+                  <span class="rb-radio-desc">Rewrite and insert right away using your default style, with an Undo.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:var(--rb-space-4);">
+            <label class="rb-label" for="inline-message-type">Default style</label>
+            <select class="rb-select" id="inline-message-type"></select>
+          </div>
+        </section>
+
+        <!-- Custom prompts -->
+        <section class="opt-card" id="card-prompts">
+          <div class="opt-card-head">
+            <h2>Custom prompts</h2>
+            <p>Your own instructions, available as styles in the popup and inline button.</p>
+          </div>
+          <div class="rb-manager-list" id="prompts-list"></div>
+          <div class="rb-add-row">
+            <input class="rb-input" id="new-prompt-name" type="text" placeholder="Name (e.g. Standup)" aria-label="Custom prompt name" style="max-width:200px;" />
+            <input class="rb-input" id="custom-prompt" type="text" placeholder="Write a custom instruction…" aria-label="Custom prompt instruction" />
+            <button class="rb-btn rb-btn-secondary rb-btn-sm" id="save-custom-prompt" type="button">Add</button>
+          </div>
+        </section>
+
+        <!-- Snippets -->
+        <section class="opt-card" id="card-snippets">
+          <div class="opt-card-head">
+            <h2>Snippets</h2>
+            <p>Type a trigger like /sig in any text field and it expands to the snippet text.</p>
+          </div>
+          <div class="rb-manager-list" id="snippets-list"></div>
+          <div class="rb-add-row">
+            <input class="rb-input" id="new-snippet-trigger" type="text" placeholder="/trigger" aria-label="Snippet trigger" style="max-width:120px;" />
+            <input class="rb-input" id="new-snippet-content" type="text" placeholder="Expands to…" aria-label="Snippet content" />
+            <button class="rb-btn rb-btn-secondary rb-btn-sm" id="save-snippet" type="button">Add</button>
+          </div>
+        </section>
+
+        <!-- About -->
+        <section class="opt-card" id="card-about">
+          <div class="opt-card-head">
+            <h2>About</h2>
+            <p>Reply Better AI is open source and stores no data on any server.</p>
+          </div>
+          <div class="opt-links">
+            <a href="https://github.com/dantnan/reply-better-ai" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://github.com/dantnan/reply-better-ai/blob/main/docs/privacy.md" target="_blank" rel="noopener">Privacy policy</a>
+            <a href="https://openrouter.ai/models" target="_blank" rel="noopener">Browse models</a>
+          </div>
+        </section>
+      </div>
+    </div>
   </div>
 
-  <div class="options-section">
-    <h2>Custom prompts &amp; text snippets</h2>
-    <p>Manage these in the toolbar popup (click the Reply Better AI icon → Settings).</p>
-  </div>
-
-  <div class="options-section">
-    <h2>Resources</h2>
-    <div class="links-row">
-      <a href="https://github.com/dantnan/reply-better-ai" target="_blank">GitHub repo</a>
-      <a href="https://openrouter.ai/models" target="_blank">Browse OpenRouter models</a>
-      <a href="https://buymeacoffee.com/antnan" target="_blank">Support the developer</a>
+  <!-- Modal picker -->
+  <div class="opt-modal" id="picker-modal">
+    <div class="opt-modal-card">
+      <div id="model-picker-container"></div>
     </div>
   </div>
 

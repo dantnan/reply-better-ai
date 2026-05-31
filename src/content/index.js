@@ -1,14 +1,16 @@
 import browser from "../lib/browser.js";
 import { storage } from "../lib/storage.js";
 import { isTextInput, isImproveTarget, readText, writeText } from "./text-target.js";
-import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast } from "./button-injector.js";
+import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast, setButtonLoading } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
+import { openPanel, isPanelOpen } from "./panel.js";
 
-import { DEFAULT_MESSAGE_TYPE } from "../lib/constants.js";
+import { DEFAULT_STYLE, DEFAULT_CLICK_MODE } from "../lib/constants.js";
 
 const DEFAULT_SETTINGS = Object.freeze({
   enableInlineButton: true,
-  inlineMessageType: DEFAULT_MESSAGE_TYPE,
+  inlineMessageType: DEFAULT_STYLE,
+  inlineClickMode: DEFAULT_CLICK_MODE,
   savedPrompts: [],
   snippets: [],
 });
@@ -19,10 +21,11 @@ let activeElement = null;
 async function loadSettings() {
   try {
     const stored = await storage.get([
-      "enableInlineButton", "inlineMessageType", "savedPrompts", "snippets",
+      "enableInlineButton", "inlineMessageType", "inlineClickMode", "savedPrompts", "snippets",
     ]);
     if (stored.enableInlineButton !== undefined) settings.enableInlineButton = stored.enableInlineButton;
     if (stored.inlineMessageType) settings.inlineMessageType = stored.inlineMessageType;
+    if (stored.inlineClickMode) settings.inlineClickMode = stored.inlineClickMode;
     if (Array.isArray(stored.savedPrompts)) settings.savedPrompts = stored.savedPrompts;
     if (Array.isArray(stored.snippets)) settings.snippets = stored.snippets;
   } catch (e) {
@@ -32,13 +35,46 @@ async function loadSettings() {
   }
 }
 
-async function improve(textElement, button) {
+// Click handler: open the review panel (default) or improve instantly.
+function improve(textElement, button) {
+  if (settings.inlineClickMode === "instant") return improveInstant(textElement, button);
+  return improveViaPanel(textElement, button);
+}
+
+function improveViaPanel(textElement, button) {
+  const text = readText(textElement);
+  if (!text.trim()) return;
+  const previous = text;
+  openPanel({
+    anchorButton: button,
+    inputText: text,
+    settings,
+    onInsert: result => {
+      writeText(textElement, result);
+      textElement.focus();
+      showToast("Inserted.", {
+        type: "success",
+        duration: 6000,
+        action: { label: "Undo", fn: () => { writeText(textElement, previous); textElement.focus(); } },
+      });
+    },
+  });
+}
+
+async function improveInstant(textElement, button) {
   const text = readText(textElement);
   if (!text.trim()) return;
 
+  const previous = text; // snapshot for Undo
   textElement.focus();
-  button.classList.add("processing");
-  button.classList.remove("error");
+  setButtonLoading(button, true);
+  button.classList.remove("reply-better-error");
+
+  const flashError = msg => {
+    button.classList.add("reply-better-error");
+    showToast(msg, { type: "error" });
+    setTimeout(() => button.classList.remove("reply-better-error"), 2000);
+  };
 
   try {
     const response = await sendMessage({
@@ -50,28 +86,31 @@ async function improve(textElement, button) {
     if (response?.improvedText) {
       writeText(textElement, response.improvedText);
       textElement.focus();
+      // Direct rewrite + safety net: an Undo that restores the original text.
+      showToast("Text improved.", {
+        type: "success",
+        duration: 6000,
+        action: {
+          label: "Undo",
+          fn: () => { writeText(textElement, previous); textElement.focus(); },
+        },
+      });
     } else if (response?.error) {
-      button.classList.add("error");
-      showToast(response.error, { type: "error" });
-      setTimeout(() => button.classList.remove("error"), 2000);
+      flashError(response.error);
     } else {
-      button.classList.add("error");
-      showToast("Empty response from the model. Try again.", { type: "error" });
-      setTimeout(() => button.classList.remove("error"), 2000);
+      flashError("Empty response from the model. Try again.");
     }
   } catch (err) {
     console.error("[content] improve failed:", err);
-    button.classList.add("error");
     let msg = err.message || "Unexpected error.";
     if (msg.includes("Receiving end does not exist")) {
       msg = "The extension may be reloading. Refresh this page and try again.";
     } else if (msg.includes("timed out")) {
       msg = "Request timed out. The model is busy — try again in a moment.";
     }
-    showToast(msg, { type: "error" });
-    setTimeout(() => button.classList.remove("error"), 2000);
+    flashError(msg);
   } finally {
-    button.classList.remove("processing");
+    setButtonLoading(button, false);
   }
 }
 
@@ -118,10 +157,14 @@ function handleFocus(event) {
 
 function handleBlur(event) {
   if (!isTextInput(event.target)) return;
+  // Keep the button alive while its panel is open — interacting with the panel
+  // blurs the field, and removing the button would detach the panel's anchor.
+  if (isPanelOpen()) return;
   // Delay so click on our button can land first
   const target = event.target;
   setTimeout(() => {
     if (document.activeElement === target) return;
+    if (isPanelOpen()) return;
     removeButtonFor(target);
     if (activeElement === target) activeElement = null;
   }, 200);
@@ -135,13 +178,14 @@ function handleInput(event) {
 }
 
 function handleResize() {
+  if (isPanelOpen()) return; // panel repositions itself; don't nuke its anchor
   removeAllButtons();
   if (activeElement && readText(activeElement).trim()) {
     ensureButton(activeElement);
   }
 }
 
-const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "savedPrompts", "snippets"];
+const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "inlineClickMode", "savedPrompts", "snippets"];
 
 async function init() {
   await loadSettings();
@@ -163,7 +207,7 @@ async function init() {
       settings[key] = newValue !== undefined ? newValue : DEFAULT_SETTINGS[key];
       touched = true;
     }
-    if (touched) {
+    if (touched && !isPanelOpen()) {
       removeAllButtons();
       if (activeElement && readText(activeElement).trim()) ensureButton(activeElement);
     }

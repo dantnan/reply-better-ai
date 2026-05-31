@@ -1,84 +1,53 @@
-import { TYPE_LABELS } from "../lib/system-prompts.js";
+import { STYLE_LABELS } from "../lib/system-prompts.js";
 import { CUSTOM_PROMPT_PREFIX } from "../lib/constants.js";
+import injectedCss from "./content-button.css";
 
 const BUTTON_CLASS = "reply-better-button";
-const TOOLTIP_CLASS = "reply-better-tooltip";
 
 const buttons = [];
+
+const PENCIL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const TOAST_ICONS = {
+  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>',
+};
+const CLOSE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
 
 export function injectStyles() {
   if (document.getElementById("reply-better-styles")) return;
   const style = document.createElement("style");
   style.id = "reply-better-styles";
-  style.textContent = `
-    .${BUTTON_CLASS} {
-      position: absolute; width: 30px; height: 30px;
-      background-color: #3498db; color: white; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      font-size: 16px; z-index: 99999; border: none;
-      transition: transform 0.2s, background-color 0.2s;
-    }
-    .${BUTTON_CLASS}:hover { transform: scale(1.1); background-color: #2980b9; }
-    .${BUTTON_CLASS}.processing { background-color: #f39c12; animation: rb-pulse 1.5s infinite; }
-    .${BUTTON_CLASS}.error { background-color: #e74c3c; }
-    @keyframes rb-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-    .${TOOLTIP_CLASS} {
-      position: absolute; background-color: #34495e; color: white;
-      padding: 5px 10px; border-radius: 4px; font-size: 12px;
-      z-index: 99999; opacity: 0; transition: opacity 0.3s;
-      pointer-events: none; white-space: nowrap;
-    }
-    .${BUTTON_CLASS}:hover + .${TOOLTIP_CLASS} { opacity: 1; }
-    .reply-better-toast {
-      position: fixed; top: 20px; right: 20px;
-      background-color: #2c3e50; color: white;
-      padding: 12px 16px; border-radius: 6px;
-      font-size: 13px; z-index: 100000;
-      max-width: 320px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-      opacity: 0; transition: opacity 0.3s;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-    .reply-better-toast.error { background-color: #c0392b; }
-    .reply-better-toast.show { opacity: 1; }
-  `;
+  style.textContent = injectedCss;
   document.head.appendChild(style);
 }
 
-function getTypeLabel(type, savedPrompts) {
+function styleTitle(type, savedPrompts) {
   if (type?.startsWith(CUSTOM_PROMPT_PREFIX)) {
     const idx = parseInt(type.slice(CUSTOM_PROMPT_PREFIX.length), 10);
-    if (Number.isInteger(idx) && idx >= 0 && idx < savedPrompts.length) {
-      return savedPrompts[idx].name.substring(0, 10);
-    }
+    if (Number.isInteger(idx) && idx >= 0 && idx < savedPrompts.length) return savedPrompts[idx].name;
     return "Custom";
   }
-  return TYPE_LABELS[type] || "Pro";
+  return STYLE_LABELS[type] || "Improve";
 }
 
-function positionElements(textElement, button, tooltip) {
+function position(textElement, button) {
   const rect = textElement.getBoundingClientRect();
   const sx = window.pageXOffset || document.documentElement.scrollLeft;
   const sy = window.pageYOffset || document.documentElement.scrollTop;
-  button.style.top = `${rect.top + sy + 5}px`;
-  button.style.left = `${rect.right + sx - 35}px`;
-  tooltip.style.top = `${rect.top + sy - 25}px`;
-  tooltip.style.left = `${rect.right + sx - 80}px`;
+  button.style.top = `${rect.top + sy + 6}px`;
+  button.style.left = `${rect.right + sx - 40}px`;
 }
 
 export function createButton(textElement, settings, onClick) {
   const button = document.createElement("button");
   button.className = BUTTON_CLASS;
-  button.textContent = "✍️";
-  button.title = "Improve with Reply Better AI";
+  button.type = "button";
+  button.title = `Improve with Reply Better AI (${styleTitle(settings.inlineMessageType, settings.savedPrompts || [])})`;
+  button.innerHTML = PENCIL_SVG + '<span class="reply-better-spin"></span>';
   document.body.appendChild(button);
-
-  const tooltip = document.createElement("div");
-  tooltip.className = TOOLTIP_CLASS;
-  tooltip.textContent = `Improve text (${getTypeLabel(settings.inlineMessageType, settings.savedPrompts || [])})`;
-  document.body.appendChild(tooltip);
-
-  positionElements(textElement, button, tooltip);
+  position(textElement, button);
+  requestAnimationFrame(() => button.classList.add("reply-better-visible"));
 
   button.addEventListener("mousedown", e => e.preventDefault());
   button.addEventListener("click", e => {
@@ -87,7 +56,11 @@ export function createButton(textElement, settings, onClick) {
     onClick(textElement, button);
   });
 
-  buttons.push({ button, tooltip, textElement });
+  buttons.push({ button, textElement });
+}
+
+export function setButtonLoading(button, loading) {
+  button.classList.toggle("reply-better-loading", loading);
 }
 
 export function findButtonFor(textElement) {
@@ -97,28 +70,54 @@ export function findButtonFor(textElement) {
 export function removeButtonFor(textElement) {
   const idx = buttons.findIndex(b => b.textElement === textElement);
   if (idx === -1) return;
-  const entry = buttons[idx];
-  entry.button?.remove();
-  entry.tooltip?.remove();
+  buttons[idx].button?.remove();
   buttons.splice(idx, 1);
 }
 
 export function removeAllButtons() {
-  while (buttons.length > 0) {
-    const entry = buttons.pop();
-    entry.button?.remove();
-    entry.tooltip?.remove();
-  }
+  while (buttons.length > 0) buttons.pop().button?.remove();
 }
 
-export function showToast(message, { type = "info", duration = 4000 } = {}) {
+// Toast with an optional action button (e.g. Undo). Returns the toast element.
+export function showToast(message, { type = "info", action = null, duration = 4000 } = {}) {
   const toast = document.createElement("div");
-  toast.className = `reply-better-toast ${type === "error" ? "error" : ""}`;
-  toast.textContent = message;
+  toast.className = `reply-better-toast reply-better-${type === "error" ? "error" : type === "success" ? "success" : "info"}`;
+
+  const icon = document.createElement("span");
+  icon.className = "reply-better-toast-icon";
+  icon.innerHTML = TOAST_ICONS[type] || TOAST_ICONS.info;
+
+  const text = document.createElement("span");
+  text.className = "reply-better-toast-text";
+  text.textContent = message;
+
+  toast.append(icon, text);
+
+  let timer;
+  const dismiss = () => {
+    toast.classList.remove("reply-better-show");
+    setTimeout(() => toast.remove(), 220);
+  };
+
+  if (action && typeof action.fn === "function") {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "reply-better-toast-action";
+    btn.textContent = action.label || "Undo";
+    btn.addEventListener("click", () => { action.fn(); clearTimeout(timer); dismiss(); });
+    toast.appendChild(btn);
+  }
+
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "reply-better-toast-close";
+  close.setAttribute("aria-label", "Dismiss");
+  close.innerHTML = CLOSE_SVG;
+  close.addEventListener("click", () => { clearTimeout(timer); dismiss(); });
+  toast.appendChild(close);
+
   document.body.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add("show"));
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, duration);
+  requestAnimationFrame(() => toast.classList.add("reply-better-show"));
+  timer = setTimeout(dismiss, duration);
+  return toast;
 }

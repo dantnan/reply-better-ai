@@ -41,6 +41,11 @@ const {
   formatContextLength,
   getProvider,
   uniqueProviders,
+  getProviderLabel,
+  getProviderColor,
+  getProviderMonogram,
+  pricePerMTok,
+  formatUsd,
 } = await import("../src/lib/models-cache.js");
 const { listModels } = await import("../src/lib/openrouter.js");
 
@@ -211,5 +216,40 @@ describe("validateSelectedModel", () => {
     expect(result.valid).toBe(false);
     expect(result.reason).toBe("missing");
     expect(listModels).not.toHaveBeenCalled();
+  });
+});
+
+describe("provider helpers", () => {
+  it("maps known provider prefixes to labels, colors, monograms", () => {
+    const m = { id: "anthropic/claude-haiku-4.5" };
+    expect(getProviderLabel(m)).toBe("Anthropic");
+    expect(getProviderColor(m)).toBe("#d97757");
+    expect(getProviderMonogram(m)).toBe("An");
+  });
+
+  it("title-cases unknown providers and uses the neutral color", () => {
+    const m = { id: "acme/widget-1" };
+    expect(getProviderLabel(m)).toBe("Acme");
+    expect(getProviderColor(m)).toBe("#868e96");
+  });
+});
+
+describe("pricePerMTok / formatUsd", () => {
+  it("returns null for free models", () => {
+    expect(pricePerMTok({ pricing: { prompt: "0", completion: "0" } })).toBeNull();
+  });
+
+  it("converts per-token to per-MTok numbers", () => {
+    const p = pricePerMTok({ pricing: { prompt: "0.000003", completion: "0.000015" } });
+    expect(p.in).toBeCloseTo(3, 5);
+    expect(p.out).toBeCloseTo(15, 5);
+  });
+
+  it("formats USD compactly", () => {
+    expect(formatUsd(3)).toBe("$3");
+    expect(formatUsd(0.25)).toBe("$0.25");
+    expect(formatUsd(1.04)).toBe("$1.04");
+    expect(formatUsd(0)).toBe("$0");
+    expect(formatUsd(null)).toBe("—");
   });
 });

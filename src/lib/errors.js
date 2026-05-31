@@ -34,7 +34,7 @@ export class RateLimitError extends OpenRouterError {
     this.name = "RateLimitError";
   }
   get userMessage() {
-    return "Too many requests in a row. Wait a moment and try again.";
+    return "Rate limited — this model is busy (free models limit how often you can call them). Wait a moment, or pick a different model.";
   }
 }
 
@@ -44,7 +44,7 @@ export class ProviderError extends OpenRouterError {
     this.name = "ProviderError";
   }
   get userMessage() {
-    return "OpenRouter or the upstream provider is having a hiccup. Try again in a bit.";
+    return "This model returned an error — free models are often overloaded. Try again, or switch to a different model.";
   }
 }
 

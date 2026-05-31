@@ -1,0 +1,193 @@
+/* ============================================================================
+   Reply Better AI — shared design tokens
+   ----------------------------------------------------------------------------
+   Drop this into a single file (e.g. src/shared/tokens.css) and @import it
+   from popup.css and the options page so every surface agrees.
+   System font stack only — no external fonts (CSP-safe).
+   Dark mode is automatic via prefers-color-scheme; a manual [data-theme]
+   override is included so you can force a theme in the popup if you ever
+   add a toggle. The content-script injected styles do NOT use these tokens
+   (they stay self-contained + namespaced) — see button-injector spec.
+   ========================================================================== */
+
+:root {
+  /* — Typeface (system stack, no webfont) — */
+  --rb-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --rb-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  /* — Type scale (px; popup UI is compact) — */
+  --rb-text-xs: 11px;   /* badges, overlines        */
+  --rb-text-sm: 12px;   /* captions, helper text    */
+  --rb-text-base: 13px; /* meta, secondary labels   */
+  --rb-text-md: 14px;   /* body, inputs, buttons    */
+  --rb-text-lg: 16px;   /* row titles, section head */
+  --rb-text-xl: 18px;   /* popup header             */
+  --rb-text-2xl: 22px;  /* options page H1          */
+
+  --rb-leading-tight: 1.25;
+  --rb-leading-normal: 1.5;
+  --rb-weight-regular: 450;
+  --rb-weight-medium: 540;
+  --rb-weight-semibold: 640;
+
+  /* — Spacing (4pt) — */
+  --rb-space-1: 4px;
+  --rb-space-2: 8px;
+  --rb-space-3: 12px;
+  --rb-space-4: 16px;
+  --rb-space-5: 20px;
+  --rb-space-6: 24px;
+  --rb-space-8: 32px;
+  --rb-space-10: 40px;
+
+  /* — Radii — */
+  --rb-radius-sm: 6px;
+  --rb-radius-md: 8px;
+  --rb-radius-lg: 10px;
+  --rb-radius-xl: 14px;
+  --rb-radius-pill: 999px;
+
+  /* — Neutral scale (cool gray) — */
+  --rb-gray-0: #ffffff;
+  --rb-gray-50: #f8f9fa;
+  --rb-gray-100: #f1f3f5;
+  --rb-gray-200: #e9ecef;
+  --rb-gray-300: #dee2e6;
+  --rb-gray-400: #ced4da;
+  --rb-gray-500: #adb5bd;
+  --rb-gray-600: #868e96;
+  --rb-gray-700: #495057;
+  --rb-gray-800: #343a40;
+  --rb-gray-900: #212529;
+  --rb-gray-950: #14171a;
+
+  /* — Accent (indigo) — refined, trustworthy, replaces flat #3498db — */
+  --rb-accent-50: #eef0ff;
+  --rb-accent-100: #e0e3ff;
+  --rb-accent-200: #c6ccff;
+  --rb-accent-300: #a6adfb;
+  --rb-accent-400: #828df0;
+  --rb-accent-500: #5e6ad2; /* primary  */
+  --rb-accent-600: #4f5bc4; /* hover    */
+  --rb-accent-700: #4049a8; /* active   */
+
+  /* — Semantic — */
+  --rb-green-50: #e9f7ee;
+  --rb-green-500: #2da14e;
+  --rb-green-600: #1f8a40;
+  --rb-green-700: #1a7434;
+  --rb-red-50: #fdecec;
+  --rb-red-500: #e5484d;
+  --rb-red-600: #cf3a3f;
+  --rb-amber-50: #fdf5e6;
+  --rb-amber-500: #d99423;
+  --rb-amber-700: #9a6711;
+
+  /* — Semantic surface/text aliases (theme-aware below) — */
+  --rb-bg: var(--rb-gray-100);          /* app canvas        */
+  --rb-surface: var(--rb-gray-0);       /* cards, popup      */
+  --rb-surface-2: var(--rb-gray-50);    /* inset / hover     */
+  --rb-surface-3: var(--rb-gray-100);   /* deeper inset      */
+  --rb-border: var(--rb-gray-200);      /* default 1px       */
+  --rb-border-strong: var(--rb-gray-300);
+  --rb-fg: var(--rb-gray-900);          /* primary text      */
+  --rb-fg-muted: var(--rb-gray-700);    /* secondary text    */
+  --rb-fg-subtle: var(--rb-gray-600);   /* meta / captions   */
+  --rb-fg-faint: var(--rb-gray-500);    /* placeholders      */
+  --rb-fg-on-accent: #ffffff;
+
+  --rb-accent: var(--rb-accent-500);
+  --rb-accent-hover: var(--rb-accent-600);
+  --rb-accent-active: var(--rb-accent-700);
+  --rb-accent-soft: var(--rb-accent-50);
+  --rb-accent-soft-border: var(--rb-accent-100);
+  --rb-accent-fg: var(--rb-accent-600);
+
+  --rb-free-bg: var(--rb-green-50);
+  --rb-free-fg: var(--rb-green-700);
+  --rb-free-border: #bfe6cb;
+
+  /* — Shadows (subtle, two-layer) — */
+  --rb-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --rb-shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08),
+    0 1px 2px rgba(16, 24, 40, 0.04);
+  --rb-shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08),
+    0 2px 4px rgba(16, 24, 40, 0.04);
+  --rb-shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12),
+    0 4px 8px rgba(16, 24, 40, 0.06);
+
+  /* — Focus ring — */
+  --rb-focus-ring: 0 0 0 3px rgba(94, 106, 210, 0.28);
+
+  --rb-ease: cubic-bezier(0.2, 0, 0, 1);
+  color-scheme: light;
+}
+
+/* ── Dark theme ──────────────────────────────────────────────────────────
+   Applies automatically when the OS is dark (unless [data-theme="light"]),
+   and manually when [data-theme="dark"] is set on a wrapper. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rb-bg: #0e1013;
+    --rb-surface: #16191d;
+    --rb-surface-2: #1c2024;
+    --rb-surface-3: #23282d;
+    --rb-border: #2a3036;
+    --rb-border-strong: #3a4047;
+    --rb-fg: #f1f3f5;
+    --rb-fg-muted: #c2c8ce;
+    --rb-fg-subtle: #9aa1a9;
+    --rb-fg-faint: #6e767e;
+
+    --rb-accent: var(--rb-accent-400);
+    --rb-accent-hover: #95a0f5;
+    --rb-accent-active: #b0b8f8;
+    --rb-accent-soft: rgba(94, 106, 210, 0.16);
+    --rb-accent-soft-border: rgba(130, 141, 240, 0.32);
+    --rb-accent-fg: #aab2f5;
+
+    --rb-free-bg: rgba(45, 161, 78, 0.16);
+    --rb-free-fg: #6fd98c;
+    --rb-free-border: rgba(45, 161, 78, 0.4);
+
+    --rb-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --rb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+    --rb-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+    --rb-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.5);
+    --rb-focus-ring: 0 0 0 3px rgba(130, 141, 240, 0.4);
+    color-scheme: dark;
+  }
+}
+
+[data-theme="dark"] {
+  --rb-bg: #0e1013;
+  --rb-surface: #16191d;
+  --rb-surface-2: #1c2024;
+  --rb-surface-3: #23282d;
+  --rb-border: #2a3036;
+  --rb-border-strong: #3a4047;
+  --rb-fg: #f1f3f5;
+  --rb-fg-muted: #c2c8ce;
+  --rb-fg-subtle: #9aa1a9;
+  --rb-fg-faint: #6e767e;
+
+  --rb-accent: var(--rb-accent-400);
+  --rb-accent-hover: #95a0f5;
+  --rb-accent-active: #b0b8f8;
+  --rb-accent-soft: rgba(94, 106, 210, 0.16);
+  --rb-accent-soft-border: rgba(130, 141, 240, 0.32);
+  --rb-accent-fg: #aab2f5;
+
+  --rb-free-bg: rgba(45, 161, 78, 0.16);
+  --rb-free-fg: #6fd98c;
+  --rb-free-border: rgba(45, 161, 78, 0.4);
+
+  --rb-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --rb-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --rb-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --rb-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.5);
+  --rb-focus-ring: 0 0 0 3px rgba(130, 141, 240, 0.4);
+  color-scheme: dark;
+}

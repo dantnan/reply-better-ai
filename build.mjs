@@ -23,7 +23,10 @@ const BUNDLES = [
 const STATIC_FILES = [
   { from: "popup/popup.html", to: "popup.html" },
   { from: "popup/popup.css", to: "popup.css" },
+  { from: "popup/model-picker.css", to: "model-picker.css" },
+  { from: "shared/tokens.css", to: "tokens.css" },
   { from: "options/options.html", to: "options.html" },
+  { from: "options/options.css", to: "options.css" },
 ];
 
 async function copyDir(src, dest) {
@@ -63,7 +66,7 @@ async function buildBrowser(browser) {
         "process.env.NODE_ENV": WATCH ? '"development"' : '"production"',
         "__BROWSER__": JSON.stringify(browser),
       },
-      loader: { ".svg": "text" },
+      loader: { ".svg": "text", ".css": "text" },
       logLevel: "info",
     });
   }

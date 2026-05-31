@@ -1,4 +1,7 @@
-import { getModels, isFree, formatPrice, formatContextLength, getProvider, uniqueProviders } from "../../lib/models-cache.js";
+import {
+  getModels, isFree, formatContextLength, getProvider, uniqueProviders,
+  getProviderLabel, getProviderColor, getProviderMonogram, pricePerMTok, formatUsd,
+} from "../../lib/models-cache.js";
 import { POPULAR_IDS } from "../../data/popular-models.js";
 
 const TABS = [
@@ -6,6 +9,19 @@ const TABS = [
   { id: "free", label: "Free" },
   { id: "all", label: "All" },
 ];
+
+// Inline SVGs — CSP-safe (static strings, no eval / no external fetch).
+const ICONS = {
+  back: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
+  search: '<svg class="mp-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>',
+  x: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+  ctx: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+  empty: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/></svg>',
+  bolt: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13z"/></svg>',
+};
+
+const OPENROUTER_MODELS_URL = "https://openrouter.ai/models";
 
 export class ModelPicker {
   constructor({ container, onSelect, onClose, currentModelId }) {
@@ -30,15 +46,13 @@ export class ModelPicker {
   async refresh({ forceRefresh = false } = {}) {
     this.loading = true;
     this.error = null;
-    this.renderBody();
+    this.applyState();
     try {
       const result = await getModels({ forceRefresh });
       this.models = result.models;
       this.stale = result.stale;
     } catch (err) {
       this.error = err;
-      // Keep the previous list if we have one — wiping it on a transient
-      // network blip is user-hostile, especially during a manual refresh.
       if (this.models.length > 0) this.stale = true;
     } finally {
       this.loading = false;
@@ -48,139 +62,215 @@ export class ModelPicker {
 
   renderShell() {
     this.container.replaceChildren();
-    this.container.classList.add("model-picker");
 
-    const header = document.createElement("div");
-    header.className = "mp-header";
+    const mp = document.createElement("div");
+    mp.className = "mp";
+    this.mp = mp;
 
+    // Header: title + back
+    const head = document.createElement("div");
+    head.className = "mp-head";
+    const titleWrap = document.createElement("div");
+    const title = document.createElement("h2");
+    title.className = "mp-head-title";
+    title.textContent = "Choose a model";
+    const sub = document.createElement("p");
+    sub.className = "mp-head-sub";
+    sub.textContent = "Routed through OpenRouter";
+    titleWrap.append(title, sub);
     const back = document.createElement("button");
     back.type = "button";
     back.className = "mp-back";
-    back.textContent = "← Back";
+    back.innerHTML = `${ICONS.back} Back`;
     back.addEventListener("click", () => this.onClose?.());
-    header.appendChild(back);
+    head.append(titleWrap, back);
+    mp.appendChild(head);
 
-    const title = document.createElement("h3");
-    title.textContent = "Choose model";
-    header.appendChild(title);
-
-    const refreshBtn = document.createElement("button");
-    refreshBtn.type = "button";
-    refreshBtn.className = "mp-refresh";
-    refreshBtn.title = "Refresh model list";
-    refreshBtn.textContent = "↻";
-    refreshBtn.addEventListener("click", () => this.refresh({ forceRefresh: true }));
-    header.appendChild(refreshBtn);
-
-    this.container.appendChild(header);
-
+    // Tabs
     const tabsEl = document.createElement("div");
     tabsEl.className = "mp-tabs";
+    tabsEl.setAttribute("role", "tablist");
+    this.tabEls = {};
     for (const tab of TABS) {
       const btn = document.createElement("button");
       btn.type = "button";
+      btn.className = "mp-tab";
       btn.dataset.tab = tab.id;
-      btn.textContent = tab.label;
-      if (tab.id === this.activeTab) btn.classList.add("active");
+      btn.setAttribute("role", "tab");
+      btn.innerHTML = `${tab.label} <span class="mp-tab-count"></span>`;
       btn.addEventListener("click", () => {
         this.activeTab = tab.id;
-        for (const b of tabsEl.querySelectorAll("button")) {
-          b.classList.toggle("active", b.dataset.tab === tab.id);
-        }
         this.renderBody();
       });
       tabsEl.appendChild(btn);
+      this.tabEls[tab.id] = btn;
     }
-    this.container.appendChild(tabsEl);
+    mp.appendChild(tabsEl);
 
+    // Filters: search + provider
     const filters = document.createElement("div");
     filters.className = "mp-filters";
 
+    const searchWrap = document.createElement("div");
+    searchWrap.className = "mp-search-wrap";
+    searchWrap.innerHTML = ICONS.search;
     const search = document.createElement("input");
     search.type = "search";
-    search.placeholder = "Search models...";
-    search.setAttribute("aria-label", "Search models by name or id");
-    search.value = this.searchQuery;
-    search.addEventListener("input", e => {
-      this.searchQuery = e.target.value.trim().toLowerCase();
+    search.className = "mp-search";
+    search.placeholder = "Search models…";
+    search.setAttribute("aria-label", "Search models");
+    search.autocomplete = "off";
+    search.spellcheck = false;
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "mp-search-clear";
+    clear.setAttribute("aria-label", "Clear search");
+    clear.innerHTML = ICONS.x;
+    search.addEventListener("input", () => {
+      this.searchQuery = search.value.trim().toLowerCase();
+      searchWrap.classList.toggle("has-value", !!search.value);
       this.renderBody();
     });
-    filters.appendChild(search);
+    clear.addEventListener("click", () => {
+      search.value = "";
+      this.searchQuery = "";
+      searchWrap.classList.remove("has-value");
+      search.focus();
+      this.renderBody();
+    });
+    searchWrap.append(search, clear);
+    filters.appendChild(searchWrap);
 
     this.providerSelect = document.createElement("select");
-    this.providerSelect.setAttribute("aria-label", "Filter models by provider");
+    this.providerSelect.className = "mp-provider";
+    this.providerSelect.setAttribute("aria-label", "Filter by provider");
     this.providerSelect.addEventListener("change", e => {
       this.providerFilter = e.target.value;
       this.renderBody();
     });
     filters.appendChild(this.providerSelect);
+    mp.appendChild(filters);
 
-    this.container.appendChild(filters);
+    // Stale notice
+    const stale = document.createElement("div");
+    stale.className = "mp-stale";
+    stale.innerHTML = `${ICONS.bolt}<span>Showing your last cached model list — couldn't reach OpenRouter.</span>`;
+    mp.appendChild(stale);
 
-    this.bodyEl = document.createElement("div");
-    this.bodyEl.className = "mp-body";
-    this.container.appendChild(this.bodyEl);
+    // List
+    const list = document.createElement("div");
+    list.className = "mp-list";
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-label", "Models");
+    mp.appendChild(list);
+    this.list = list;
+
+    // Skeleton (loading)
+    const skel = document.createElement("div");
+    skel.className = "mp-skel-list";
+    for (let i = 0; i < 6; i++) {
+      const s = document.createElement("div");
+      s.className = "mp-skel";
+      s.innerHTML =
+        '<div class="mp-skel-avatar"></div>' +
+        `<div><div class="mp-skel-bar" style="width:${45 + (i * 13) % 40}%"></div>` +
+        `<div class="mp-skel-bar" style="width:${60 + (i * 17) % 30}%;margin-top:7px;height:8px"></div></div>` +
+        '<div class="mp-skel-bar" style="width:40px"></div>';
+      skel.appendChild(s);
+    }
+    mp.appendChild(skel);
+
+    // Empty
+    const empty = document.createElement("div");
+    empty.className = "mp-empty";
+    empty.innerHTML = ICONS.empty +
+      '<div class="mp-empty-title">No models match</div>' +
+      '<div class="mp-empty-hint">Try a different search or switch to the All tab.</div>';
+    this.emptyEl = empty;
+    mp.appendChild(empty);
+
+    // Footer
+    const foot = document.createElement("div");
+    foot.className = "mp-foot";
+    const count = document.createElement("span");
+    count.className = "mp-count";
+    const link = document.createElement("a");
+    link.href = OPENROUTER_MODELS_URL;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = "Browse all on OpenRouter →";
+    foot.append(count, link);
+    mp.appendChild(foot);
+    this.count = count;
+
+    this.container.appendChild(mp);
+  }
+
+  applyState() {
+    if (!this.mp) return;
+    let cls = "mp";
+    if (this.loading) cls += " is-loading";
+    else if (this.stale) cls += " is-stale";
+    this.mp.className = cls;
   }
 
   renderBody() {
-    if (!this.bodyEl) return;
+    if (!this.mp) return;
 
-    if (this.providerSelect) {
-      const currentValue = this.providerSelect.value;
-      this.providerSelect.replaceChildren();
-      const allOpt = document.createElement("option");
-      allOpt.value = "";
-      allOpt.textContent = "All providers";
-      this.providerSelect.appendChild(allOpt);
-      for (const provider of uniqueProviders(this.models)) {
-        const opt = document.createElement("option");
-        opt.value = provider;
-        opt.textContent = provider;
-        this.providerSelect.appendChild(opt);
-      }
-      this.providerSelect.value = currentValue;
+    // Tab active state + counts
+    const popularCount = this.models.filter(m => POPULAR_IDS.includes(m.id)).length;
+    const freeCount = this.models.filter(isFree).length;
+    const counts = { popular: popularCount, free: freeCount, all: this.models.length };
+    for (const [id, btn] of Object.entries(this.tabEls)) {
+      const active = this.activeTab === id;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+      btn.querySelector(".mp-tab-count").textContent = counts[id] ? String(counts[id]) : "";
     }
 
-    this.bodyEl.replaceChildren();
+    // Provider <select> options
+    const currentProvider = this.providerSelect.value;
+    this.providerSelect.replaceChildren();
+    const allOpt = document.createElement("option");
+    allOpt.value = "";
+    allOpt.textContent = "All providers";
+    this.providerSelect.appendChild(allOpt);
+    for (const provider of uniqueProviders(this.models)) {
+      const opt = document.createElement("option");
+      opt.value = provider;
+      opt.textContent = provider;
+      this.providerSelect.appendChild(opt);
+    }
+    this.providerSelect.value = currentProvider;
 
     if (this.loading) {
-      const loading = document.createElement("div");
-      loading.className = "mp-loading";
-      loading.textContent = "Loading models...";
-      this.bodyEl.appendChild(loading);
+      this.applyState();
       return;
-    }
-
-    if (this.error && this.models.length === 0) {
-      const errEl = document.createElement("div");
-      errEl.className = "mp-error";
-      errEl.textContent = `Could not load models: ${this.error.userMessage || this.error.message}`;
-      this.bodyEl.appendChild(errEl);
-      return;
-    }
-
-    if (this.stale) {
-      const staleEl = document.createElement("div");
-      staleEl.className = "mp-stale";
-      staleEl.textContent = "Showing cached list (couldn't reach OpenRouter just now).";
-      this.bodyEl.appendChild(staleEl);
     }
 
     const filtered = this.filteredModels();
-    if (filtered.length === 0) {
-      const empty = document.createElement("div");
-      empty.className = "mp-empty";
-      empty.textContent = "No models match the current filters.";
-      this.bodyEl.appendChild(empty);
-      return;
+    this.list.replaceChildren();
+    for (const model of filtered) {
+      this.list.appendChild(this.renderRow(model));
     }
 
-    const list = document.createElement("div");
-    list.className = "mp-list";
-    for (const model of filtered) {
-      list.appendChild(this.renderRow(model));
+    // Empty hint reflects error vs. no-match
+    if (this.error && this.models.length === 0) {
+      this.emptyEl.querySelector(".mp-empty-title").textContent = "Couldn't load models";
+      this.emptyEl.querySelector(".mp-empty-hint").textContent =
+        this.error.userMessage || "Check your connection and try again.";
+    } else {
+      this.emptyEl.querySelector(".mp-empty-title").textContent = "No models match";
+      this.emptyEl.querySelector(".mp-empty-hint").textContent =
+        "Try a different search or switch to the All tab.";
     }
-    this.bodyEl.appendChild(list);
+
+    let cls = "mp";
+    if (this.stale) cls += " is-stale";
+    if (filtered.length === 0) cls += " is-empty";
+    this.mp.className = cls;
+
+    this.count.textContent = `${filtered.length} ${filtered.length === 1 ? "model" : "models"}`;
   }
 
   filteredModels() {
@@ -196,64 +286,83 @@ export class ModelPicker {
     }
     if (this.searchQuery) {
       const q = this.searchQuery;
-      // Match id and name only — searching descriptions surfaced confusing
-      // hits (a model whose blurb merely mentions "claude" appearing under a
-      // "claude" search).
       list = list.filter(m =>
         (m.id || "").toLowerCase().includes(q) ||
-        (m.name || "").toLowerCase().includes(q),
+        (m.name || "").toLowerCase().includes(q) ||
+        getProviderLabel(m).toLowerCase().includes(q),
       );
     }
     return list;
   }
 
   renderRow(model) {
+    const selected = model.id === this.currentModelId;
     const row = document.createElement("button");
     row.type = "button";
-    row.className = "mp-row";
-    if (model.id === this.currentModelId) row.classList.add("selected");
+    row.className = selected ? "mp-row selected" : "mp-row";
+    row.dataset.id = model.id;
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", selected ? "true" : "false");
 
+    // Avatar
+    const avatar = document.createElement("span");
+    avatar.className = "mp-row-avatar";
+    avatar.style.background = getProviderColor(model);
+    avatar.textContent = getProviderMonogram(model);
+
+    // Main: name (+ check) + id
     const main = document.createElement("div");
     main.className = "mp-row-main";
-
     const name = document.createElement("div");
     name.className = "mp-row-name";
-    name.textContent = model.name || model.id;
-    main.appendChild(name);
-
-    const sub = document.createElement("div");
-    sub.className = "mp-row-sub";
-    const id = document.createElement("span");
+    const nameText = document.createElement("span");
+    nameText.textContent = model.name || model.id;
+    const check = document.createElement("span");
+    check.className = "mp-row-check";
+    check.innerHTML = ICONS.check;
+    name.append(nameText, check);
+    const id = document.createElement("div");
     id.className = "mp-row-id";
     id.textContent = model.id;
-    sub.appendChild(id);
-    const ctx = formatContextLength(model);
-    if (ctx) {
-      const ctxEl = document.createElement("span");
-      ctxEl.className = "mp-row-ctx";
-      ctxEl.textContent = ctx;
-      sub.appendChild(ctxEl);
+    main.append(name, id);
+
+    // Aside: ctx pill + price
+    const aside = document.createElement("div");
+    aside.className = "mp-row-aside";
+    const ctxText = formatContextLength(model);
+    if (ctxText) {
+      const ctx = document.createElement("span");
+      ctx.className = "mp-row-ctx";
+      ctx.innerHTML = `${ICONS.ctx}${ctxText}`;
+      aside.appendChild(ctx);
     }
-    main.appendChild(sub);
-
-    row.appendChild(main);
-
-    const meta = document.createElement("div");
-    meta.className = "mp-row-meta";
-    const price = document.createElement("span");
-    price.className = "mp-row-price";
-    if (isFree(model)) price.classList.add("free");
-    price.textContent = formatPrice(model);
-    meta.appendChild(price);
-    if (model.id === this.currentModelId) {
-      const check = document.createElement("span");
-      check.className = "mp-row-check";
-      check.textContent = "✓";
-      meta.appendChild(check);
+    if (isFree(model)) {
+      const free = document.createElement("span");
+      free.className = "mp-row-price free";
+      free.innerHTML = `${ICONS.bolt}Free`;
+      aside.appendChild(free);
+    } else {
+      const prices = pricePerMTok(model);
+      const price = document.createElement("span");
+      price.className = "mp-row-price";
+      if (prices) {
+        price.innerHTML =
+          `<span class="mp-price-num">${formatUsd(prices.in)}</span>` +
+          '<span class="mp-price-unit"> in</span> · ' +
+          `<span class="mp-price-num">${formatUsd(prices.out)}</span>` +
+          '<span class="mp-price-unit"> out / MTok</span>';
+      } else {
+        price.textContent = "—";
+      }
+      aside.appendChild(price);
     }
-    row.appendChild(meta);
 
-    row.addEventListener("click", () => this.onSelect?.(model));
+    row.append(avatar, main, aside);
+    row.addEventListener("click", () => {
+      this.currentModelId = model.id;
+      this.renderBody();
+      this.onSelect?.(model);
+    });
     return row;
   }
 }
