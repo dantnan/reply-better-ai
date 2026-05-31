@@ -81,3 +81,55 @@ export function uniqueProviders(models) {
   const set = new Set(models.map(getProvider).filter(Boolean));
   return [...set].sort();
 }
+
+// Display name + brand color + monogram for the provider prefix in a model id.
+const PROVIDER_META = {
+  anthropic: { label: "Anthropic", color: "#d97757" },
+  openai: { label: "OpenAI", color: "#10a37f" },
+  google: { label: "Google", color: "#4285f4" },
+  "meta-llama": { label: "Meta", color: "#0866ff" },
+  mistralai: { label: "Mistral", color: "#fa5310" },
+  deepseek: { label: "DeepSeek", color: "#4d6bfe" },
+  qwen: { label: "Qwen", color: "#6f42c1" },
+  "x-ai": { label: "xAI", color: "#1a1a1a" },
+  nousresearch: { label: "Nous", color: "#7a869a" },
+  cohere: { label: "Cohere", color: "#39594d" },
+  microsoft: { label: "Microsoft", color: "#0078d4" },
+  perplexity: { label: "Perplexity", color: "#20808d" },
+  nvidia: { label: "NVIDIA", color: "#76b900" },
+};
+
+export function getProviderLabel(model) {
+  const key = getProvider(model);
+  if (PROVIDER_META[key]) return PROVIDER_META[key].label;
+  if (!key) return "";
+  return key.charAt(0).toUpperCase() + key.slice(1).replace(/[-_]/g, " ");
+}
+
+export function getProviderColor(model) {
+  const key = getProvider(model);
+  return PROVIDER_META[key]?.color || "#868e96";
+}
+
+export function getProviderMonogram(model) {
+  const label = getProviderLabel(model);
+  return label.slice(0, 2);
+}
+
+// Per-MTok prices as numbers (USD), or null for a free/unknown model.
+export function pricePerMTok(model) {
+  if (!model?.pricing || isFree(model)) return null;
+  const toMTok = n => {
+    const num = Number(n);
+    return Number.isFinite(num) ? num * 1_000_000 : null;
+  };
+  return { in: toMTok(model.pricing.prompt), out: toMTok(model.pricing.completion) };
+}
+
+// Compact USD string for a per-MTok number: $3, $0.25, $1.04.
+export function formatUsd(n) {
+  if (n == null || !Number.isFinite(n)) return "—";
+  if (n === 0) return "$0";
+  if (n < 1) return `$${n.toFixed(2).replace(/0$/, "")}`;
+  return n % 1 ? `$${n.toFixed(2)}` : `$${n}`;
+}

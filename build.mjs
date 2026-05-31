@@ -23,6 +23,8 @@ const BUNDLES = [
 const STATIC_FILES = [
   { from: "popup/popup.html", to: "popup.html" },
   { from: "popup/popup.css", to: "popup.css" },
+  { from: "popup/model-picker.css", to: "model-picker.css" },
+  { from: "shared/tokens.css", to: "tokens.css" },
   { from: "options/options.html", to: "options.html" },
 ];
 
