@@ -1,7 +1,7 @@
 import browser from "../lib/browser.js";
 import { storage } from "../lib/storage.js";
 import { isTextInput, isImproveTarget, readText, writeText } from "./text-target.js";
-import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast } from "./button-injector.js";
+import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast, setButtonLoading } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
 
 import { DEFAULT_STYLE } from "../lib/constants.js";
@@ -36,9 +36,16 @@ async function improve(textElement, button) {
   const text = readText(textElement);
   if (!text.trim()) return;
 
+  const previous = text; // snapshot for Undo
   textElement.focus();
-  button.classList.add("processing");
-  button.classList.remove("error");
+  setButtonLoading(button, true);
+  button.classList.remove("reply-better-error");
+
+  const flashError = msg => {
+    button.classList.add("reply-better-error");
+    showToast(msg, { type: "error" });
+    setTimeout(() => button.classList.remove("reply-better-error"), 2000);
+  };
 
   try {
     const response = await sendMessage({
@@ -50,28 +57,31 @@ async function improve(textElement, button) {
     if (response?.improvedText) {
       writeText(textElement, response.improvedText);
       textElement.focus();
+      // Direct rewrite + safety net: an Undo that restores the original text.
+      showToast("Text improved.", {
+        type: "success",
+        duration: 6000,
+        action: {
+          label: "Undo",
+          fn: () => { writeText(textElement, previous); textElement.focus(); },
+        },
+      });
     } else if (response?.error) {
-      button.classList.add("error");
-      showToast(response.error, { type: "error" });
-      setTimeout(() => button.classList.remove("error"), 2000);
+      flashError(response.error);
     } else {
-      button.classList.add("error");
-      showToast("Empty response from the model. Try again.", { type: "error" });
-      setTimeout(() => button.classList.remove("error"), 2000);
+      flashError("Empty response from the model. Try again.");
     }
   } catch (err) {
     console.error("[content] improve failed:", err);
-    button.classList.add("error");
     let msg = err.message || "Unexpected error.";
     if (msg.includes("Receiving end does not exist")) {
       msg = "The extension may be reloading. Refresh this page and try again.";
     } else if (msg.includes("timed out")) {
       msg = "Request timed out. The model is busy — try again in a moment.";
     }
-    showToast(msg, { type: "error" });
-    setTimeout(() => button.classList.remove("error"), 2000);
+    flashError(msg);
   } finally {
-    button.classList.remove("processing");
+    setButtonLoading(button, false);
   }
 }
 

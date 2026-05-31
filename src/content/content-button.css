@@ -1,0 +1,156 @@
+/* ============================================================================
+   Reply Better AI — content-script injected styles
+   ----------------------------------------------------------------------------
+   Injected as a <style> block into arbitrary third-party pages by
+   button-injector.js. Self-contained: hard-coded values (no --rb-* tokens),
+   namespaced .reply-better-*, highest z-index, explicit defensive reset
+   (never `all: revert` — on a host page that rolls back to the site's own
+   UA/user styles, which we can't predict). Theme-independent by design.
+   ========================================================================== */
+
+.reply-better-button,
+.reply-better-button *,
+.reply-better-toast,
+.reply-better-toast * {
+  box-sizing: border-box !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 13px;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  text-align: left;
+  text-shadow: none !important;
+  text-indent: 0 !important;
+  margin: 0 !important;
+  padding: 0;
+  float: none !important;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  vertical-align: baseline;
+}
+
+/* — Floating ✍️ button — */
+.reply-better-button {
+  position: absolute !important;
+  z-index: 2147483646 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 9px !important;
+  background: #5e6ad2 !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.18), 0 2px 4px rgba(16, 24, 40, 0.12) !important;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: opacity 0.14s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.14s cubic-bezier(0.2, 0, 0, 1),
+    background 0.12s cubic-bezier(0.2, 0, 0, 1) !important;
+  -webkit-font-smoothing: antialiased;
+  user-select: none !important;
+}
+.reply-better-button.reply-better-visible {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+}
+.reply-better-button:hover { background: #4f5bc4 !important; }
+.reply-better-button:active { transform: scale(0.94); }
+.reply-better-button svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block !important;
+  stroke: #ffffff !important;
+  fill: none !important;
+}
+.reply-better-button.reply-better-loading { pointer-events: none; }
+.reply-better-button.reply-better-loading svg { display: none !important; }
+.reply-better-button.reply-better-error { background: #cf3a3f !important; }
+.reply-better-button .reply-better-spin {
+  display: none;
+  width: 16px !important;
+  height: 16px !important;
+  border: 2px solid rgba(255, 255, 255, 0.45) !important;
+  border-right-color: #ffffff !important;
+  border-radius: 50% !important;
+  animation: reply-better-spin 0.7s linear infinite;
+}
+.reply-better-button.reply-better-loading .reply-better-spin { display: block; }
+@keyframes reply-better-spin { to { transform: rotate(360deg); } }
+
+/* — Toast notifications (with optional action, e.g. Undo) — */
+.reply-better-toast {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  right: 20px;
+  bottom: 20px;
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  max-width: 360px;
+  padding: 12px 14px !important;
+  background: #16191d !important;
+  color: #f1f3f5 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 4px 8px rgba(0, 0, 0, 0.2) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.18s cubic-bezier(0.2, 0, 0, 1),
+    transform 0.18s cubic-bezier(0.2, 0, 0, 1) !important;
+}
+.reply-better-toast.reply-better-show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+.reply-better-toast .reply-better-toast-icon {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px !important;
+  flex: none;
+}
+.reply-better-toast.reply-better-success .reply-better-toast-icon { background: rgba(45, 161, 78, 0.22) !important; color: #6fd98c !important; }
+.reply-better-toast.reply-better-error .reply-better-toast-icon { background: rgba(229, 72, 77, 0.22) !important; color: #ff8a8d !important; }
+.reply-better-toast.reply-better-info .reply-better-toast-icon { background: rgba(130, 141, 240, 0.22) !important; color: #aab2f5 !important; }
+.reply-better-toast .reply-better-toast-icon svg { width: 14px !important; height: 14px !important; stroke: currentColor !important; fill: none !important; }
+.reply-better-toast .reply-better-toast-text { flex: 1 1 auto; }
+.reply-better-toast .reply-better-toast-action {
+  flex: none;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border-radius: 7px !important;
+  padding: 5px 11px !important;
+  cursor: pointer !important;
+}
+.reply-better-toast .reply-better-toast-action:hover { background: rgba(255, 255, 255, 0.2) !important; }
+.reply-better-toast .reply-better-toast-close {
+  background: transparent !important;
+  border: 0 !important;
+  color: rgba(241, 243, 245, 0.55) !important;
+  cursor: pointer !important;
+  padding: 2px !important;
+  display: inline-flex !important;
+  flex: none;
+}
+.reply-better-toast .reply-better-toast-close:hover { color: #f1f3f5 !important; }
+.reply-better-toast .reply-better-toast-close svg { width: 14px !important; height: 14px !important; stroke: currentColor !important; fill: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reply-better-button,
+  .reply-better-toast { transition-duration: 0.001ms !important; }
+  .reply-better-button .reply-better-spin { animation-duration: 1.6s; }
+}

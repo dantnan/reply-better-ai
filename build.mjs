@@ -66,7 +66,7 @@ async function buildBrowser(browser) {
         "process.env.NODE_ENV": WATCH ? '"development"' : '"production"',
         "__BROWSER__": JSON.stringify(browser),
       },
-      loader: { ".svg": "text" },
+      loader: { ".svg": "text", ".css": "text" },
       logLevel: "info",
     });
   }
