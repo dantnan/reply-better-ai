@@ -1,14 +1,12 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, streamImproveText } from "../lib/openrouter.js";
-import { resolveSystemPrompt, STYLES, styleLabel } from "../lib/system-prompts.js";
-import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
-import {
-  getModels, isFree, formatContextLength, pricePerMTok, formatUsd,
-  getProviderColor, getProviderMonogram, getProviderLabel,
-} from "../lib/models-cache.js";
+import { resolveSystemPrompt } from "../lib/system-prompts.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
+import { getModels } from "../lib/models-cache.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
+import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
 
 const $ = id => document.getElementById(id);
 
@@ -93,45 +91,13 @@ function showError(msg, withSettingsLink = false) {
 }
 function hideError() { els.errorBanner.classList.remove("show"); }
 
-/* ── Style dropdowns ─────────────────────────────────────────────────── */
-function fillStyleSelect(select, selectedId) {
-  select.replaceChildren();
-  for (const style of STYLES) {
-    const opt = document.createElement("option");
-    opt.value = style.id;
-    opt.textContent = style.label;
-    select.appendChild(opt);
-  }
-  if (state.savedPrompts.length) {
-    const sep = document.createElement("option");
-    sep.disabled = true;
-    sep.textContent = "──────────";
-    select.appendChild(sep);
-    state.savedPrompts.forEach((p, i) => {
-      const opt = document.createElement("option");
-      opt.value = `${CUSTOM_PROMPT_PREFIX}${i}`;
-      opt.textContent = p.name;
-      select.appendChild(opt);
-    });
-  }
-  if (selectedId && [...select.options].some(o => o.value === selectedId)) select.value = selectedId;
-}
-
 /* ── Model chip ──────────────────────────────────────────────────────── */
-function renderModelChip() {
-  const model = state.modelsCache.find(m => m.id === state.currentModelId);
-  if (model) {
-    els.chipAvatar.textContent = getProviderMonogram(model);
-    els.chipAvatar.style.background = getProviderColor(model);
-    els.modelName.textContent = model.name || model.id;
-    const price = isFree(model) ? "Free" : (() => { const p = pricePerMTok(model); return p ? `${formatUsd(p.in)} / ${formatUsd(p.out)} per MTok` : "—"; })();
-    els.modelMeta.textContent = `${model.id} · ${formatContextLength(model)} · ${price}`;
-  } else {
-    els.chipAvatar.textContent = "··";
-    els.chipAvatar.style.background = "var(--rb-gray-500)";
-    els.modelName.textContent = state.currentModelId || DEFAULT_MODEL;
-    els.modelMeta.textContent = state.modelsCache.length ? "(not in current list)" : "Tap Change to load models";
-  }
+function refreshChip() {
+  renderModelChip({
+    avatarEl: els.chipAvatar, nameEl: els.modelName, metaEl: els.modelMeta,
+    models: state.modelsCache, currentModelId: state.currentModelId,
+    emptyHint: "Tap Change to load models",
+  });
 }
 
 async function ensureModels() {
@@ -139,7 +105,7 @@ async function ensureModels() {
   try {
     const result = await getModels();
     state.modelsCache = result.models;
-    renderModelChip();
+    refreshChip();
   } catch (e) {
     console.warn("[popup] models load failed:", e?.message);
   }
@@ -254,8 +220,8 @@ function renderPrompts() {
         state.savedPrompts.splice(index, 1);
         await storage.set({ savedPrompts: state.savedPrompts });
         renderPrompts();
-        fillStyleSelect(els.styleSelect, els.styleSelect.value);
-        fillStyleSelect(els.inlineStyle, els.inlineStyle.value);
+        fillStyleSelect(els.styleSelect, state.savedPrompts, els.styleSelect.value);
+        fillStyleSelect(els.inlineStyle, state.savedPrompts, els.inlineStyle.value);
       },
     }));
   });
@@ -275,26 +241,6 @@ function renderSnippets() {
   });
 }
 
-const EDIT_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
-const DEL_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14"/></svg>';
-
-function managerItem(title, sub, { onEdit, onDelete }) {
-  const item = document.createElement("div");
-  item.className = "rb-manager-item";
-  const body = document.createElement("div");
-  body.className = "rb-mi-body";
-  const t = document.createElement("div"); t.className = "rb-mi-title"; t.textContent = title;
-  const s = document.createElement("div"); s.className = "rb-mi-sub"; s.textContent = sub; s.title = sub;
-  body.append(t, s);
-  const actions = document.createElement("div");
-  actions.className = "rb-mi-actions";
-  const edit = document.createElement("button"); edit.type = "button"; edit.setAttribute("aria-label", "Edit"); edit.innerHTML = EDIT_SVG; edit.addEventListener("click", onEdit);
-  const del = document.createElement("button"); del.type = "button"; del.className = "danger"; del.setAttribute("aria-label", "Delete"); del.innerHTML = DEL_SVG; del.addEventListener("click", onDelete);
-  actions.append(edit, del);
-  item.append(body, actions);
-  return item;
-}
-
 /* ── Picker ──────────────────────────────────────────────────────────── */
 function openPicker() {
   showPicker();
@@ -306,7 +252,7 @@ function openPicker() {
       if (state.modelsCache.length === 0 && state.picker?.models?.length) state.modelsCache = state.picker.models;
       await setSelectedModel(model.id);
       els.fallbackBanner.classList.remove("show");
-      renderModelChip();
+      refreshChip();
       showSettings();
       showStatus(`Model set to ${model.name || model.id}`);
     },
@@ -365,12 +311,12 @@ async function init() {
   state.snippets = Array.isArray(data.snippets) ? data.snippets : [];
   state.currentModelId = data.model || DEFAULT_MODEL;
 
-  fillStyleSelect(els.styleSelect, data.messageType || DEFAULT_STYLE);
-  fillStyleSelect(els.inlineStyle, data.inlineMessageType || DEFAULT_STYLE);
+  fillStyleSelect(els.styleSelect, state.savedPrompts, data.messageType || DEFAULT_STYLE);
+  fillStyleSelect(els.inlineStyle, state.savedPrompts, data.inlineMessageType || DEFAULT_STYLE);
   els.enableInline.checked = data.enableInlineButton !== false;
   renderPrompts();
   renderSnippets();
-  renderModelChip();
+  refreshChip();
   ensureModels();
   reflectKeyState();
   showFallbackIfNeeded();
@@ -419,8 +365,8 @@ async function init() {
     await storage.set({ savedPrompts: state.savedPrompts });
     els.newPromptName.value = ""; els.customPrompt.value = "";
     renderPrompts();
-    fillStyleSelect(els.styleSelect, els.styleSelect.value);
-    fillStyleSelect(els.inlineStyle, els.inlineStyle.value);
+    fillStyleSelect(els.styleSelect, state.savedPrompts, els.styleSelect.value);
+    fillStyleSelect(els.inlineStyle, state.savedPrompts, els.inlineStyle.value);
   });
 
   els.saveSnippet.addEventListener("click", async () => {

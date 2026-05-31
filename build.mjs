@@ -26,6 +26,7 @@ const STATIC_FILES = [
   { from: "popup/model-picker.css", to: "model-picker.css" },
   { from: "shared/tokens.css", to: "tokens.css" },
   { from: "options/options.html", to: "options.html" },
+  { from: "options/options.css", to: "options.css" },
 ];
 
 async function copyDir(src, dest) {

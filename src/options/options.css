@@ -1,0 +1,140 @@
+@import "tokens.css";
+@import "model-picker.css";
+
+/* ============================================================================
+   Reply Better AI — Options page (full settings)
+   Reuses tokens.css + popup.css component classes (.rb-*). Page-level layout
+   here. Two-column: sticky nav + content, with a modal picker overlay.
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+
+.opt-page {
+  min-height: 100vh;
+  background: var(--rb-bg);
+  color: var(--rb-fg);
+  font-family: var(--rb-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.opt-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--rb-surface) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 1px solid var(--rb-border);
+}
+.opt-topbar-inner {
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--rb-space-3);
+  padding: var(--rb-space-4) var(--rb-space-6);
+}
+.opt-topbar .rb-logo { width: 32px; height: 32px; }
+.opt-topbar h1 {
+  font-size: var(--rb-text-xl);
+  font-weight: var(--rb-weight-semibold);
+  letter-spacing: -0.01em;
+  margin: 0;
+  flex: 1 1 auto;
+}
+.opt-saved {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--rb-text-base); color: var(--rb-free-fg);
+  font-weight: var(--rb-weight-medium);
+  opacity: 0; transition: opacity 0.2s var(--rb-ease);
+}
+.opt-saved.show { opacity: 1; }
+.opt-saved svg { width: 16px; height: 16px; }
+
+.opt-layout {
+  max-width: 920px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--rb-space-8);
+  padding: var(--rb-space-8) var(--rb-space-6) var(--rb-space-10);
+  align-items: start;
+}
+@media (max-width: 760px) { .opt-layout { grid-template-columns: 1fr; } .opt-nav { display: none; } }
+
+.opt-nav { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 2px; }
+.opt-nav a {
+  display: flex; align-items: center; gap: var(--rb-space-3);
+  padding: 9px 12px; border-radius: var(--rb-radius-md);
+  color: var(--rb-fg-muted); text-decoration: none;
+  font-size: var(--rb-text-md); font-weight: var(--rb-weight-medium);
+  transition: background 0.12s var(--rb-ease), color 0.12s var(--rb-ease);
+}
+.opt-nav a svg { width: 17px; height: 17px; color: var(--rb-fg-faint); }
+.opt-nav a:hover { background: var(--rb-surface-2); color: var(--rb-fg); }
+.opt-nav a.active { background: var(--rb-accent-soft); color: var(--rb-accent-fg); }
+.opt-nav a.active svg { color: var(--rb-accent-fg); }
+
+.opt-content { display: flex; flex-direction: column; gap: var(--rb-space-5); min-width: 0; }
+
+.opt-card {
+  background: var(--rb-surface);
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-xl);
+  box-shadow: var(--rb-shadow-xs);
+  padding: var(--rb-space-6);
+  scroll-margin-top: 88px;
+}
+.opt-card-head { margin-bottom: var(--rb-space-5); }
+.opt-card-head h2 {
+  font-size: var(--rb-text-lg);
+  font-weight: var(--rb-weight-semibold);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.opt-card-head p { margin: 4px 0 0; font-size: var(--rb-text-base); color: var(--rb-fg-subtle); line-height: var(--rb-leading-normal); }
+
+.opt-row { padding: var(--rb-space-4) 0; border-top: 1px solid var(--rb-border); }
+.opt-row:first-child { padding-top: 0; border-top: 0; }
+.opt-row:last-child { padding-bottom: 0; }
+
+.opt-links { display: flex; gap: var(--rb-space-3); flex-wrap: wrap; }
+.opt-links a {
+  flex: 1 1 200px;
+  padding: 12px 14px;
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-md);
+  background: var(--rb-surface-2);
+  color: var(--rb-accent-fg);
+  text-decoration: none;
+  font-weight: var(--rb-weight-medium);
+  font-size: var(--rb-text-base);
+  text-align: center;
+}
+.opt-links a:hover { background: var(--rb-accent-soft); }
+
+/* ── Modal picker overlay ────────────────────────────────────────────── */
+.opt-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(16, 24, 40, 0.45);
+  align-items: center;
+  justify-content: center;
+  padding: var(--rb-space-6);
+}
+.opt-modal.show { display: flex; }
+.opt-modal-card {
+  width: 520px;
+  max-width: 100%;
+  max-height: 80vh;
+  background: var(--rb-surface);
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-xl);
+  box-shadow: var(--rb-shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.opt-modal-card .mp { max-height: 80vh; }
