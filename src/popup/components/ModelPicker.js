@@ -99,6 +99,7 @@ export class ModelPicker {
     const search = document.createElement("input");
     search.type = "search";
     search.placeholder = "Search models...";
+    search.setAttribute("aria-label", "Search models by name or id");
     search.value = this.searchQuery;
     search.addEventListener("input", e => {
       this.searchQuery = e.target.value.trim().toLowerCase();
@@ -107,6 +108,7 @@ export class ModelPicker {
     filters.appendChild(search);
 
     this.providerSelect = document.createElement("select");
+    this.providerSelect.setAttribute("aria-label", "Filter models by provider");
     this.providerSelect.addEventListener("change", e => {
       this.providerFilter = e.target.value;
       this.renderBody();
@@ -194,10 +196,12 @@ export class ModelPicker {
     }
     if (this.searchQuery) {
       const q = this.searchQuery;
+      // Match id and name only — searching descriptions surfaced confusing
+      // hits (a model whose blurb merely mentions "claude" appearing under a
+      // "claude" search).
       list = list.filter(m =>
         (m.id || "").toLowerCase().includes(q) ||
-        (m.name || "").toLowerCase().includes(q) ||
-        (m.description || "").toLowerCase().includes(q),
+        (m.name || "").toLowerCase().includes(q),
       );
     }
     return list;
