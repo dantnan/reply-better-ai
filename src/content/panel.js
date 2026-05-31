@@ -1,5 +1,5 @@
 import browser from "../lib/browser.js";
-import { STYLES, styleLabel } from "../lib/system-prompts.js";
+import { STYLES } from "../lib/system-prompts.js";
 import { CUSTOM_PROMPT_PREFIX, DEFAULT_STYLE } from "../lib/constants.js";
 import { diffWords } from "../lib/diff.js";
 
@@ -52,9 +52,9 @@ export function openPanel({ anchorButton, inputText, settings, onInsert, onClose
   const head = document.createElement("div");
   head.className = "reply-better-panel-head";
   const mark = document.createElement("span"); mark.className = "reply-better-panel-mark"; mark.innerHTML = MARK_SVG;
-  const tone = document.createElement("span"); tone.className = "reply-better-panel-tone";
+  const title = document.createElement("span"); title.className = "reply-better-panel-title"; title.textContent = "Reply Better AI";
   const closeBtn = document.createElement("button"); closeBtn.type = "button"; closeBtn.className = "reply-better-panel-close"; closeBtn.setAttribute("aria-label", "Close"); closeBtn.innerHTML = CLOSE_SVG;
-  head.append(mark, tone, closeBtn);
+  head.append(mark, title, closeBtn);
 
   // style chips
   const chipsWrap = document.createElement("div");
@@ -102,7 +102,6 @@ export function openPanel({ anchorButton, inputText, settings, onInsert, onClose
   // ── helpers ────────────────────────────────────────────────────────
   function markChips() {
     for (const [id, el] of chipEls) el.classList.toggle("reply-better-active", id === styleId);
-    tone.textContent = styleLabel(styleId, savedPrompts);
   }
   function setMode(next) {
     mode = next;
