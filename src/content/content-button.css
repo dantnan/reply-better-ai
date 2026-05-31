@@ -148,12 +148,6 @@
 }
 .reply-better-panel-mark svg { width: 14px !important; height: 14px !important; stroke: #5e6ad2 !important; fill: none !important; }
 .reply-better-panel-title { font-size: 13px !important; font-weight: 600 !important; color: #16191d !important; }
-.reply-better-panel-tone {
-  font-size: 11px !important; font-weight: 600 !important;
-  color: #5e6ad2 !important; background: #eef0ff !important;
-  border: 1px solid #e0e3ff !important; border-radius: 999px !important;
-  padding: 2px 8px !important;
-}
 .reply-better-panel-close {
   margin-left: auto !important;
   width: 26px; height: 26px;

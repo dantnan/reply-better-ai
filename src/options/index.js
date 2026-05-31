@@ -55,6 +55,13 @@ function showKeyError(msg) {
   els.keyError.classList.add("show");
 }
 
+// Persist + confirm only on success — never flash "Saved" for a write that
+// rejected, or the toggle silently reverts on reopen and the user is misled.
+async function persist(values) {
+  try { await storage.set(values); flashSaved(); }
+  catch { showKeyError("Couldn't save — try again."); }
+}
+
 function renderPrompts() {
   els.promptsList.replaceChildren();
   state.savedPrompts.forEach((p, index) => {
@@ -184,10 +191,10 @@ async function init() {
   els.saveKey.addEventListener("click", saveKey);
   els.openPicker.addEventListener("click", openPicker);
   els.modal.addEventListener("click", e => { if (e.target === els.modal) closePicker(); });
-  els.enableInline.addEventListener("change", () => { storage.set({ enableInlineButton: els.enableInline.checked }); flashSaved(); });
-  els.inlineStyle.addEventListener("change", () => { storage.set({ inlineMessageType: els.inlineStyle.value }); flashSaved(); });
+  els.enableInline.addEventListener("change", () => persist({ enableInlineButton: els.enableInline.checked }));
+  els.inlineStyle.addEventListener("change", () => persist({ inlineMessageType: els.inlineStyle.value }));
   for (const radio of document.querySelectorAll('#inline-click-mode input[name="click-mode"]')) {
-    radio.addEventListener("change", () => { if (radio.checked) { storage.set({ inlineClickMode: radio.value }); flashSaved(); } });
+    radio.addEventListener("change", () => { if (radio.checked) persist({ inlineClickMode: radio.value }); });
   }
 
   els.saveCustomPrompt.addEventListener("click", async () => {
