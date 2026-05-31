@@ -2,7 +2,7 @@ import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { improveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
-import { DEFAULT_MODEL, DEFAULT_MESSAGE_TYPE, MAX_INPUT_LENGTH } from "../lib/constants.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
 import { validateSelectedModel } from "../lib/models-cache.js";
 
 browser.runtime.onInstalled.addListener(async details => {
@@ -11,7 +11,7 @@ browser.runtime.onInstalled.addListener(async details => {
     const existing = await storage.get(["model", "messageType"]);
     const defaults = {};
     if (!existing.model) defaults.model = DEFAULT_MODEL;
-    if (!existing.messageType) defaults.messageType = DEFAULT_MESSAGE_TYPE;
+    if (!existing.messageType) defaults.messageType = DEFAULT_STYLE;
     if (Object.keys(defaults).length > 0) await storage.set(defaults);
     browser.runtime.openOptionsPage().catch(err => console.warn("openOptionsPage:", err.message));
   }
@@ -100,7 +100,7 @@ async function handleImproveText(message) {
   }
   const settings = await storage.get(["apiKey", "model", "messageType", "savedPrompts"]);
   if (!settings.apiKey) return { error: "No API key set. Open the extension settings.", code: "NoApiKey" };
-  const messageType = message.messageType || settings.messageType || DEFAULT_MESSAGE_TYPE;
+  const messageType = message.messageType || settings.messageType || DEFAULT_STYLE;
   const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
   try {
     const improvedText = await improveText({

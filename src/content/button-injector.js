@@ -1,4 +1,4 @@
-import { TYPE_LABELS } from "../lib/system-prompts.js";
+import { STYLE_LABELS } from "../lib/system-prompts.js";
 import { CUSTOM_PROMPT_PREFIX } from "../lib/constants.js";
 
 const BUTTON_CLASS = "reply-better-button";
@@ -53,7 +53,7 @@ function getTypeLabel(type, savedPrompts) {
     }
     return "Custom";
   }
-  return TYPE_LABELS[type] || "Pro";
+  return STYLE_LABELS[type] || "Pro";
 }
 
 function positionElements(textElement, button, tooltip) {

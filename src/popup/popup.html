@@ -5,132 +5,188 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div id="first-time-setup" class="hidden">
-    <h2>Welcome to Reply Better AI!</h2>
-    <p>To get started, you need a free OpenRouter API key:</p>
-    <ol>
-      <li>Visit <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
-      <li>Create a free account</li>
-      <li>Generate an API key</li>
-      <li>Copy and paste it below</li>
-    </ol>
-    <label for="first-time-api-key">Your OpenRouter API Key:</label>
-    <input type="password" id="first-time-api-key">
-    <button id="first-time-save">Save API Key</button>
-  </div>
-
-  <div id="main-interface">
-    <div class="header-container">
-      <div class="logo-title">
-        <img src="icons/icon.png" alt="Reply Better AI Logo" class="header-logo">
-        <h2>Reply Better AI</h2>
+  <div class="rb-popup" id="rb-popup">
+    <!-- Header -->
+    <header class="rb-header">
+      <span class="rb-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V5"/><circle cx="12" cy="3.5" r="1.4" fill="currentColor" stroke="none"/><circle cx="9" cy="13" r="1.2" fill="currentColor" stroke="none"/><circle cx="15" cy="13" r="1.2" fill="currentColor" stroke="none"/><path d="M9.5 16.2h5"/></svg>
+      </span>
+      <h1 class="rb-title">Reply Better AI</h1>
+      <div class="rb-header-actions">
+        <button class="rb-icon-btn" id="settings-toggle" type="button" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button class="rb-icon-btn" id="open-options" type="button" aria-label="Open full settings" title="Open full settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+        </button>
+        <button class="rb-icon-btn" id="close-popup" type="button" aria-label="Close" title="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </div>
-      <button id="close-popup" class="close-button" type="button" aria-label="Close">×</button>
-    </div>
+    </header>
 
-    <div class="settings-toggle">
-      <button id="show-settings" type="button">⚙️ Settings</button>
-      <button id="open-options" type="button">⚙️ Open full settings</button>
-    </div>
+    <!-- MAIN VIEW -->
+    <div class="rb-view-main">
+      <div class="rb-body">
+        <!-- banners -->
+        <div class="rb-banner success" id="status-banner" role="status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          <span id="status-banner-text">Done.</span>
+          <button class="rb-banner-close" type="button" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="rb-banner warning" id="model-fallback-banner" role="status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <span id="model-fallback-text"></span>
+          <button class="rb-banner-close" type="button" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="rb-banner error" id="error-banner" role="alert">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span id="error-banner-text">Something went wrong.</span>
+          <button class="rb-banner-close" type="button" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </div>
 
-    <div id="settings-panel" class="hidden">
-      <h3>Settings</h3>
-      <div class="setting-group">
-        <label for="api-key">OpenRouter API Key:</label>
-        <input type="password" id="api-key">
-      </div>
+        <!-- first-run / no-key empty state -->
+        <div class="rb-setup" id="setup-notice">
+          <span class="rb-setup-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 1-7.1 7.1 5 5 0 0 1 7.1-7.1zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3"/></svg></span>
+          <div class="rb-setup-title">Add your OpenRouter API key to get started</div>
+          <p class="rb-setup-desc">Reply Better AI rewrites your text with the model you choose. Grab a free key from OpenRouter — it's stored only in your browser.</p>
+          <button class="rb-btn rb-btn-primary rb-btn-sm" id="setup-cta" type="button">Add API key</button>
+        </div>
 
-      <div class="setting-group">
-        <label>Model:</label>
-        <div class="model-display">
-          <div id="model-display-info">
-            <div id="model-display-name">Loading…</div>
-            <div id="model-display-meta" class="model-meta"></div>
+        <!-- working form (hidden in first-run) -->
+        <div class="rb-needs-key">
+          <div>
+            <label class="rb-label" for="message-type">Style</label>
+            <select class="rb-select" id="message-type"></select>
           </div>
-          <button id="open-picker" type="button">Change</button>
-        </div>
-      </div>
 
-      <div class="setting-group">
-        <h4>Inline Text Improvement</h4>
-        <p class="setting-description">Controls the button that appears next to text fields on websites.</p>
-        <div class="checkbox-setting">
-          <input type="checkbox" id="enable-inline-button" checked>
-          <label for="enable-inline-button">Show improvement button on websites</label>
-        </div>
-        <div class="inline-type-selector">
-          <label for="inline-message-type">Default improvement type for inline button:</label>
-          <select id="inline-message-type">
-            <option value="professional">Professional Email</option>
-            <option value="friendly">Friendly Message</option>
-            <option value="customer">Customer Service</option>
-            <option value="concise">Concise Response</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="setting-group prompt-management">
-        <h4>Custom Prompts Management</h4>
-        <label for="custom-prompt">Create Custom Prompt:</label>
-        <textarea id="custom-prompt" placeholder="Write your custom instructions here..."></textarea>
-        <label for="new-prompt-name">Prompt Name:</label>
-        <input type="text" id="new-prompt-name" placeholder="Enter a name for this prompt">
-        <button id="save-custom-prompt" type="button">Create Custom Prompt</button>
-        <h4>Your Saved Prompts</h4>
-        <div class="prompts-list-container"></div>
-      </div>
-
-      <div class="setting-group snippet-management">
-        <h4>Text Snippets</h4>
-        <p class="setting-description">Create shortcuts that expand into longer text. Type "/wel" → welcome message.</p>
-        <div class="snippet-input-row">
-          <div class="snippet-trigger-input">
-            <label for="new-snippet-trigger">Trigger:</label>
-            <input type="text" id="new-snippet-trigger" placeholder="/shortcut">
+          <div style="margin-top:var(--rb-space-4);">
+            <label class="rb-label" for="improve-text">Your message</label>
+            <div class="rb-field">
+              <textarea class="rb-textarea" id="improve-text" placeholder="Write or paste your message here…"></textarea>
+              <span class="rb-counter" id="char-counter">0 characters</span>
+            </div>
           </div>
-          <div class="snippet-content-input">
-            <label for="new-snippet-content">Content:</label>
-            <textarea id="new-snippet-content" placeholder="Text that will replace the trigger"></textarea>
+
+          <button class="rb-btn rb-btn-primary" id="improve-btn" type="button" style="margin-top:var(--rb-space-4);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5L13 3z"/></svg>
+            <span class="rb-btn-text">Improve message</span>
+          </button>
+
+          <div class="rb-output" id="rb-output" style="margin-top:var(--rb-space-4);">
+            <div class="rb-output-head">
+              <label class="rb-label" style="margin:0;">Improved message</label>
+              <div class="rb-output-tools">
+                <div class="rb-seg" id="output-seg" role="tablist" hidden>
+                  <button class="rb-seg-btn active" data-mode="result" type="button" role="tab" aria-selected="true">Result</button>
+                  <button class="rb-seg-btn" data-mode="diff" type="button" role="tab" aria-selected="false">Changes</button>
+                </div>
+                <button class="rb-btn rb-btn-ghost rb-btn-sm" id="copy-btn" type="button" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+            <div class="rb-output-body">
+              <textarea class="rb-textarea is-empty" id="improved-output" readonly placeholder="Your improved message will appear here…"></textarea>
+              <div class="rb-diff" id="improved-diff" hidden aria-live="off"></div>
+            </div>
+            <div class="rb-output-actions" id="output-actions" hidden>
+              <button class="rb-btn rb-btn-secondary rb-btn-sm" id="regen-btn" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+                Regenerate
+              </button>
+              <span class="rb-variation" id="variation-label"></span>
+            </div>
           </div>
         </div>
-        <button id="save-snippet" type="button">Create Snippet</button>
-        <h4>Your Saved Snippets</h4>
-        <div class="snippets-list-container"></div>
       </div>
 
-      <button id="save-settings" type="button">Save Settings</button>
+      <footer class="rb-footer">
+        <a href="https://github.com/dantnan/reply-better-ai" target="_blank" rel="noopener">GitHub</a>
+        <span class="rb-dot">·</span>
+        <a href="https://github.com/dantnan/reply-better-ai/issues" target="_blank" rel="noopener">Feedback</a>
+        <span class="rb-dot">·</span>
+        <a href="https://openrouter.ai/" target="_blank" rel="noopener">OpenRouter</a>
+      </footer>
     </div>
 
-    <div id="status-banner" class="hidden"></div>
-    <div id="model-fallback-banner" class="hidden"></div>
+    <!-- SETTINGS VIEW -->
+    <div class="rb-view-settings">
+      <div class="rb-body" style="gap:0;">
+        <section class="rb-section">
+          <h2 class="rb-section-title">OpenRouter API key</h2>
+          <p class="rb-section-desc">Stored locally in your browser. Never sent anywhere but OpenRouter.</p>
+          <div class="rb-key-field">
+            <input class="rb-input" id="api-key" type="password" placeholder="sk-or-v1-…" aria-label="OpenRouter API key" />
+            <button class="rb-key-toggle" id="key-toggle" type="button" aria-label="Show key">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <button class="rb-btn rb-btn-primary rb-btn-sm" id="save-key" type="button" style="margin-top:var(--rb-space-3);">Save key</button>
+          <div class="rb-banner error" id="settings-error" role="alert" style="margin-top:var(--rb-space-3);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+            <span id="settings-error-text"></span>
+          </div>
+        </section>
 
-    <div id="model-picker-container" class="hidden"></div>
+        <section class="rb-section">
+          <h2 class="rb-section-title">Model</h2>
+          <div class="rb-model-chip">
+            <span class="rb-model-avatar" id="chip-avatar">··</span>
+            <span class="rb-model-meta">
+              <span id="model-display-name">Loading…</span>
+              <span class="rb-model-sub" id="model-display-meta"></span>
+            </span>
+            <button class="rb-btn rb-btn-secondary rb-btn-sm" id="open-picker" type="button">Change</button>
+          </div>
+        </section>
 
-    <div class="message-type">
-      <label for="message-type-select">Message Type:</label>
-      <select id="message-type-select">
-        <option value="professional">Professional Email</option>
-        <option value="friendly">Friendly Message</option>
-        <option value="customer">Customer Service</option>
-        <option value="concise">Concise Response</option>
-      </select>
-    </div>
+        <section class="rb-section">
+          <h2 class="rb-section-title">Inline button</h2>
+          <p class="rb-section-desc">Controls the ✍️ button that appears next to long text fields on any website. Clicking it rewrites the field instantly; an Undo appears after.</p>
+          <div class="rb-toggle-row">
+            <span class="rb-toggle-label">Show button on websites</span>
+            <label class="rb-switch">
+              <input type="checkbox" id="enable-inline-button" checked />
+              <span class="rb-track"></span><span class="rb-thumb"></span>
+            </label>
+          </div>
+          <div style="margin-top:var(--rb-space-4);">
+            <label class="rb-label" for="inline-message-type">Default style</label>
+            <select class="rb-select" id="inline-message-type"></select>
+          </div>
+        </section>
 
-    <div class="editor">
-      <textarea id="input-text" placeholder="Write your message here..."></textarea>
-      <div class="action-row">
-        <span id="char-count">0 characters</span>
-        <button id="improve-text" type="button">Improve Message</button>
+        <section class="rb-section">
+          <h2 class="rb-section-title">Custom prompts</h2>
+          <p class="rb-section-desc">Your own instructions, available as styles.</p>
+          <div class="rb-manager-list" id="prompts-list"></div>
+          <div class="rb-add-row">
+            <input class="rb-input" id="new-prompt-name" type="text" placeholder="Name (e.g. Standup)" aria-label="Custom prompt name" />
+          </div>
+          <div class="rb-add-row">
+            <input class="rb-input" id="custom-prompt" type="text" placeholder="Write a custom instruction…" aria-label="Custom prompt instruction" />
+            <button class="rb-btn rb-btn-secondary rb-btn-sm" id="save-custom-prompt" type="button">Add</button>
+          </div>
+        </section>
+
+        <section class="rb-section">
+          <h2 class="rb-section-title">Snippets</h2>
+          <p class="rb-section-desc">Type a trigger like /sig in any field and it expands to the snippet text.</p>
+          <div class="rb-manager-list" id="snippets-list"></div>
+          <div class="rb-add-row">
+            <input class="rb-input" id="new-snippet-trigger" type="text" placeholder="/trigger" aria-label="Snippet trigger" style="max-width:120px;" />
+            <input class="rb-input" id="new-snippet-content" type="text" placeholder="Expands to…" aria-label="Snippet content" />
+            <button class="rb-btn rb-btn-secondary rb-btn-sm" id="save-snippet" type="button">Add</button>
+          </div>
+        </section>
       </div>
-      <textarea id="output-text" placeholder="Improved message will appear here..." readonly></textarea>
-      <div class="output-actions">
-        <button id="copy-to-clipboard" type="button">Copy to Clipboard</button>
-      </div>
     </div>
 
-    <div class="footer">
-      <p>Powered by OpenRouter — <a href="https://openrouter.ai/" target="_blank">Learn more</a></p>
-      <p class="info-link"><a href="https://github.com/dantnan/reply-better-ai" target="_blank">GitHub</a> | <a href="https://buymeacoffee.com/antnan" target="_blank">Support the Developer</a></p>
+    <!-- PICKER VIEW -->
+    <div class="rb-view-picker">
+      <div id="model-picker-container"></div>
     </div>
   </div>
 

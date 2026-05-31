@@ -4,11 +4,11 @@ import { isTextInput, isImproveTarget, readText, writeText } from "./text-target
 import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
 
-import { DEFAULT_MESSAGE_TYPE } from "../lib/constants.js";
+import { DEFAULT_STYLE } from "../lib/constants.js";
 
 const DEFAULT_SETTINGS = Object.freeze({
   enableInlineButton: true,
-  inlineMessageType: DEFAULT_MESSAGE_TYPE,
+  inlineMessageType: DEFAULT_STYLE,
   savedPrompts: [],
   snippets: [],
 });

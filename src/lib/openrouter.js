@@ -51,6 +51,77 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
   return out;
 }
 
+// Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
+// and resolves with the full text. Used by the popup for the live "typing"
+// effect; the content script / service worker still use the plain improveText.
+export async function streamImproveText({ text, apiKey, model, systemPrompt, onChunk, signal }) {
+  await rateLimitGuard();
+  let response;
+  try {
+    response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+      method: "POST",
+      signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": REFERER,
+        "X-Title": TITLE,
+      },
+      body: JSON.stringify({
+        model,
+        stream: true,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: text },
+        ],
+      }),
+    });
+  } catch (e) {
+    throw new NetworkError(e.name === "AbortError" ? "Request aborted" : e.message);
+  }
+
+  if (!response.ok) {
+    let body = null;
+    try { body = await response.json(); } catch { /* may be empty */ }
+    throw fromResponse(response, body);
+  }
+  if (!response.body) {
+    // No stream support from this provider — fall back to a single read.
+    const body = await response.json().catch(() => null);
+    const out = body?.choices?.[0]?.message?.content;
+    if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
+    onChunk?.(out);
+    return out;
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? ""; // keep the last partial line
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const data = trimmed.slice(5).trim();
+      if (data === "[DONE]") continue;
+      let json;
+      try { json = JSON.parse(data); } catch { continue; }
+      const delta = json?.choices?.[0]?.delta?.content;
+      if (typeof delta === "string" && delta) {
+        full += delta;
+        onChunk?.(delta);
+      }
+    }
+  }
+  if (!full) throw new ProviderError(response.status, "Empty response from model");
+  return full;
+}
+
 // Returns a discriminated result so callers can distinguish "key is bad" from
 // "we couldn't reach OpenRouter" — otherwise users blame their working key on offline.
 export async function validateApiKey(apiKey) {
