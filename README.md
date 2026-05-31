@@ -2,7 +2,8 @@
 
 Improve your writing anywhere on the web with the AI model of your choice. Pick from 500+ models on OpenRouter — Claude, GPT, Gemini, DeepSeek, Llama, and more — with a searchable picker, free/paid filtering, and live pricing inside the extension.
 
-[![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-orange)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/reply-better-ai/dpdibbijcljdjnafjnmaljphpkfojlkb)
+[![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-FF7139?logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
 [![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e)
 [![GitHub](https://img.shields.io/github/license/dantnan/reply-better-ai)](https://github.com/dantnan/reply-better-ai)
 
@@ -17,15 +18,15 @@ Improve your writing anywhere on the web with the AI model of your choice. Pick 
 
 ## Install
 
+### Chrome
+
+[Reply Better AI on the Chrome Web Store](https://chromewebstore.google.com/detail/reply-better-ai/dpdibbijcljdjnafjnmaljphpkfojlkb) — install in one click.
+
+To run an unreleased build instead: `npm install && npm run build`, then load the `dist/chrome/` folder via `chrome://extensions` → **Developer mode** → **Load unpacked**.
+
 ### Firefox
 
 [Reply Better AI on AMO](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/) — install in one click.
-
-### Chrome (developer load, Web Store coming)
-
-1. Run `npm install && npm run build` (or grab a `dist/chrome` zip from a release).
-2. Go to `chrome://extensions`, toggle **Developer mode** on.
-3. Click **Load unpacked** and pick the `dist/chrome/` folder.
 
 ### Get your OpenRouter key
 
