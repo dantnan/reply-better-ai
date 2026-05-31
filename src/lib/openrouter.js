@@ -1,18 +1,8 @@
-import { OPENROUTER_BASE, RATE_LIMIT_MS, REQUEST_TIMEOUT_MS } from "./constants.js";
-import { fromResponse, NetworkError, ProviderError, RateLimitError } from "./errors.js";
-import { storage } from "./storage.js";
+import { OPENROUTER_BASE, REQUEST_TIMEOUT_MS } from "./constants.js";
+import { fromResponse, NetworkError, ProviderError } from "./errors.js";
 
 const REFERER = "https://github.com/dantnan/reply-better-ai";
 const TITLE = "Reply Better AI";
-
-async function rateLimitGuard() {
-  const { lastCallTime } = await storage.get(["lastCallTime"]);
-  const now = Date.now();
-  if (lastCallTime && now - lastCallTime < RATE_LIMIT_MS) {
-    throw new RateLimitError("Please wait a moment before making another request.");
-  }
-  await storage.set({ lastCallTime: now });
-}
 
 function timeoutFetch(url, options, ms = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
@@ -21,7 +11,6 @@ function timeoutFetch(url, options, ms = REQUEST_TIMEOUT_MS) {
 }
 
 export async function improveText({ text, apiKey, model, systemPrompt }) {
-  await rateLimitGuard();
   let response;
   try {
     response = await timeoutFetch(`${OPENROUTER_BASE}/chat/completions`, {
@@ -55,7 +44,6 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
 // and resolves with the full text. Used by the popup for the live "typing"
 // effect; the content script / service worker still use the plain improveText.
 export async function streamImproveText({ text, apiKey, model, systemPrompt, onChunk, signal }) {
-  await rateLimitGuard();
   let response;
   try {
     response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
