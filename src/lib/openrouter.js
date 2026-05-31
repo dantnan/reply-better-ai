@@ -1,5 +1,6 @@
 import { OPENROUTER_BASE, REQUEST_TIMEOUT_MS } from "./constants.js";
 import { fromResponse, NetworkError, ProviderError } from "./errors.js";
+import { cleanModelOutput } from "./sanitize.js";
 
 const REFERER = "https://github.com/dantnan/reply-better-ai";
 const TITLE = "Reply Better AI";
@@ -37,7 +38,7 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
   if (!response.ok) throw fromResponse(response, body);
   const out = body?.choices?.[0]?.message?.content;
   if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
-  return out;
+  return cleanModelOutput(out);
 }
 
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
@@ -78,8 +79,9 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
     const body = await response.json().catch(() => null);
     const out = body?.choices?.[0]?.message?.content;
     if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
-    onChunk?.(out);
-    return out;
+    const cleaned = cleanModelOutput(out);
+    onChunk?.(cleaned);
+    return cleaned;
   }
 
   const reader = response.body.getReader();
@@ -107,7 +109,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
     }
   }
   if (!full) throw new ProviderError(response.status, "Empty response from model");
-  return full;
+  return cleanModelOutput(full);
 }
 
 // Returns a discriminated result so callers can distinguish "key is bad" from

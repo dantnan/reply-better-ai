@@ -124,12 +124,27 @@ export function openPanel({ anchorButton, inputText, settings, onInsert, onClose
     const sy = window.pageYOffset || document.documentElement.scrollTop;
     const pw = panel.offsetWidth || 360;
     const ph = panel.offsetHeight || 280;
-    let left = r.right + sx - pw;
-    if (left < sx + 8) left = sx + 8;
-    let top = r.bottom + sy + 8;
-    if (r.bottom + ph + 8 > window.innerHeight && r.top - ph - 8 > 0) top = r.top + sy - ph - 8; // flip above
-    panel.style.left = `${left}px`;
-    panel.style.top = `${top}px`;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Horizontal (viewport coords): right-align to the button; if that runs off
+    // the left, left-align to the button instead; finally clamp on-screen — so
+    // the panel always sits adjacent to the button, never slammed to a screen edge.
+    let left = r.right - pw;
+    if (left < 8) left = r.left;
+    if (left + pw > vw - 8) left = vw - pw - 8;
+    if (left < 8) left = 8;
+
+    // Vertical: below the button; flip above if it would overflow and there's
+    // room; otherwise clamp so the panel stays fully on-screen.
+    let top = r.bottom + 8;
+    if (top + ph > vh - 8) {
+      const above = r.top - ph - 8;
+      top = above >= 8 ? above : Math.max(8, vh - ph - 8);
+    }
+
+    panel.style.left = `${left + sx}px`;
+    panel.style.top = `${top + sy}px`;
   }
 
   async function run(isRegen) {
