@@ -52,10 +52,9 @@ export function openPanel({ anchorButton, inputText, settings, onInsert, onClose
   const head = document.createElement("div");
   head.className = "reply-better-panel-head";
   const mark = document.createElement("span"); mark.className = "reply-better-panel-mark"; mark.innerHTML = MARK_SVG;
-  const title = document.createElement("span"); title.className = "reply-better-panel-title"; title.textContent = "Reply Better AI";
   const tone = document.createElement("span"); tone.className = "reply-better-panel-tone";
   const closeBtn = document.createElement("button"); closeBtn.type = "button"; closeBtn.className = "reply-better-panel-close"; closeBtn.setAttribute("aria-label", "Close"); closeBtn.innerHTML = CLOSE_SVG;
-  head.append(mark, title, tone, closeBtn);
+  head.append(mark, tone, closeBtn);
 
   // style chips
   const chipsWrap = document.createElement("div");
