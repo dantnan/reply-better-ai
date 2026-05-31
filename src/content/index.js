@@ -3,7 +3,7 @@ import { storage } from "../lib/storage.js";
 import { isTextInput, isImproveTarget, readText, writeText } from "./text-target.js";
 import { injectStyles, createButton, findButtonFor, removeButtonFor, removeAllButtons, showToast, setButtonLoading } from "./button-injector.js";
 import { tryExpandSnippet } from "./snippet-expander.js";
-import { openPanel } from "./panel.js";
+import { openPanel, isPanelOpen } from "./panel.js";
 
 import { DEFAULT_STYLE, DEFAULT_CLICK_MODE } from "../lib/constants.js";
 
@@ -157,10 +157,14 @@ function handleFocus(event) {
 
 function handleBlur(event) {
   if (!isTextInput(event.target)) return;
+  // Keep the button alive while its panel is open — interacting with the panel
+  // blurs the field, and removing the button would detach the panel's anchor.
+  if (isPanelOpen()) return;
   // Delay so click on our button can land first
   const target = event.target;
   setTimeout(() => {
     if (document.activeElement === target) return;
+    if (isPanelOpen()) return;
     removeButtonFor(target);
     if (activeElement === target) activeElement = null;
   }, 200);
@@ -174,6 +178,7 @@ function handleInput(event) {
 }
 
 function handleResize() {
+  if (isPanelOpen()) return; // panel repositions itself; don't nuke its anchor
   removeAllButtons();
   if (activeElement && readText(activeElement).trim()) {
     ensureButton(activeElement);
@@ -202,7 +207,7 @@ async function init() {
       settings[key] = newValue !== undefined ? newValue : DEFAULT_SETTINGS[key];
       touched = true;
     }
-    if (touched) {
+    if (touched && !isPanelOpen()) {
       removeAllButtons();
       if (activeElement && readText(activeElement).trim()) ensureButton(activeElement);
     }

@@ -120,6 +120,9 @@ export function openPanel({ anchorButton, inputText, settings, onInsert, onClose
   }
   function position() {
     const r = anchorButton.getBoundingClientRect();
+    // If the anchor was detached (e.g. the button got removed), its rect is all
+    // zeros — don't yank the panel to the top-left corner; keep the last spot.
+    if (!anchorButton.isConnected || (r.width === 0 && r.height === 0)) return;
     const sx = window.pageXOffset || document.documentElement.scrollLeft;
     const sy = window.pageYOffset || document.documentElement.scrollTop;
     const pw = panel.offsetWidth || 360;
