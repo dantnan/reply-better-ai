@@ -402,6 +402,26 @@ body {
 .rb-switch input:checked ~ .rb-thumb { transform: translateX(16px); }
 .rb-switch input:focus-visible ~ .rb-track { box-shadow: var(--rb-focus-ring); }
 
+/* radio cards (e.g. inline click-mode) */
+.rb-radio-group { display: flex; flex-direction: column; gap: var(--rb-space-2); }
+.rb-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--rb-space-3);
+  padding: 11px 12px;
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-md);
+  background: var(--rb-surface);
+  cursor: pointer;
+  transition: border-color 0.12s var(--rb-ease), background 0.12s var(--rb-ease);
+}
+.rb-radio:hover { border-color: var(--rb-border-strong); }
+.rb-radio input { margin: 2px 0 0; accent-color: var(--rb-accent); width: 16px; height: 16px; flex: none; }
+.rb-radio:has(input:checked) { border-color: var(--rb-accent); background: var(--rb-accent-soft); }
+.rb-radio-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rb-radio-title { font-size: var(--rb-text-md); font-weight: var(--rb-weight-medium); color: var(--rb-fg); }
+.rb-radio-desc { font-size: var(--rb-text-sm); color: var(--rb-fg-subtle); line-height: var(--rb-leading-normal); }
+
 .rb-key-field { position: relative; }
 .rb-key-field .rb-input { padding-right: 44px; font-family: var(--rb-font-mono); }
 .rb-key-toggle {
