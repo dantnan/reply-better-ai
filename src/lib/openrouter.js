@@ -38,12 +38,14 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
   if (!response.ok) throw fromResponse(response, body);
   const out = body?.choices?.[0]?.message?.content;
   if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
-  return cleanModelOutput(out);
+  const cleaned = cleanModelOutput(out);
+  if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
+  return cleaned;
 }
 
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
-// and resolves with the full text. Used by the popup for the live "typing"
-// effect; the content script / service worker still use the plain improveText.
+// and resolves with the full text. Used by the popup (direct) and by the inline
+// panel via the service-worker port relay; non-streaming callers use improveText.
 export async function streamImproveText({ text, apiKey, model, systemPrompt, onChunk, signal }) {
   let response;
   try {
@@ -80,6 +82,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
     const out = body?.choices?.[0]?.message?.content;
     if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
     const cleaned = cleanModelOutput(out);
+    if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
     onChunk?.(cleaned);
     return cleaned;
   }
@@ -88,28 +91,36 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
   const decoder = new TextDecoder();
   let buffer = "";
   let full = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? ""; // keep the last partial line
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed.startsWith("data:")) continue;
-      const data = trimmed.slice(5).trim();
-      if (data === "[DONE]") continue;
-      let json;
-      try { json = JSON.parse(data); } catch { continue; }
-      const delta = json?.choices?.[0]?.delta?.content;
-      if (typeof delta === "string" && delta) {
-        full += delta;
-        onChunk?.(delta);
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? ""; // keep the last partial line
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data:")) continue;
+        const data = trimmed.slice(5).trim();
+        if (data === "[DONE]") continue;
+        let json;
+        try { json = JSON.parse(data); } catch { continue; }
+        const delta = json?.choices?.[0]?.delta?.content;
+        if (typeof delta === "string" && delta) {
+          full += delta;
+          onChunk?.(delta);
+        }
       }
     }
+  } catch (e) {
+    // A mid-stream drop rejects reader.read() with a raw error; normalize it so
+    // callers' typed branches (NetworkError) fire instead of a cryptic message.
+    throw e.name === "AbortError" ? new NetworkError("Request aborted") : new NetworkError(e.message);
   }
   if (!full) throw new ProviderError(response.status, "Empty response from model");
-  return cleanModelOutput(full);
+  const cleaned = cleanModelOutput(full);
+  if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
+  return cleaned;
 }
 
 // Returns a discriminated result so callers can distinguish "key is bad" from

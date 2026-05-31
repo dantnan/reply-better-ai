@@ -9,6 +9,7 @@ const REGEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 
 let current = null; // the open panel controller, if any
+let activePort = null; // the in-flight stream port, if any — so we can cancel it
 
 export function closePanel() {
   if (!current) return;
@@ -24,13 +25,15 @@ function streamThroughWorker({ text, messageType, onDelta }) {
     let port;
     try { port = browser.runtime.connect({ name: "rb-improve-stream" }); }
     catch (e) { reject(new Error(e.message)); return; }
+    activePort = port;
     let settled = false;
+    const finish = () => { if (activePort === port) activePort = null; try { port.disconnect(); } catch {} };
     port.onMessage.addListener(msg => {
       if (msg.delta) onDelta(msg.delta);
-      else if (msg.done) { settled = true; resolve(msg.full); try { port.disconnect(); } catch {} }
-      else if (msg.error) { settled = true; const err = new Error(msg.error); err.code = msg.code; reject(err); try { port.disconnect(); } catch {} }
+      else if (msg.done) { settled = true; resolve(msg.full); finish(); }
+      else if (msg.error) { settled = true; const err = new Error(msg.error); err.code = msg.code; reject(err); finish(); }
     });
-    port.onDisconnect.addListener(() => { if (!settled) reject(new Error("The extension may be reloading. Refresh this page and try again.")); });
+    port.onDisconnect.addListener(() => { if (activePort === port) activePort = null; if (!settled) reject(new Error("The extension may be reloading. Refresh this page and try again.")); });
     port.postMessage({ action: "stream", text, messageType });
   });
 }
@@ -198,6 +201,9 @@ export function openPanel({ anchorButton, inputText, settings, onInsert, onClose
 
   current = {
     destroy() {
+      // Cancel an in-flight stream: disconnecting the port makes the worker
+      // abort the upstream OpenRouter request instead of streaming to nobody.
+      if (activePort) { try { activePort.disconnect(); } catch {} activePort = null; }
       document.removeEventListener("mousedown", onDocClick, true);
       document.removeEventListener("keydown", onKey, true);
       window.removeEventListener("scroll", onReposition, true);

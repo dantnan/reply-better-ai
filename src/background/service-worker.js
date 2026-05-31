@@ -9,25 +9,33 @@ import { validateSelectedModel } from "../lib/models-cache.js";
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
 browser.runtime.onConnect.addListener(port => {
   if (port.name !== "rb-improve-stream") return;
+  // The panel disconnects the port when it closes mid-stream; abort the upstream
+  // OpenRouter request so we don't keep streaming (and billing) into the void.
+  const controller = new AbortController();
+  port.onDisconnect.addListener(() => controller.abort());
+  const post = m => { try { port.postMessage(m); } catch { /* port already closed */ } };
   port.onMessage.addListener(async msg => {
     if (!msg || msg.action !== "stream") return;
     try {
       const text = typeof msg.text === "string" ? msg.text : "";
-      if (!text.trim()) { port.postMessage({ error: "No text to improve." }); return; }
-      if (text.length > MAX_INPUT_LENGTH) { port.postMessage({ error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` }); return; }
+      if (!text.trim()) { post({ error: "No text to improve." }); return; }
+      if (text.length > MAX_INPUT_LENGTH) { post({ error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` }); return; }
       const settings = await storage.get(["apiKey", "model", "savedPrompts"]);
-      if (!settings.apiKey) { port.postMessage({ error: "No API key set. Open the extension settings.", code: "NoApiKey" }); return; }
+      if (!settings.apiKey) { post({ error: "No API key set. Open the extension settings.", code: "NoApiKey" }); return; }
       const systemPrompt = resolveSystemPrompt(msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
       const full = await streamImproveText({
         text,
         apiKey: settings.apiKey,
         model: settings.model || DEFAULT_MODEL,
         systemPrompt,
-        onChunk: delta => { try { port.postMessage({ delta }); } catch { /* port closed */ } },
+        signal: controller.signal,
+        onChunk: delta => post({ delta }),
       });
-      port.postMessage({ done: true, full });
+      post({ done: true, full });
     } catch (err) {
-      port.postMessage({ error: err?.userMessage || err?.message || "Something went wrong", code: err?.name });
+      if (controller.signal.aborted) return; // panel closed; nothing to report
+      console.error("[stream] relay failed:", err);
+      post({ error: err?.userMessage || err?.message || "Something went wrong", code: err?.name });
     }
   });
 });
