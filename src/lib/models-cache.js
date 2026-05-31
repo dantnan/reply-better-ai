@@ -64,8 +64,11 @@ export function formatPrice(model) {
 }
 
 export function formatContextLength(model) {
-  const len = model?.context_length || model?.top_provider?.context_length;
-  if (!len) return "";
+  // Coerce to a number: the value comes from the remote /models response, and
+  // rendering it goes through innerHTML downstream — a non-numeric string here
+  // would be injected as markup. Number() + isFinite guarantees a numeric out.
+  const len = Number(model?.context_length || model?.top_provider?.context_length);
+  if (!Number.isFinite(len) || len <= 0) return "";
   if (len >= 1_000_000) return `${(len / 1_000_000).toFixed(1)}M`;
   if (len >= 1000) return `${Math.round(len / 1000)}K`;
   return String(len);
