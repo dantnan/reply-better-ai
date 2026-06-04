@@ -84,7 +84,6 @@
   stroke: #ffffff !important;
   fill: none !important;
 }
-.reply-better-button.reply-better-error { background: #cf3a3f !important; }
 .reply-better-button.reply-better-loading {
   pointer-events: none;
 }
@@ -125,6 +124,8 @@
   pointer-events: none;
   overflow: hidden;
 }
+/* let the model popover escape the panel when it's taller than the panel */
+.reply-better-panel.reply-better-models-open { overflow: visible !important; }
 .reply-better-panel.reply-better-open {
   opacity: 1 !important;
   transform: translateY(0) scale(1) !important;
@@ -147,7 +148,32 @@
   flex: none;
 }
 .reply-better-panel-mark svg { width: 14px !important; height: 14px !important; stroke: #5e6ad2 !important; fill: none !important; }
-.reply-better-panel-title { font-size: 13px !important; font-weight: 600 !important; color: #16191d !important; }
+.reply-better-panel-title { font-size: 14px !important; font-weight: 700 !important; letter-spacing: -0.01em; color: #16191d !important; flex: 0 0 auto; }
+
+/* active-model trigger (compact, pushed to the right of the header) */
+.reply-better-model-trigger {
+  display: inline-flex !important;
+  align-items: center; gap: 5px;
+  margin-left: auto !important;
+  background: #f1f3f5 !important;
+  border: 1px solid #e6e8ef !important;
+  border-radius: 999px !important;
+  padding: 4px 8px 4px 5px !important;
+  cursor: pointer !important;
+  max-width: 170px;
+}
+.reply-better-model-trigger .reply-better-mav {
+  width: 17px !important; height: 17px !important; border-radius: 5px !important;
+  display: inline-flex !important; align-items: center; justify-content: center;
+  color: #fff !important; font-size: 9px !important; font-weight: 700 !important; flex: none;
+}
+.reply-better-model-trigger .reply-better-mname { font-size: 12px !important; font-weight: 600 !important; color: #495057 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-better-model-trigger:hover { background: #e9ecef !important; }
+.reply-better-model-trigger .reply-better-mchev { width: 14px !important; height: 14px !important; stroke: #868e96 !important; fill: none !important; flex: none; transition: transform 0.15s; }
+.reply-better-model-trigger:hover .reply-better-mname { color: #4f5bc4 !important; }
+.reply-better-model-trigger:hover .reply-better-mchev { stroke: #5e6ad2 !important; }
+.reply-better-panel.reply-better-models-open .reply-better-mchev { transform: rotate(180deg); }
+
 .reply-better-panel-close {
   margin-left: auto !important;
   width: 26px; height: 26px;
@@ -158,6 +184,66 @@
 }
 .reply-better-panel-close:hover { background: #f1f3f5 !important; color: #343a40 !important; }
 .reply-better-panel-close svg { width: 14px !important; height: 14px !important; stroke: currentColor !important; fill: none !important; }
+
+/* model menu popover (anchored under the trigger) */
+.reply-better-models {
+  position: absolute !important;
+  z-index: 2 !important;
+  top: 56px; left: 13px; right: 13px;
+  background: #ffffff !important;
+  border: 1px solid #e9ecef !important;
+  border-radius: 11px !important;
+  box-shadow: 0 14px 34px rgba(16, 24, 40, 0.18) !important;
+  padding: 6px !important;
+  max-height: 264px; overflow-y: auto;
+  opacity: 0; transform: translateY(-6px); pointer-events: none;
+  transition: opacity 0.13s cubic-bezier(0.2,0,0,1), transform 0.13s cubic-bezier(0.2,0,0,1) !important;
+}
+.reply-better-panel.reply-better-models-open .reply-better-models { opacity: 1 !important; transform: translateY(0) !important; pointer-events: auto !important; }
+.reply-better-models-label { display: block !important; font-size: 11px !important; font-weight: 700 !important; text-transform: uppercase; letter-spacing: 0.05em; color: #adb5bd !important; padding: 7px 9px 5px !important; }
+.reply-better-model-item {
+  display: flex !important; align-items: center; gap: 10px;
+  width: 100% !important; text-align: left !important;
+  background: transparent !important; border: 0 !important; border-radius: 8px !important;
+  padding: 8px 9px !important; cursor: pointer !important;
+}
+.reply-better-model-item:hover { background: #f1f3f5 !important; }
+.reply-better-model-item.reply-better-current { background: #eef0ff !important; }
+.reply-better-model-item .reply-better-mav { width: 26px !important; height: 26px !important; border-radius: 7px !important; display: inline-flex !important; align-items: center; justify-content: center; color: #fff !important; font-size: 11px !important; font-weight: 700 !important; flex: none; }
+.reply-better-model-item .reply-better-mbody { min-width: 0; flex: 1 1 auto; }
+.reply-better-model-item .reply-better-mn { font-size: 13px !important; font-weight: 600 !important; color: #16191d !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reply-better-model-item .reply-better-mmeta { font-size: 11px !important; color: #868e96 !important; margin-top: 1px; }
+.reply-better-model-item .reply-better-mfree { font-size: 10px !important; font-weight: 700 !important; color: #1a7434 !important; background: #e3f6ea !important; border: 1px solid #bfe6cb !important; border-radius: 999px !important; padding: 2px 7px !important; flex: none; }
+.reply-better-model-item .reply-better-mcheck { width: 16px !important; height: 16px !important; stroke: #5e6ad2 !important; fill: none !important; flex: none; opacity: 0; }
+.reply-better-model-item.reply-better-current .reply-better-mcheck { opacity: 1; }
+
+/* error state inside the body */
+.reply-better-error {
+  display: none;
+  align-items: flex-start; gap: 9px;
+  margin: 0 0 12px !important;
+  padding: 11px 12px !important;
+  background: #fdecec !important;
+  border: 1px solid #f5c4c5 !important;
+  border-radius: 10px !important;
+}
+.reply-better-panel.reply-better-has-error .reply-better-error { display: flex !important; }
+.reply-better-panel.reply-better-has-error .reply-better-preview,
+.reply-better-panel.reply-better-has-error .reply-better-diff-box { display: none !important; }
+.reply-better-error-ic { width: 18px !important; height: 18px !important; stroke: #cf3a3f !important; fill: none !important; flex: none; margin-top: 1px; }
+.reply-better-error-body { flex: 1 1 auto; min-width: 0; }
+.reply-better-error-title { font-size: 13px !important; font-weight: 700 !important; color: #b3282d !important; }
+.reply-better-error-msg { font-size: 12px !important; color: #9a3b3e !important; margin-top: 2px; line-height: 1.45; }
+.reply-better-error-fix {
+  display: inline-flex !important; align-items: center; gap: 6px;
+  margin-top: 9px !important;
+  font-size: 12px !important; font-weight: 700 !important;
+  color: #fff !important; background: #1a7434 !important;
+  border: 0 !important; border-radius: 7px !important;
+  padding: 7px 11px !important; cursor: pointer !important;
+}
+.reply-better-error-fix:hover { background: #145e2a !important; }
+.reply-better-error-fix svg { width: 14px !important; height: 14px !important; stroke: #fff !important; fill: none !important; }
 
 /* style chips */
 .reply-better-styles {
