@@ -1,12 +1,14 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { improveText, streamImproveText } from "../lib/openrouter.js";
-import { resolveSystemPrompt } from "../lib/system-prompts.js";
+import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
-import { validateSelectedModel } from "../lib/models-cache.js";
+import { validateSelectedModel, getModels } from "../lib/models-cache.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
+// Two modes: "improve" (rewrite the user's draft in a style) and "reply" (write
+// a reply to a captured conversation in a tone, in the instruction's language).
 browser.runtime.onConnect.addListener(port => {
   if (port.name !== "rb-improve-stream") return;
   // The panel disconnects the port when it closes mid-stream; abort the upstream
@@ -18,15 +20,17 @@ browser.runtime.onConnect.addListener(port => {
     if (!msg || msg.action !== "stream") return;
     try {
       const text = typeof msg.text === "string" ? msg.text : "";
-      if (!text.trim()) { post({ error: "No text to improve." }); return; }
+      if (!text.trim()) { post({ error: "Nothing to send yet." }); return; }
       if (text.length > MAX_INPUT_LENGTH) { post({ error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` }); return; }
       const settings = await storage.get(["apiKey", "model", "savedPrompts"]);
       if (!settings.apiKey) { post({ error: "No API key set. Open the extension settings.", code: "NoApiKey" }); return; }
-      const systemPrompt = resolveSystemPrompt(msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
+      const systemPrompt = msg.mode === "reply"
+        ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize })
+        : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
       const full = await streamImproveText({
         text,
         apiKey: settings.apiKey,
-        model: settings.model || DEFAULT_MODEL,
+        model: msg.model || settings.model || DEFAULT_MODEL,
         systemPrompt,
         signal: controller.signal,
         onChunk: delta => post({ delta }),
@@ -120,6 +124,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           model: err?.model,
         });
       });
+    return true;
+  }
+  // The content-script panel can't fetch openrouter.ai directly (host-page CSP
+  // blocks it), so it asks the worker for the model list for its in-panel switcher.
+  if (message.action === "getModels") {
+    getModels()
+      .then(result => sendResponse({ models: result.models || [], stale: !!result.stale }))
+      .catch(err => sendResponse({ error: err?.userMessage || err?.message || "Failed to load models" }));
     return true;
   }
   console.warn("[bg] unknown action:", message.action);
