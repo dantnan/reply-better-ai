@@ -1,6 +1,6 @@
 {
   "name": "reply-better-ai",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Improve your messages using AI. Dynamic OpenRouter model picker. Chrome + Firefox.",
   "private": true,
   "type": "module",
