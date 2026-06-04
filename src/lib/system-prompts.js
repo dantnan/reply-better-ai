@@ -56,3 +56,42 @@ export function resolveSystemPrompt(styleId, savedPrompts = []) {
   }
   return STYLE_PROMPTS[styleId] || STYLE_PROMPTS[DEFAULT_STYLE];
 }
+
+// ── Reply Mode ────────────────────────────────────────────────────────────
+// "Join the conversation": the user selects (or captures) the text they're
+// replying to, optionally types a free-form instruction, and picks a tone. The
+// reply comes back in the language of the instruction (or the conversation when
+// there's no instruction) — no language setting needed.
+
+const REPLY_TONE_GUIDANCE = {
+  match: "Match the tone, style, and level of formality of the conversation.",
+  professional: "Use a professional, polished, business-appropriate tone.",
+  friendly: "Use a warm, friendly, conversational tone.",
+  concise: "Keep the reply brief and to the point.",
+};
+
+// Tone chips shown in the inline reply panel.
+export const REPLY_TONES = [
+  { id: "match", label: "Match thread" },
+  { id: "professional", label: "Professional" },
+  { id: "friendly", label: "Friendly" },
+  { id: "concise", label: "Concise" },
+];
+
+const REPLY_OUTPUT_RULE = " Output ONLY the reply text — no preamble, no surrounding quotes, no commentary.";
+
+// Build the system prompt for a reply. `summarize` forces a recap-style reply;
+// otherwise the optional `instruction` steers what to say and sets the reply
+// language (falling back to the conversation's language when absent).
+export function buildReplyPrompt({ tone = "match", instruction = "", summarize = false } = {}) {
+  if (summarize) {
+    return "You are helping the user reply in a conversation. Read the conversation the user provides and write a short, recap-style summary they can post as a reply: capture the key points and where things landed. " +
+      "Reply in the same language as the conversation." + REPLY_OUTPUT_RULE;
+  }
+  const guidance = REPLY_TONE_GUIDANCE[tone] || REPLY_TONE_GUIDANCE.match;
+  const trimmed = (instruction || "").trim();
+  const want = trimmed
+    ? `The user wants the reply to convey: ${trimmed}. Reply in the same language as that instruction.`
+    : "Write a natural, appropriate reply that fits the conversation. Reply in the same language as the conversation.";
+  return `You are helping the user write a reply in a conversation. ${guidance} ${want}` + REPLY_OUTPUT_RULE;
+}
