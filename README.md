@@ -30,6 +30,7 @@ Everything streams live, you can **Regenerate** for another take, and **Insert**
 - **Changes diff** — word-level additions/deletions between your draft and the rewrite.
 - **Regenerate** — cycle fresh variations with a version counter.
 - **Dynamic model picker** — Popular / Free / All tabs, search, provider filter, context window, and live per-token pricing.
+- **Auto · Fastest free** — one pick that routes to the fastest available free model and fails over automatically when one is busy or errors (reasoning models excluded; shows which model answered).
 - **Inline model switch + recovery** — swap models without leaving the page; when a free model is rate-limited, switch and retry in one tap.
 - **Writing styles** — Improve, Professional, Friendly, Concise, Persuasive — plus your own custom prompts.
 - **Snippets** — TextBlaze-style triggers (`/sig`, `/welcome`) that expand as you type in plain text fields.
@@ -66,7 +67,7 @@ OpenRouter has both free and paid models. Free models are flagged in the picker;
 
 **Inline — Reply** — select the messages you're replying to anywhere on the page; the button turns into a speech bubble. Click it, then pick a tone, **Summarize**, or **You tell me** to type your intent in any language. Insert the drafted reply with one-tap Undo.
 
-**Model switch** — the active model shows in the panel/popup header; click it to search and swap. Handy when a free model is busy: switch and it retries on the new one.
+**Model switch** — the active model shows in the panel/popup header; click it to search and swap. Handy when a free model is busy: switch and it retries on the new one. Pick **Auto · Fastest free** to let OpenRouter route to the fastest available free model and fail over automatically — the best default if you're sticking to free models.
 
 **Snippets** — in **Settings**, define triggers like `/welcome` that expand into longer text when typed.
 
