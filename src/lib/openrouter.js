@@ -5,6 +5,17 @@ import { cleanModelOutput } from "./sanitize.js";
 const REFERER = "https://github.com/dantnan/reply-better-ai";
 const TITLE = "Reply Better AI";
 
+// Free models run on OpenRouter's throttled, shared capacity, so they queue and
+// crawl. The one lever we control is provider selection: ask OpenRouter to route
+// a free model to its highest-throughput provider. There's no cost downside
+// (the model is free); paid models keep the default price-balanced routing so we
+// don't quietly raise the user's bill.
+function routingExtras(model) {
+  return typeof model === "string" && model.includes(":free")
+    ? { provider: { sort: "throughput" } }
+    : {};
+}
+
 function timeoutFetch(url, options, ms = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
@@ -24,6 +35,7 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
       },
       body: JSON.stringify({
         model,
+        ...routingExtras(model),
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: text },
@@ -60,6 +72,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
       },
       body: JSON.stringify({
         model,
+        ...routingExtras(model),
         stream: true,
         messages: [
           { role: "system", content: systemPrompt },
