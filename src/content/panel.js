@@ -15,7 +15,10 @@ const CHEV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
 const REGEN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
 const ERR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
-const FIX_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 8V5"/></svg>';
+// Path-only swap icon: the content-script CSS reset zeroes width/height on
+// descendants, which collapses SVG <rect> geometry — so the error-fix icon must
+// avoid <rect>/<circle> and use paths only.
+const FIX_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>';
 const CTX_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 const PRIV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
 
@@ -509,14 +512,20 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
 
   function showError(err) {
     const code = err?.code;
-    errTitle.textContent = code === "RateLimitError" ? "Rate limit reached"
+    // In Auto mode OpenRouter already tried several free models, so a rate/
+    // provider error means they're all busy — say that, and point to a paid model.
+    const autoBusy = (code === "RateLimitError" || code === "ProviderError") && lastGen?.model === AUTO_FREE_MODEL;
+    errTitle.textContent = autoBusy ? "Free models are busy"
+      : code === "RateLimitError" ? "Rate limit reached"
       : code === "InvalidKeyError" ? "API key rejected"
       : code === "NoApiKey" ? "No API key set"
       : code === "ModelUnavailableError" ? "Model unavailable"
       : code === "NetworkError" ? "Can’t reach OpenRouter"
       : code === "ProviderError" ? "Model error"
       : "Something went wrong";
-    errMsg.textContent = err?.message || "Try again, or switch to a different model.";
+    errMsg.textContent = autoBusy
+      ? "All the fast free models are busy right now. Try again in a moment, or switch to a paid model for reliability."
+      : (err?.message || "Try again, or switch to a different model.");
     errFix.style.display = (code === "NoApiKey" || code === "InvalidKeyError") ? "none" : "";
     insert.disabled = true; regen.disabled = false;
     panel.classList.add("reply-better-has-error");
