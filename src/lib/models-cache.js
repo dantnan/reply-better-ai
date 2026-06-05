@@ -1,6 +1,7 @@
 import { listModels } from "./openrouter.js";
 import { storage } from "./storage.js";
-import { MODELS_CACHE_TTL_MS, DEFAULT_MODEL } from "./constants.js";
+import { MODELS_CACHE_TTL_MS, DEFAULT_MODEL, AUTO_FREE_MODEL, AUTO_FREE_MODEL_LIMIT } from "./constants.js";
+import { POPULAR_IDS } from "../data/popular-models.js";
 
 const CACHE_KEY = "modelsCache";
 
@@ -49,6 +50,42 @@ export async function validateSelectedModel({ currentId, fallback = DEFAULT_MODE
 
 export function isFree(model) {
   return Number(model?.pricing?.prompt) === 0 && Number(model?.pricing?.completion) === 0;
+}
+
+export function isAutoModel(id) {
+  return id === AUTO_FREE_MODEL;
+}
+
+// Reasoning models stream long internal chains of thought and are slow; keep them
+// out of the "fastest free" pool.
+export function isReasoningModel(model) {
+  const s = `${model?.id || ""} ${model?.name || ""}`.toLowerCase();
+  return /(^|[^a-z])(r1|o1|o3|qwq)([^a-z]|$)|reason|thinking/.test(s);
+}
+
+// Ordered free model ids to hand OpenRouter for "Auto · Fastest free": reasoning
+// models excluded, popular ones first (as a quality tiebreak — OpenRouter still
+// routes by live throughput), capped. Built from the live list so it never goes
+// stale.
+export function autoFreeModelIds(models, limit = AUTO_FREE_MODEL_LIMIT) {
+  const free = (models || []).filter(m => isFree(m) && !isReasoningModel(m));
+  free.sort((a, b) => (POPULAR_IDS.includes(a.id) ? 0 : 1) - (POPULAR_IDS.includes(b.id) ? 0 : 1));
+  return free.slice(0, limit).map(m => m.id);
+}
+
+// Turn a stored model selection into the request shape openrouter.js expects:
+// a single { model } normally, or { models: [...] } for the Auto sentinel so
+// OpenRouter picks the fastest free model and fails over automatically.
+export async function resolveModelSelection(selectedId) {
+  if (selectedId !== AUTO_FREE_MODEL) return { model: selectedId };
+  try {
+    const { models } = await getModels();
+    const ids = autoFreeModelIds(models);
+    if (ids.length) return { models: ids };
+  } catch (e) {
+    console.warn("[models-cache] auto-free resolution failed:", e?.message);
+  }
+  return { model: DEFAULT_MODEL };
 }
 
 export function formatPrice(model) {

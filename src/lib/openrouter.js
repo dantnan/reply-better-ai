@@ -22,7 +22,19 @@ function timeoutFetch(url, options, ms = REQUEST_TIMEOUT_MS) {
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-export async function improveText({ text, apiKey, model, systemPrompt }) {
+// Build the request body. With a `models` array (Auto · Fastest free) OpenRouter
+// picks the fastest available and fails over automatically; with a single model
+// we keep default routing (throughput only for free models, no cost downside).
+function buildBody({ model, models, systemPrompt, text, stream }) {
+  const messages = [{ role: "system", content: systemPrompt }, { role: "user", content: text }];
+  const streamPart = stream ? { stream: true } : {};
+  const body = Array.isArray(models) && models.length
+    ? { models, provider: { sort: "throughput" }, ...streamPart, messages }
+    : { model, ...routingExtras(model), ...streamPart, messages };
+  return JSON.stringify(body);
+}
+
+export async function improveText({ text, apiKey, model, models, systemPrompt }) {
   let response;
   try {
     response = await timeoutFetch(`${OPENROUTER_BASE}/chat/completions`, {
@@ -33,14 +45,7 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
         "HTTP-Referer": REFERER,
         "X-Title": TITLE,
       },
-      body: JSON.stringify({
-        model,
-        ...routingExtras(model),
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text },
-        ],
-      }),
+      body: buildBody({ model, models, systemPrompt, text }),
     });
   } catch (e) {
     throw new NetworkError(e.name === "AbortError" ? "Request timed out" : e.message);
@@ -58,7 +63,7 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
 // and resolves with the full text. Used by the popup (direct) and by the inline
 // panel via the service-worker port relay; non-streaming callers use improveText.
-export async function streamImproveText({ text, apiKey, model, systemPrompt, onChunk, signal }) {
+export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, signal }) {
   let response;
   try {
     response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
@@ -70,15 +75,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
         "HTTP-Referer": REFERER,
         "X-Title": TITLE,
       },
-      body: JSON.stringify({
-        model,
-        ...routingExtras(model),
-        stream: true,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text },
-        ],
-      }),
+      body: buildBody({ model, models, systemPrompt, text, stream: true }),
     });
   } catch (e) {
     throw new NetworkError(e.name === "AbortError" ? "Request aborted" : e.message);
@@ -96,6 +93,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
     if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
     const cleaned = cleanModelOutput(out);
     if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
+    if (body?.model) onModel?.(body.model);
     onChunk?.(cleaned);
     return cleaned;
   }
@@ -118,6 +116,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
         if (data === "[DONE]") continue;
         let json;
         try { json = JSON.parse(data); } catch { continue; }
+        if (json.model && onModel) { onModel(json.model); onModel = null; } // report which model actually answered (once)
         const delta = json?.choices?.[0]?.delta?.content;
         if (typeof delta === "string" && delta) {
           full += delta;

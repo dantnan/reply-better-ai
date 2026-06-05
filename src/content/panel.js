@@ -6,7 +6,7 @@ import {
   pricePerMTok, formatUsd,
 } from "../lib/models-cache.js";
 import { storage, setSelectedModel } from "../lib/storage.js";
-import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL } from "../lib/constants.js";
+import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, AUTO_FREE_MODEL } from "../lib/constants.js";
 
 // ── Static icon markup (safe to use via innerHTML — no dynamic data) ───────
 const MARK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
@@ -46,8 +46,9 @@ export function closePanel() {
 }
 
 // Stream a generation through the service-worker port. The API key never enters
-// the page. onDelta(text), resolves with the full text, rejects with {code}.
-function streamThroughWorker(payload, onDelta) {
+// the page. onDelta(text), onModel(usedId), resolves with the full text, rejects
+// with {code}.
+function streamThroughWorker(payload, onDelta, onModel) {
   return new Promise((resolve, reject) => {
     let port;
     try { port = browser.runtime.connect({ name: "rb-improve-stream" }); }
@@ -57,6 +58,7 @@ function streamThroughWorker(payload, onDelta) {
     const finish = () => { if (activePort === port) activePort = null; try { port.disconnect(); } catch {} };
     port.onMessage.addListener(msg => {
       if (msg.delta) onDelta(msg.delta);
+      else if (msg.model) onModel?.(msg.model);
       else if (msg.done) { settled = true; resolve(msg.full); finish(); }
       else if (msg.error) { settled = true; const err = new Error(msg.error); err.code = msg.code; reject(err); finish(); }
     });
@@ -94,6 +96,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   const savedPrompts = settings.savedPrompts || [];
   const inputText = mode === "improve" ? (draft || "") : "";
   let currentModelId = settings.model || DEFAULT_MODEL;
+  let lastUsedModelId = null; // which model actually answered (shown for Auto mode)
 
   let busy = false;
   let hasResult = false;
@@ -223,6 +226,13 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
 
   // ── Model switcher ──────────────────────────────────────────────────
   function reflectModel() {
+    if (currentModelId === AUTO_FREE_MODEL) {
+      const used = lastUsedModelId && (modelsState?.models || []).find(x => x.id === lastUsedModelId);
+      mav.style.background = "#5e6ad2";
+      mav.textContent = "⚡";
+      mname.textContent = used ? used.name : (lastUsedModelId ? lastUsedModelId.split("/").pop() : "Auto · Fastest free");
+      return;
+    }
     const m = (modelsState?.models || []).find(x => x.id === currentModelId);
     mav.style.background = getProviderColor(m || { id: currentModelId });
     mav.textContent = getProviderMonogram(m || { id: currentModelId });
@@ -232,6 +242,23 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
     modelMenu.replaceChildren();
     const label = el("span", "reply-better-models-label"); label.textContent = "Switch model";
     modelMenu.appendChild(label);
+
+    // Pinned "Auto · Fastest free": OpenRouter picks the fastest free model and
+    // fails over automatically — the natural recovery pick when a free model dies.
+    const auto = document.createElement("button");
+    auto.type = "button"; auto.setAttribute("role", "option");
+    auto.className = "reply-better-model-item" + (currentModelId === AUTO_FREE_MODEL ? " reply-better-current" : "");
+    auto.dataset.id = AUTO_FREE_MODEL;
+    const aav = el("span", "reply-better-mav"); aav.style.background = "#5e6ad2"; aav.textContent = "⚡";
+    const abody = el("span", "reply-better-mbody");
+    const an = el("span", "reply-better-mn"); an.textContent = "Auto · Fastest free";
+    const am = el("span", "reply-better-mmeta"); am.textContent = "Fastest free model, switches on errors";
+    abody.append(an, am);
+    const afr = el("span", "reply-better-mfree"); afr.textContent = "Free";
+    const achk = el("span", "reply-better-mcheck"); achk.innerHTML = CHECK_SVG;
+    auto.append(aav, abody, afr, achk);
+    modelMenu.appendChild(auto);
+
     const models = state?.models || [];
     if (!models.length) {
       // Never a blank popover: the switcher is the recovery path, so say why it's empty.
@@ -452,6 +479,10 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
       const full = await streamThroughWorker(payload, delta => {
         if (myToken !== runToken) return;
         cursor.remove(); preview.textContent += delta; preview.appendChild(cursor); preview.scrollTop = preview.scrollHeight;
+      }, used => {
+        if (myToken !== runToken) return;
+        lastUsedModelId = used;
+        reflectModel(); // Auto mode: show which model actually answered
       });
       if (myToken !== runToken) return;          // a newer run superseded this one
       cursor.remove();

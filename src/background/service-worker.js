@@ -2,8 +2,8 @@ import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { improveText, streamImproveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
-import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
-import { validateSelectedModel, getModels } from "../lib/models-cache.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
+import { validateSelectedModel, getModels, resolveModelSelection } from "../lib/models-cache.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
@@ -27,13 +27,15 @@ browser.runtime.onConnect.addListener(port => {
       const systemPrompt = msg.mode === "reply"
         ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize })
         : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
+      const resolved = await resolveModelSelection(msg.model || settings.model || DEFAULT_MODEL);
       const full = await streamImproveText({
         text,
         apiKey: settings.apiKey,
-        model: msg.model || settings.model || DEFAULT_MODEL,
+        ...resolved,
         systemPrompt,
         signal: controller.signal,
         onChunk: delta => post({ delta }),
+        onModel: used => post({ model: used }),
       });
       post({ done: true, full });
     } catch (err) {
@@ -76,6 +78,12 @@ async function runStartupValidation() {
   // because the user never chose anything to begin with.
   if (!model) {
     await storage.set({ model: DEFAULT_MODEL }).catch(err => console.warn("[startup] could not set default model:", err?.message));
+    return;
+  }
+  // "Auto · Fastest free" is a sentinel, not a real model id — it's always valid
+  // and resolved per-request, so skip availability validation (don't revert it).
+  if (model === AUTO_FREE_MODEL) {
+    await storage.remove("modelFallbackNotice").catch(() => {});
     return;
   }
   let result;
@@ -150,10 +158,11 @@ async function handleImproveText(message) {
   const messageType = message.messageType || settings.messageType || DEFAULT_STYLE;
   const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
   try {
+    const resolved = await resolveModelSelection(settings.model || DEFAULT_MODEL);
     const improvedText = await improveText({
       text,
       apiKey: settings.apiKey,
-      model: settings.model || DEFAULT_MODEL,
+      ...resolved,
       systemPrompt,
     });
     return { improvedText };

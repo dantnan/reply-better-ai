@@ -2,8 +2,8 @@ import browser from "../lib/browser.js";
 import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, streamImproveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
-import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
-import { getModels } from "../lib/models-cache.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
+import { getModels, resolveModelSelection } from "../lib/models-cache.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
@@ -170,16 +170,22 @@ async function runImprove(isRegen) {
   els.output.value = "";
   els.copyBtn.disabled = true;
 
+  const selectedId = data.model || state.currentModelId || DEFAULT_MODEL;
+  const isAuto = selectedId === AUTO_FREE_MODEL;
+  const resolved = await resolveModelSelection(selectedId);
+  let usedModelId = null;
+
   try {
     const full = await streamImproveText({
       text,
       apiKey: data.apiKey,
-      model: data.model || state.currentModelId || DEFAULT_MODEL,
+      ...resolved,
       systemPrompt,
       onChunk: delta => {
         els.output.value += delta;
         els.output.scrollTop = els.output.scrollHeight;
       },
+      onModel: isAuto ? id => { usedModelId = id; } : undefined,
     });
     els.output.value = full;
     state.variations.push(full);
@@ -188,6 +194,10 @@ async function runImprove(isRegen) {
     els.outputSeg.hidden = false;
     els.outputActions.hidden = false;
     els.variationLabel.textContent = `Version ${state.variations.length} of ${state.variations.length}`;
+    if (isAuto && usedModelId) {
+      const m = state.modelsCache.find(x => x.id === usedModelId);
+      showStatus(`Answered by ${m?.name || usedModelId.split("/").pop()}`);
+    }
   } catch (err) {
     console.error("[popup] improve failed:", err);
     els.output.classList.add("is-empty");

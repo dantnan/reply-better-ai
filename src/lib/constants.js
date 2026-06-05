@@ -1,4 +1,9 @@
 export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
+// Sentinel "model": let OpenRouter pick the fastest available free model and
+// auto-fail-over to another when one errors/rate-limits (resolved to a models[]
+// list at request time — see resolveModelSelection in models-cache.js).
+export const AUTO_FREE_MODEL = "auto:fastest-free";
+export const AUTO_FREE_MODEL_LIMIT = 6; // how many free models to hand OpenRouter for routing/failover
 export const DEFAULT_STYLE = "improve";
 export const DEFAULT_CLICK_MODE = "panel"; // inline button: "panel" | "instant"
 export const RATE_LIMIT_MS = 1000;
