@@ -16,8 +16,15 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { improveText, validateApiKey, listModels } = await import("../src/lib/openrouter.js");
+const { improveText, streamImproveText, validateApiKey, listModels } = await import("../src/lib/openrouter.js");
 const errors = await import("../src/lib/errors.js");
+
+// Minimal fetch Response stub whose body streams the given SSE text once.
+function sseResponse(sse) {
+  const chunks = [new TextEncoder().encode(sse)];
+  let i = 0;
+  return { ok: true, status: 200, body: { getReader: () => ({ read: async () => (i < chunks.length ? { value: chunks[i++], done: false } : { value: undefined, done: true }) }) } };
+}
 
 describe("improveText", () => {
   beforeEach(() => {
@@ -178,5 +185,22 @@ describe("listModels", () => {
   it("throws ProviderError on non-2xx", async () => {
     global.fetch.mockResolvedValue({ ok: false, status: 502, json: async () => ({}) });
     await expect(listModels()).rejects.toBeInstanceOf(errors.ProviderError);
+  });
+});
+
+describe("streamImproveText baseUrl", () => {
+  beforeEach(() => { global.fetch = vi.fn(); });
+
+  it("streams against a custom baseUrl when provided", async () => {
+    global.fetch.mockResolvedValue(sseResponse('data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n'));
+    const full = await streamImproveText({ text: "x", apiKey: "k", model: "m", systemPrompt: "s", baseUrl: "https://api.groq.com/openai/v1" });
+    expect(global.fetch.mock.calls[0][0]).toBe("https://api.groq.com/openai/v1/chat/completions");
+    expect(full).toBe("hi");
+  });
+
+  it("defaults to the OpenRouter base when no baseUrl is given", async () => {
+    global.fetch.mockResolvedValue(sseResponse('data: {"choices":[{"delta":{"content":"yo"}}]}\n\ndata: [DONE]\n\n'));
+    await streamImproveText({ text: "x", apiKey: "k", model: "m", systemPrompt: "s" });
+    expect(global.fetch.mock.calls[0][0]).toBe("https://openrouter.ai/api/v1/chat/completions");
   });
 });

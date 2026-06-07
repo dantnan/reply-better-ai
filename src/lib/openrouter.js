@@ -63,10 +63,10 @@ export async function improveText({ text, apiKey, model, models, systemPrompt })
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
 // and resolves with the full text. Used by the popup (direct) and by the inline
 // panel via the service-worker port relay; non-streaming callers use improveText.
-export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, signal }) {
+export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, signal, baseUrl = OPENROUTER_BASE }) {
   let response;
   try {
-    response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+    response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       signal,
       headers: {
