@@ -10,6 +10,13 @@ let session = null;
   catch (e) { $("avail").textContent = "availability() threw: " + e; }
 })();
 
+$("swcheck").onclick = () => {
+  chrome.runtime.sendMessage("sw-check", res => {
+    if (chrome.runtime.lastError) { log("SW check error: " + chrome.runtime.lastError.message); return; }
+    log("SERVICE WORKER → LanguageModel present: " + res.has + " · availability: " + res.avail);
+  });
+};
+
 $("prepare").onclick = async () => {
   if (typeof LanguageModel === "undefined") { log("LanguageModel undefined"); return; }
   const t0 = performance.now();
