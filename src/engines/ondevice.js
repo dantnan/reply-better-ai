@@ -23,7 +23,13 @@ export const onDeviceEngine = {
 
   async streamImprove({ text, systemPrompt, signal, onChunk }) {
     if (typeof LanguageModel === "undefined") throw new ProviderError(0, "On-device AI is unavailable");
-    const session = await LanguageModel.create({ initialPrompts: [{ role: "system", content: systemPrompt }] });
+    // Declare the output language so Chrome attests safety + optimizes quality
+    // (silences the "No output language specified" warning). Gemini Nano only
+    // supports [de, en, es, fr, ja]; this is an English-first product, so "en".
+    const session = await LanguageModel.create({
+      initialPrompts: [{ role: "system", content: systemPrompt }],
+      expectedOutputs: [{ type: "text", languages: ["en"] }],
+    });
     try {
       let full = "";
       const stream = session.promptStreaming(text); // chunks are deltas (confirmed in the POC)
