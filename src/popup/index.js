@@ -329,7 +329,7 @@ async function engineQuotaText(d) {
   if (d.id === "groq") {
     const { groqQuota } = await storage.get(["groqQuota"]);
     if (groqQuota && Number.isFinite(groqQuota.remaining)) {
-      return `≈${groqQuota.remaining} requests left${groqQuota.reset ? ` · resets in ${groqQuota.reset}` : ""} (as of last use).`;
+      return `≈${groqQuota.remaining} requests available right now (Groq free tier; refills continuously, as of last use).`;
     }
     return "Use it once to see your remaining requests.";
   }
