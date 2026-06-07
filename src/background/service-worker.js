@@ -1,37 +1,65 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
-import { improveText, streamImproveText } from "../lib/openrouter.js";
-import { resolveSystemPrompt } from "../lib/system-prompts.js";
-import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
-import { validateSelectedModel } from "../lib/models-cache.js";
+import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
+import { validateSelectedModel, getModels } from "../lib/models-cache.js";
+import { orderedEngines, describeActiveEngine } from "../engines/index.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
+// Two modes: "improve" (rewrite the user's draft in a style) and "reply" (write
+// a reply to a captured conversation in a tone, in the instruction's language).
 browser.runtime.onConnect.addListener(port => {
   if (port.name !== "rb-improve-stream") return;
   // The panel disconnects the port when it closes mid-stream; abort the upstream
   // OpenRouter request so we don't keep streaming (and billing) into the void.
   const controller = new AbortController();
   port.onDisconnect.addListener(() => controller.abort());
-  const post = m => { try { port.postMessage(m); } catch { /* port already closed */ } };
+  const post = m => {
+    try { port.postMessage(m); }
+    catch (e) {
+      // Expected when the panel closed the port mid-stream; onDisconnect handles
+      // the user side. Log only if the port still looks open (unexpected throw).
+      if (port.error == null) console.warn("[stream] postMessage failed on open port:", e?.message);
+    }
+  };
   port.onMessage.addListener(async msg => {
     if (!msg || msg.action !== "stream") return;
     try {
       const text = typeof msg.text === "string" ? msg.text : "";
-      if (!text.trim()) { post({ error: "No text to improve." }); return; }
+      if (!text.trim()) { post({ error: "Nothing to send yet." }); return; }
       if (text.length > MAX_INPUT_LENGTH) { post({ error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` }); return; }
-      const settings = await storage.get(["apiKey", "model", "savedPrompts"]);
-      if (!settings.apiKey) { post({ error: "No API key set. Open the extension settings.", code: "NoApiKey" }); return; }
-      const systemPrompt = resolveSystemPrompt(msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
-      const full = await streamImproveText({
-        text,
-        apiKey: settings.apiKey,
-        model: settings.model || DEFAULT_MODEL,
-        systemPrompt,
-        signal: controller.signal,
-        onChunk: delta => post({ delta }),
-      });
-      post({ done: true, full });
+      // No early API-key gate: the active engine decides. On-device needs no key;
+      // a cloud engine without a key throws InvalidKeyError, surfaced below.
+      const { savedPrompts } = await storage.get(["savedPrompts"]);
+      const systemPrompt = msg.mode === "reply"
+        ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize })
+        : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, savedPrompts || []);
+      // Try the active engine, then fall back to other usable engines — but only
+      // before any output has streamed (never double-stream a partial result).
+      const engines = await orderedEngines();
+      let emitted = false, lastErr = null, finished = false;
+      for (const engine of engines) {
+        try {
+          const full = await engine.streamImprove({
+            text,
+            systemPrompt,
+            signal: controller.signal,
+            onChunk: delta => { emitted = true; post({ delta }); },
+            onModel: used => post({ model: used }),
+          });
+          post({ done: true, full, engine: engine.label });
+          finished = true;
+          break;
+        } catch (err) {
+          lastErr = err;
+          if (controller.signal.aborted || emitted) break;
+        }
+      }
+      if (!finished && !controller.signal.aborted) {
+        console.error("[stream] all engines failed:", lastErr);
+        post({ error: lastErr?.userMessage || lastErr?.message || "Something went wrong", code: lastErr?.name });
+      }
     } catch (err) {
       if (controller.signal.aborted) return; // panel closed; nothing to report
       console.error("[stream] relay failed:", err);
@@ -72,6 +100,12 @@ async function runStartupValidation() {
   // because the user never chose anything to begin with.
   if (!model) {
     await storage.set({ model: DEFAULT_MODEL }).catch(err => console.warn("[startup] could not set default model:", err?.message));
+    return;
+  }
+  // "Auto · Fastest free" is a sentinel, not a real model id — it's always valid
+  // and resolved per-request, so skip availability validation (don't revert it).
+  if (model === AUTO_FREE_MODEL) {
+    await storage.remove("modelFallbackNotice").catch(() => {});
     return;
   }
   let result;
@@ -122,6 +156,25 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+  // The content-script panel can't fetch openrouter.ai directly (host-page CSP
+  // blocks it), so it asks the worker for the model list for its in-panel switcher.
+  if (message.action === "getModels") {
+    getModels()
+      .then(result => sendResponse({ models: result.models || [], stale: !!result.stale }))
+      .catch(err => sendResponse({ error: err?.userMessage || err?.message || "Failed to load models" }));
+    return true;
+  }
+  // The content-script panel asks which engine is active so it can show
+  // "running on: …" (it can't resolve on-device availability in page context).
+  if (message.action === "activeEngine") {
+    describeActiveEngine()
+      .then(sendResponse)
+      .catch(err => {
+        console.warn("[bg] describeActiveEngine failed, falling back to OpenRouter label:", err?.message);
+        sendResponse({ id: "openrouter", label: "OpenRouter", kind: "cloud" });
+      });
+    return true;
+  }
   console.warn("[bg] unknown action:", message.action);
   sendResponse({ error: `Unknown action: ${message.action}` });
   return true;
@@ -133,18 +186,20 @@ async function handleImproveText(message) {
   if (text.length > MAX_INPUT_LENGTH) {
     return { error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` };
   }
-  const settings = await storage.get(["apiKey", "model", "messageType", "savedPrompts"]);
-  if (!settings.apiKey) return { error: "No API key set. Open the extension settings.", code: "NoApiKey" };
+  const settings = await storage.get(["messageType", "savedPrompts"]);
   const messageType = message.messageType || settings.messageType || DEFAULT_STYLE;
   const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
   try {
-    const improvedText = await improveText({
-      text,
-      apiKey: settings.apiKey,
-      model: settings.model || DEFAULT_MODEL,
-      systemPrompt,
-    });
-    return { improvedText };
+    const engines = await orderedEngines();
+    let lastErr = null;
+    for (const engine of engines) {
+      try { return { improvedText: await engine.streamImprove({ text, systemPrompt }) }; }
+      catch (err) {
+        lastErr = err;
+        console.warn(`[improveText] engine "${engine.id}" failed:`, err?.name, err?.message);
+      }
+    }
+    throw lastErr || new Error("No engine available");
   } catch (err) {
     return {
       error: err.userMessage || err.message,

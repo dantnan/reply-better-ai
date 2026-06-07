@@ -2,7 +2,7 @@
 // full options page: the style dropdown, the model chip, and the add/edit/delete
 // list rows for custom prompts and snippets.
 import { STYLES } from "../../lib/system-prompts.js";
-import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL } from "../../lib/constants.js";
+import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, AUTO_FREE_MODEL } from "../../lib/constants.js";
 import {
   isFree, formatContextLength, pricePerMTok, formatUsd,
   getProviderColor, getProviderMonogram,
@@ -34,6 +34,12 @@ export function fillStyleSelect(select, savedPrompts, selectedId) {
 }
 
 export function renderModelChip({ avatarEl, nameEl, metaEl, models, currentModelId, emptyHint }) {
+  if (currentModelId === AUTO_FREE_MODEL) {
+    if (avatarEl) { avatarEl.textContent = "⚡"; avatarEl.style.background = "#5e6ad2"; }
+    nameEl.textContent = "Auto · Fastest free";
+    metaEl.textContent = "Picks the fastest free model, switches on errors";
+    return;
+  }
   const model = models.find(m => m.id === currentModelId);
   if (model) {
     if (avatarEl) {

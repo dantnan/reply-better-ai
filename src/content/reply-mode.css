@@ -1,0 +1,182 @@
+/* ============================================================================
+   Reply Better AI — Reply Mode (context-aware) additions
+   ----------------------------------------------------------------------------
+   Layered on top of content-button.css. All selectors namespaced .reply-better-*
+   and theme-independent (injected into arbitrary pages). These power the
+   "join the conversation" panel: captured-context strip, intent chips, and the
+   privacy/transparency line.
+   ========================================================================== */
+
+/* widen the panel a touch for reply mode */
+.reply-better-panel.reply-better-reply { width: 400px; }
+
+/* ── Captured context strip ─────────────────────────────────────────────── */
+.reply-better-context {
+  margin: 11px 13px 0 !important;
+  border: 1px solid #e6e8ef !important;
+  border-radius: 11px !important;
+  background: #f7f8fc !important;
+  overflow: hidden;
+}
+.reply-better-context-head {
+  display: flex !important; align-items: center; gap: 8px;
+  padding: 9px 11px !important;
+  cursor: pointer;
+}
+.reply-better-ctx-toggle { color: #5e6ad2 !important; font-weight: 700 !important; }
+.reply-better-context.reply-better-collapsed .reply-better-ctx-preview { display: none !important; }
+.reply-better-context-head .reply-better-ctx-ic {
+  width: 26px !important; height: 26px !important; border-radius: 7px !important;
+  background: #eef0ff !important; display: inline-flex !important;
+  align-items: center; justify-content: center; flex: none;
+}
+.reply-better-context-head .reply-better-ctx-ic svg { width: 15px !important; height: 15px !important; stroke: #5e6ad2 !important; fill: none !important; }
+.reply-better-ctx-meta { flex: 1 1 auto; min-width: 0; }
+.reply-better-ctx-title { font-size: 12.5px !important; font-weight: 700 !important; color: #16191d !important; }
+.reply-better-ctx-sub { font-size: 11px !important; color: #868e96 !important; margin-top: 1px; }
+.reply-better-ctx-clear {
+  border: 0 !important; background: transparent !important; color: #868e96 !important;
+  cursor: pointer !important; border-radius: 6px !important; padding: 4px 8px !important;
+  font-size: 11px !important; font-weight: 700 !important; flex: none;
+}
+.reply-better-ctx-clear:hover { background: #eceef4 !important; color: #495057 !important; }
+
+/* collapsible preview of the captured messages */
+.reply-better-ctx-preview {
+  max-height: 96px; overflow-y: auto;
+  border-top: 1px solid #e6e8ef !important;
+  padding: 8px 11px !important;
+  display: flex !important; flex-direction: column; gap: 7px;
+}
+.reply-better-ctx-msg { flex: 0 0 auto !important; font-size: 12px !important; line-height: 1.4 !important; color: #495057 !important; }
+.reply-better-ctx-msg b { color: #16191d !important; font-weight: 700 !important; }
+
+/* empty / needs-capture state */
+.reply-better-context.reply-better-ctx-empty { background: #fff !important; border-style: dashed !important; }
+.reply-better-ctx-empty-row {
+  display: flex !important; align-items: center; gap: 9px;
+  padding: 11px 12px !important;
+}
+.reply-better-ctx-empty-row .reply-better-ctx-txt { flex: 1 1 auto; font-size: 12px !important; color: #868e96 !important; line-height: 1.4; }
+.reply-better-ctx-capture {
+  border: 1px solid #c6ccff !important; background: #eef0ff !important; color: #4f5bc4 !important;
+  font-size: 11px !important; font-weight: 700 !important; border-radius: 7px !important;
+  padding: 6px 10px !important; cursor: pointer !important; flex: none; white-space: nowrap;
+}
+.reply-better-ctx-capture:hover { background: #e3e6ff !important; }
+
+/* ── Style / "how should I reply" label ─────────────────────────────────── */
+.reply-better-style-label {
+  display: block !important; font-size: 10.5px !important; font-weight: 700 !important;
+  text-transform: uppercase; letter-spacing: 0.06em; color: #adb5bd !important;
+  margin: 13px 13px 6px !important;
+}
+
+/* ── Privacy / transparency line ────────────────────────────────────────── */
+.reply-better-privacy {
+  display: flex !important; align-items: center; gap: 7px;
+  margin: 11px 13px 0 !important;
+  padding: 8px 10px !important;
+  background: #f4f9f5 !important; border: 1px solid #d6ecdb !important;
+  border-radius: 9px !important;
+}
+.reply-better-privacy svg { width: 14px !important; height: 14px !important; stroke: #1a7434 !important; fill: none !important; flex: none; }
+.reply-better-privacy-txt { font-size: 11px !important; line-height: 1.4 !important; color: #2c6b3f !important; }
+.reply-better-privacy-txt b { font-weight: 700 !important; }
+
+/* model switcher: empty / error state (never a blank popover) */
+.reply-better-models-empty { font-size: 12px !important; color: #868e96 !important; padding: 8px 9px !important; line-height: 1.4 !important; }
+.reply-better-models-retry {
+  display: block !important; margin: 0 9px 8px !important;
+  font-size: 12px !important; font-weight: 700 !important; color: #4f5bc4 !important;
+  background: #eef0ff !important; border: 1px solid #c6ccff !important; border-radius: 7px !important;
+  padding: 6px 10px !important; cursor: pointer !important;
+}
+.reply-better-models-retry:hover { background: #e3e6ff !important; }
+
+/* engine-fixed (on-device / Groq): the header pill is a label, not a model picker */
+.reply-better-panel.reply-better-engine-fixed .reply-better-mchev { display: none !important; }
+.reply-better-panel.reply-better-engine-fixed .reply-better-model-trigger { cursor: default !important; }
+.reply-better-panel.reply-better-engine-fixed .reply-better-model-trigger:hover { background: #f1f3f5 !important; }
+.reply-better-panel.reply-better-engine-fixed .reply-better-model-trigger:hover .reply-better-mname { color: #495057 !important; }
+
+/* divider before body in reply mode */
+.reply-better-panel.reply-better-reply .reply-better-panel-body { border-top: 1px solid #eef0f2 !important; margin-top: 12px; }
+
+/* ── Morphing button: Improve (pencil/indigo) ⇄ Reply (bubble/teal) ──────── */
+/* mode is shown by icon + color only — no label, no width change while typing */
+.reply-better-button#rb-inline-btn {
+  width: 28px !important; height: 28px !important; padding: 0 !important;
+  border-radius: 8px !important;
+  display: inline-flex !important; align-items: center !important; justify-content: center !important;
+  transition: background 0.3s cubic-bezier(0.2,0,0,1), box-shadow 0.3s cubic-bezier(0.2,0,0,1) !important;
+}
+.reply-better-button.reply-better-mode-improve { background: #5e6ad2 !important; box-shadow: 0 3px 9px rgba(94,106,210,0.45) !important; }
+.reply-better-button.reply-better-mode-reply { background: #1f8a7a !important; box-shadow: 0 3px 9px rgba(31,138,122,0.45) !important; }
+
+.reply-better-iconwrap { position: relative !important; width: 28px !important; height: 28px !important; flex: none !important; display: grid !important; place-items: center !important; }
+.reply-better-ic {
+  position: absolute !important; inset: 0 !important;
+  display: grid !important; place-items: center !important;
+  transition: opacity 0.26s cubic-bezier(0.2,0,0,1), transform 0.34s cubic-bezier(0.34,1.4,0.5,1) !important;
+}
+.reply-better-ic svg { width: 15px !important; height: 15px !important; stroke: #fff !important; fill: none !important; }
+.reply-better-ic-improve { opacity: 0; transform: scale(0.4) rotate(-90deg); }
+.reply-better-ic-reply { opacity: 0; transform: scale(0.4) rotate(90deg); }
+.reply-better-button.reply-better-mode-improve .reply-better-ic-improve { opacity: 1; transform: none; }
+.reply-better-button.reply-better-mode-reply .reply-better-ic-reply { opacity: 1; transform: none; }
+.reply-better-button.reply-better-loading .reply-better-ic { display: none !important; }
+
+/* in Improve mode, hide the reply-only sections */
+.reply-better-panel.reply-better-improve .reply-better-context,
+.reply-better-panel.reply-better-improve .reply-better-instruct,
+.reply-better-panel.reply-better-improve .reply-better-chip[data-action] { display: none !important; }
+
+/* ── Your-instruction box (reply mode) — hidden until "You tell me" ──────── */
+.reply-better-instruct { margin: 9px 13px 0 !important; display: none !important; }
+.reply-better-panel.reply-better-custom-open .reply-better-instruct { display: block !important; }
+.reply-better-instruct-box {
+  width: 100% !important; box-sizing: border-box !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-size: 13px !important; line-height: 1.45 !important; color: #16191d !important;
+  background: #fff !important; border: 1.5px solid #e3e6ea !important; border-radius: 10px !important;
+  padding: 10px 12px !important; resize: none !important; min-height: 52px !important;
+}
+.reply-better-instruct-box::placeholder { color: #adb5bd !important; }
+.reply-better-instruct-box:focus { outline: none !important; border-color: #1f8a7a !important; box-shadow: 0 0 0 3px rgba(31,138,122,0.16) !important; }
+.reply-better-instruct-tones { display: flex !important; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 9px !important; }
+.reply-better-instruct-hint { font-size: 11px !important; font-weight: 600 !important; color: #adb5bd !important; margin-right: 2px; }
+
+/* custom ("You tell me") chip + active state */
+.reply-better-chip-custom { display: inline-flex !important; align-items: center; gap: 5px; }
+.reply-better-chip-custom svg { width: 13px !important; height: 13px !important; stroke: currentColor !important; fill: none !important; }
+.reply-better-panel.reply-better-custom-open .reply-better-chip-custom { background: #eef0ff !important; color: #4f5bc4 !important; border-color: #c6ccff !important; }
+.reply-better-chip-sm { padding: 5px 10px !important; font-size: 12px !important; }
+
+/* ── Footer: hidden until a result exists, then shows regen + insert ── */
+.reply-better-panel-foot { display: none !important; }
+.reply-better-panel.reply-better-has-result .reply-better-panel-foot { display: flex !important; }
+.reply-better-panel-foot #rb-panel-regen,
+.reply-better-panel-foot #rb-panel-insert { display: inline-flex !important; }
+
+/* Result/Changes toggle — only meaningful in Improve mode (there's an original to diff) */
+.reply-better-seg { display: none !important; }
+.reply-better-panel.reply-better-improve.reply-better-has-result .reply-better-seg { display: inline-flex !important; margin: 0 0 11px !important; }
+.reply-better-diff-box { display: none; }
+.reply-better-panel.reply-better-mode-diff .reply-better-preview { display: none !important; }
+.reply-better-panel.reply-better-mode-diff .reply-better-diff-box { display: block !important; line-height: 1.55 !important; }
+
+/* hide the result area until there's something in it */
+.reply-better-panel .reply-better-panel-body { display: none !important; }
+.reply-better-panel.reply-better-has-result .reply-better-panel-body,
+.reply-better-panel.reply-better-streaming .reply-better-panel-body,
+.reply-better-panel.reply-better-has-error .reply-better-panel-body { display: block !important; }
+
+/* breathing room: result text + spacing above the footer */
+.reply-better-panel-body { padding: 13px 14px 4px !important; }
+.reply-better-preview { line-height: 1.55 !important; }
+.reply-better-styles { margin-bottom: 13px !important; }
+.reply-better-panel-foot { padding: 12px 14px 14px !important; gap: 9px !important; }
+.reply-better-vari { font-size: 12px !important; color: #adb5bd !important; font-variant-numeric: tabular-nums; align-self: center; }
+.reply-better-pbtn-primary { margin-left: auto !important; }
+

@@ -1,12 +1,10 @@
-import { STYLE_LABELS } from "../lib/system-prompts.js";
-import { CUSTOM_PROMPT_PREFIX } from "../lib/constants.js";
-import injectedCss from "./content-button.css";
+import contentButtonCss from "./content-button.css";
+import replyModeCss from "./reply-mode.css";
 
-const BUTTON_CLASS = "reply-better-button";
-
-const buttons = [];
-
-const PENCIL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+// Two icons crossfade as the button morphs between Reply (bubble) and Improve
+// (pencil). Stroke/fill come from the injected CSS (.reply-better-ic svg).
+const PENCIL_SVG = '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
+const REPLY_SVG = '<svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
 const TOAST_ICONS = {
   success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
   error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>',
@@ -18,64 +16,69 @@ export function injectStyles() {
   if (document.getElementById("reply-better-styles")) return;
   const style = document.createElement("style");
   style.id = "reply-better-styles";
-  style.textContent = injectedCss;
-  document.head.appendChild(style);
+  style.textContent = `${contentButtonCss}\n${replyModeCss}`;
+  (document.head || document.documentElement).appendChild(style);
 }
 
-function styleTitle(type, savedPrompts) {
-  if (type?.startsWith(CUSTOM_PROMPT_PREFIX)) {
-    const idx = parseInt(type.slice(CUSTOM_PROMPT_PREFIX.length), 10);
-    if (Number.isInteger(idx) && idx >= 0 && idx < savedPrompts.length) return savedPrompts[idx].name;
-    return "Custom";
-  }
-  return STYLE_LABELS[type] || "Improve";
+// One shared morphing button follows the focused field — created once, then
+// repositioned/re-moded as focus and content change.
+let button = null;
+
+export function ensureButton(onClick) {
+  if (button && button.isConnected) return button;
+  button = document.createElement("button");
+  button.id = "rb-inline-btn";
+  button.type = "button";
+  button.className = "reply-better-button reply-better-mode-reply";
+  button.setAttribute("aria-label", "Reply Better AI");
+  button.innerHTML =
+    '<span class="reply-better-iconwrap">' +
+      `<span class="reply-better-ic reply-better-ic-improve">${PENCIL_SVG}</span>` +
+      `<span class="reply-better-ic reply-better-ic-reply">${REPLY_SVG}</span>` +
+      '<span class="reply-better-spin"></span>' +
+    '</span>';
+  button.addEventListener("mousedown", e => e.preventDefault());
+  button.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); onClick(); });
+  document.body.appendChild(button);
+  return button;
 }
 
-function position(textElement, button) {
-  const rect = textElement.getBoundingClientRect();
+export function getButton() {
+  return button && button.isConnected ? button : null;
+}
+
+export function setButtonMode(mode) {
+  if (!button) return;
+  const reply = mode === "reply";
+  button.classList.toggle("reply-better-mode-reply", reply);
+  button.classList.toggle("reply-better-mode-improve", !reply);
+  button.title = reply ? "Reply to the conversation" : "Improve what you wrote";
+}
+
+export function setButtonVisible(visible) {
+  if (button) button.classList.toggle("reply-better-visible", visible);
+}
+
+export function setButtonLoading(loading) {
+  if (button) button.classList.toggle("reply-better-loading", loading);
+}
+
+// Tuck the button into the bottom-right corner of the field's visible box.
+// Bail when the field is detached/zero-sized so it never jumps to (0,0).
+export function positionButton(field) {
+  if (!button || !field) return;
+  const rect = field.getBoundingClientRect();
+  if (!field.isConnected || (rect.width === 0 && rect.height === 0)) return;
   const sx = window.pageXOffset || document.documentElement.scrollLeft;
   const sy = window.pageYOffset || document.documentElement.scrollTop;
-  button.style.top = `${rect.top + sy + 6}px`;
-  button.style.left = `${rect.right + sx - 40}px`;
+  const bw = button.offsetWidth || 28;
+  const bh = button.offsetHeight || 28;
+  button.style.top = `${rect.bottom + sy - bh - 6}px`;
+  button.style.left = `${rect.right + sx - bw - 6}px`;
 }
 
-export function createButton(textElement, settings, onClick) {
-  const button = document.createElement("button");
-  button.className = BUTTON_CLASS;
-  button.type = "button";
-  button.title = `Improve with Reply Better AI (${styleTitle(settings.inlineMessageType, settings.savedPrompts || [])})`;
-  button.innerHTML = PENCIL_SVG + '<span class="reply-better-spin"></span>';
-  document.body.appendChild(button);
-  position(textElement, button);
-  requestAnimationFrame(() => button.classList.add("reply-better-visible"));
-
-  button.addEventListener("mousedown", e => e.preventDefault());
-  button.addEventListener("click", e => {
-    e.preventDefault();
-    e.stopPropagation();
-    onClick(textElement, button);
-  });
-
-  buttons.push({ button, textElement });
-}
-
-export function setButtonLoading(button, loading) {
-  button.classList.toggle("reply-better-loading", loading);
-}
-
-export function findButtonFor(textElement) {
-  return buttons.find(b => b.textElement === textElement);
-}
-
-export function removeButtonFor(textElement) {
-  const idx = buttons.findIndex(b => b.textElement === textElement);
-  if (idx === -1) return;
-  buttons[idx].button?.remove();
-  buttons.splice(idx, 1);
-}
-
-export function removeAllButtons() {
-  while (buttons.length > 0) buttons.pop().button?.remove();
+export function removeButton() {
+  if (button) { button.remove(); button = null; }
 }
 
 // Toast with an optional action button (e.g. Undo). Returns the toast element.

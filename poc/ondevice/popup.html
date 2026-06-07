@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>RB Probe</title>
+<style>
+  body { width: 460px; font-family: system-ui, sans-serif; padding: 14px; }
+  textarea { width: 100%; min-height: 70px; box-sizing: border-box; }
+  button { margin: 6px 0; padding: 6px 12px; }
+  #avail { font-weight: 700; }
+  #out { white-space: pre-wrap; background: #f4f5f8; padding: 8px; border-radius: 6px; min-height: 40px; }
+  #log { white-space: pre-wrap; color: #555; font: 12px monospace; margin-top: 8px; }
+</style></head>
+<body>
+  <div>Availability: <span id="avail">checking…</span></div>
+  <button id="swcheck">Check service worker</button>
+  <button id="prepare">Prepare / download model</button>
+  <textarea id="in">hey team i think the 15th is to risky lets push it to the 18th so QA can finish</textarea>
+  <button id="run">Improve (on-device)</button>
+  <div id="out"></div>
+  <div id="log"></div>
+  <script src="popup.js"></script>
+</body></html>

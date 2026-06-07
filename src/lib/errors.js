@@ -44,7 +44,7 @@ export class ProviderError extends OpenRouterError {
     this.name = "ProviderError";
   }
   get userMessage() {
-    return "This model returned an error — free models are often overloaded. Try again, or switch to a different model.";
+    return "The AI service returned an error. Try again, or switch engine in settings.";
   }
 }
 
@@ -54,7 +54,7 @@ export class NetworkError extends OpenRouterError {
     this.name = "NetworkError";
   }
   get userMessage() {
-    return "Couldn't reach OpenRouter. Check your connection and try again.";
+    return "Couldn't reach the AI service. Check your connection and try again.";
   }
 }
 

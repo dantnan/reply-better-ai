@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI",
-  "version": "1.3.0",
-  "description": "Improve your messages using AI. Pick from 500+ OpenRouter models with search, pricing, and free filter.",
+  "version": "1.5.0",
+  "description": "Improve and reply to messages with AI using your own free Groq or OpenRouter key. Polish drafts and reply in context, anywhere.",
   "browser_specific_settings": {
     "gecko": {
       "id": "hi@antnan.com",
@@ -10,7 +10,8 @@
       "data_collection_permissions": {
         "required": [
           "authenticationInfo",
-          "personalCommunications"
+          "personalCommunications",
+          "websiteContent"
         ]
       }
     },
@@ -25,7 +26,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://openrouter.ai/*"
+    "https://openrouter.ai/*",
+    "https://api.groq.com/*"
   ],
   "action": {
     "default_icon": "icons/icon.png",

@@ -5,13 +5,36 @@ import { cleanModelOutput } from "./sanitize.js";
 const REFERER = "https://github.com/dantnan/reply-better-ai";
 const TITLE = "Reply Better AI";
 
+// Free models run on OpenRouter's throttled, shared capacity, so they queue and
+// crawl. The one lever we control is provider selection: ask OpenRouter to route
+// a free model to its highest-throughput provider. There's no cost downside
+// (the model is free); paid models keep the default price-balanced routing so we
+// don't quietly raise the user's bill.
+function routingExtras(model) {
+  return typeof model === "string" && model.includes(":free")
+    ? { provider: { sort: "throughput" } }
+    : {};
+}
+
 function timeoutFetch(url, options, ms = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
   return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-export async function improveText({ text, apiKey, model, systemPrompt }) {
+// Build the request body. With a `models` array (Auto · Fastest free) OpenRouter
+// picks the fastest available and fails over automatically; with a single model
+// we keep default routing (throughput only for free models, no cost downside).
+function buildBody({ model, models, systemPrompt, text, stream }) {
+  const messages = [{ role: "system", content: systemPrompt }, { role: "user", content: text }];
+  const streamPart = stream ? { stream: true } : {};
+  const body = Array.isArray(models) && models.length
+    ? { models, provider: { sort: "throughput" }, ...streamPart, messages }
+    : { model, ...routingExtras(model), ...streamPart, messages };
+  return JSON.stringify(body);
+}
+
+export async function improveText({ text, apiKey, model, models, systemPrompt }) {
   let response;
   try {
     response = await timeoutFetch(`${OPENROUTER_BASE}/chat/completions`, {
@@ -22,13 +45,7 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
         "HTTP-Referer": REFERER,
         "X-Title": TITLE,
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text },
-        ],
-      }),
+      body: buildBody({ model, models, systemPrompt, text }),
     });
   } catch (e) {
     throw new NetworkError(e.name === "AbortError" ? "Request timed out" : e.message);
@@ -46,10 +63,10 @@ export async function improveText({ text, apiKey, model, systemPrompt }) {
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
 // and resolves with the full text. Used by the popup (direct) and by the inline
 // panel via the service-worker port relay; non-streaming callers use improveText.
-export async function streamImproveText({ text, apiKey, model, systemPrompt, onChunk, signal }) {
+export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, onQuota, signal, baseUrl = OPENROUTER_BASE }) {
   let response;
   try {
-    response = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
+    response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       signal,
       headers: {
@@ -58,14 +75,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
         "HTTP-Referer": REFERER,
         "X-Title": TITLE,
       },
-      body: JSON.stringify({
-        model,
-        stream: true,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text },
-        ],
-      }),
+      body: buildBody({ model, models, systemPrompt, text, stream: true }),
     });
   } catch (e) {
     throw new NetworkError(e.name === "AbortError" ? "Request aborted" : e.message);
@@ -76,6 +86,11 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
     try { body = await response.json(); } catch { /* may be empty */ }
     throw fromResponse(response, body);
   }
+  // Providers that send rate-limit headers (e.g. Groq) let us show remaining quota.
+  if (onQuota) {
+    const rem = response.headers?.get?.("x-ratelimit-remaining-requests");
+    if (rem != null) onQuota({ remaining: Number(rem), reset: response.headers.get("x-ratelimit-reset-requests") || null });
+  }
   if (!response.body) {
     // No stream support from this provider — fall back to a single read.
     const body = await response.json().catch(() => null);
@@ -83,6 +98,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
     if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
     const cleaned = cleanModelOutput(out);
     if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
+    if (body?.model) onModel?.(body.model);
     onChunk?.(cleaned);
     return cleaned;
   }
@@ -105,6 +121,7 @@ export async function streamImproveText({ text, apiKey, model, systemPrompt, onC
         if (data === "[DONE]") continue;
         let json;
         try { json = JSON.parse(data); } catch { continue; }
+        if (json.model && onModel) { onModel(json.model); onModel = null; } // report which model actually answered (once)
         const delta = json?.choices?.[0]?.delta?.content;
         if (typeof delta === "string" && delta) {
           full += delta;
@@ -149,4 +166,21 @@ export async function listModels() {
   if (!response.ok) throw new ProviderError(response.status, "Failed to fetch models");
   const body = await response.json();
   return Array.isArray(body?.data) ? body.data : [];
+}
+
+// Live key info (credits/limit) for the OpenRouter key. Cheap GET that does NOT
+// consume model quota. Returns the `data` object, e.g. { limit, usage,
+// limit_remaining, is_free_tier, rate_limit }, or null on failure.
+export async function getKeyInfo(apiKey) {
+  if (!apiKey) return null;
+  try {
+    const response = await timeoutFetch(`${OPENROUTER_BASE}/key`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }, 10000);
+    if (!response.ok) return null;
+    const body = await response.json();
+    return body?.data || null;
+  } catch {
+    return null;
+  }
 }

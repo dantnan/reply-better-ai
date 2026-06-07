@@ -1,9 +1,10 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
-import { validateApiKey, streamImproveText } from "../lib/openrouter.js";
+import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
-import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH } from "../lib/constants.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { getModels } from "../lib/models-cache.js";
+import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine } from "../engines/index.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
@@ -34,6 +35,11 @@ const els = {
   variationLabel: $("variation-label"),
   copyBtn: $("copy-btn"),
   // settings
+  engineSelect: $("engine-select"),
+  activeEngineLabel: $("active-engine-label"),
+  engineQuota: $("engine-quota"),
+  groqApiKey: $("groq-api-key"),
+  groqKeyToggle: $("groq-key-toggle"),
   apiKey: $("api-key"),
   keyToggle: $("key-toggle"),
   saveKey: $("save-key"),
@@ -147,8 +153,7 @@ async function runImprove(isRegen) {
     return;
   }
 
-  const data = await storage.get(["apiKey", "model", "savedPrompts"]);
-  if (!data.apiKey) { showError("Set your OpenRouter API key in settings first.", true); return; }
+  const data = await storage.get(["model", "savedPrompts"]);
 
   state.busy = true;
   hideError();
@@ -170,16 +175,19 @@ async function runImprove(isRegen) {
   els.output.value = "";
   els.copyBtn.disabled = true;
 
+  const isAuto = (data.model || state.currentModelId) === AUTO_FREE_MODEL;
+  let usedModelId = null;
+
   try {
-    const full = await streamImproveText({
+    const engine = await resolveActiveEngine();
+    const full = await engine.streamImprove({
       text,
-      apiKey: data.apiKey,
-      model: data.model || state.currentModelId || DEFAULT_MODEL,
       systemPrompt,
       onChunk: delta => {
         els.output.value += delta;
         els.output.scrollTop = els.output.scrollHeight;
       },
+      onModel: isAuto ? id => { usedModelId = id; } : undefined,
     });
     els.output.value = full;
     state.variations.push(full);
@@ -188,6 +196,10 @@ async function runImprove(isRegen) {
     els.outputSeg.hidden = false;
     els.outputActions.hidden = false;
     els.variationLabel.textContent = `Version ${state.variations.length} of ${state.variations.length}`;
+    if (isAuto && usedModelId) {
+      const m = state.modelsCache.find(x => x.id === usedModelId);
+      showStatus(`Answered by ${m?.name || usedModelId.split("/").pop()}`);
+    }
   } catch (err) {
     console.error("[popup] improve failed:", err);
     els.output.classList.add("is-empty");
@@ -264,7 +276,10 @@ function openPicker() {
 /* ── First-run / fallback ────────────────────────────────────────────── */
 async function reflectKeyState() {
   const { apiKey } = await storage.get(["apiKey"]);
-  popup.classList.toggle("no-key", !apiKey);
+  // Show the setup card only when there's no way to run: no key AND no usable
+  // on-device engine. On-device users need no key.
+  const onDeviceOk = await isOnDeviceUsable();
+  popup.classList.toggle("no-key", !apiKey && !onDeviceOk);
   if (apiKey) els.apiKey.value = apiKey;
 }
 
@@ -291,6 +306,7 @@ async function saveKey() {
     if (!result.ok && result.reason === "invalid") throw new Error("API key invalid. Check it at openrouter.ai/keys.");
     await storage.set({ apiKey: key });
     popup.classList.remove("no-key");
+    updateActiveEngineLabel();
     showStatus(result.ok ? "API key saved." : "Saved (couldn't verify — offline).");
   } catch (e) {
     showSettingsError(e.message);
@@ -300,11 +316,39 @@ async function saveKey() {
   }
 }
 
+async function updateActiveEngineLabel() {
+  let d = null;
+  try { d = await describeActiveEngine(); } catch { /* keep null */ }
+  els.activeEngineLabel.textContent = d ? d.label : "—";
+  try { els.engineQuota.textContent = await engineQuotaText(d); }
+  catch (e) { console.warn("[popup] quota text failed:", e?.message); els.engineQuota.textContent = ""; }
+}
+
+async function engineQuotaText(d) {
+  if (!d) return "";
+  if (d.id === "ondevice") return "No usage limit — runs on your device.";
+  if (d.id === "groq") {
+    const { groqQuota } = await storage.get(["groqQuota"]);
+    if (groqQuota && Number.isFinite(groqQuota.remaining)) {
+      return `≈${groqQuota.remaining} requests available right now (Groq free tier; refills continuously, as of last use).`;
+    }
+    return "Use it once to see your remaining requests.";
+  }
+  if (d.id === "openrouter") {
+    const { apiKey } = await storage.get(["apiKey"]);
+    const info = await getKeyInfo(apiKey);
+    if (info && info.limit_remaining != null) return `≈$${Number(info.limit_remaining).toFixed(2)} of credits left.`;
+    if (info && info.is_free_tier) return "Free tier — limited daily :free requests.";
+    return "";
+  }
+  return "";
+}
+
 /* ── Init ────────────────────────────────────────────────────────────── */
 async function init() {
   await migrateFromSync();
   const data = await storage.get([
-    "apiKey", "model", "messageType", "savedPrompts", "snippets",
+    "apiKey", "groqApiKey", "engine", "model", "messageType", "savedPrompts", "snippets",
     "enableInlineButton", "inlineMessageType", "inlineClickMode",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
@@ -317,11 +361,14 @@ async function init() {
   const clickMode = data.inlineClickMode || "panel";
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
   if (clickRadio) clickRadio.checked = true;
+  els.engineSelect.value = data.engine || "auto";
+  if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
   renderPrompts();
   renderSnippets();
   refreshChip();
   ensureModels();
   reflectKeyState();
+  updateActiveEngineLabel();
   showFallbackIfNeeded();
 
   // header
@@ -352,6 +399,16 @@ async function init() {
   els.styleSelect.addEventListener("change", () => storage.set({ messageType: els.styleSelect.value }));
 
   // settings
+  els.engineSelect.addEventListener("change", async () => {
+    await storage.set({ engine: els.engineSelect.value }).catch(() => {});
+    updateActiveEngineLabel();
+    refreshChip();
+  });
+  els.groqApiKey.addEventListener("change", async () => {
+    await storage.set({ groqApiKey: els.groqApiKey.value.trim() }).catch(() => {});
+    updateActiveEngineLabel();
+  });
+  els.groqKeyToggle.addEventListener("click", () => { els.groqApiKey.type = els.groqApiKey.type === "password" ? "text" : "password"; });
   els.keyToggle.addEventListener("click", () => { els.apiKey.type = els.apiKey.type === "password" ? "text" : "password"; });
   els.saveKey.addEventListener("click", saveKey);
   els.openPicker.addEventListener("click", openPicker);

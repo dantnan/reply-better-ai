@@ -3,6 +3,7 @@ import {
   getProviderLabel, getProviderColor, getProviderMonogram, pricePerMTok, formatUsd,
 } from "../../lib/models-cache.js";
 import { POPULAR_IDS } from "../../data/popular-models.js";
+import { AUTO_FREE_MODEL } from "../../lib/constants.js";
 
 const TABS = [
   { id: "popular", label: "Popular" },
@@ -250,6 +251,7 @@ export class ModelPicker {
 
     const filtered = this.filteredModels();
     this.list.replaceChildren();
+    if (this.shouldShowAuto()) this.list.appendChild(this.renderAutoRow());
     for (const model of filtered) {
       this.list.appendChild(this.renderRow(model));
     }
@@ -293,6 +295,60 @@ export class ModelPicker {
       );
     }
     return list;
+  }
+
+  // The "Auto · Fastest free" entry is pinned to the top of the list. Hidden
+  // when filtering by a provider, when the search doesn't match, or when there
+  // are no free models to route between.
+  shouldShowAuto() {
+    if (this.providerFilter) return false;
+    if (!this.models.some(isFree)) return false;
+    return !this.searchQuery || "auto fastest free".includes(this.searchQuery);
+  }
+
+  renderAutoRow() {
+    const selected = this.currentModelId === AUTO_FREE_MODEL;
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = selected ? "mp-row selected" : "mp-row";
+    row.dataset.id = AUTO_FREE_MODEL;
+    row.setAttribute("role", "option");
+    row.setAttribute("aria-selected", selected ? "true" : "false");
+
+    const avatar = document.createElement("span");
+    avatar.className = "mp-row-avatar";
+    avatar.style.background = "#5e6ad2";
+    avatar.textContent = "⚡";
+
+    const main = document.createElement("div");
+    main.className = "mp-row-main";
+    const name = document.createElement("div");
+    name.className = "mp-row-name";
+    const nameText = document.createElement("span");
+    nameText.textContent = "Auto · Fastest free";
+    const check = document.createElement("span");
+    check.className = "mp-row-check";
+    check.innerHTML = ICONS.check;
+    name.append(nameText, check);
+    const sub = document.createElement("div");
+    sub.className = "mp-row-id";
+    sub.textContent = "Fastest free model, switches on errors";
+    main.append(name, sub);
+
+    const aside = document.createElement("div");
+    aside.className = "mp-row-aside";
+    const free = document.createElement("span");
+    free.className = "mp-row-price free";
+    free.innerHTML = `${ICONS.bolt}Free`;
+    aside.appendChild(free);
+
+    row.append(avatar, main, aside);
+    row.addEventListener("click", () => {
+      this.currentModelId = AUTO_FREE_MODEL;
+      this.renderBody();
+      this.onSelect?.({ id: AUTO_FREE_MODEL, name: "Auto · Fastest free" });
+    });
+    return row;
   }
 
   renderRow(model) {

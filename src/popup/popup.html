@@ -115,6 +115,26 @@
     <div class="rb-view-settings">
       <div class="rb-body" style="gap:0;">
         <section class="rb-section">
+          <h2 class="rb-section-title">Engine</h2>
+          <p class="rb-section-desc">Where your text is processed. Auto uses free on-device AI when your device supports it, otherwise a free Groq key, otherwise OpenRouter.</p>
+          <select class="rb-input" id="engine-select" aria-label="Engine">
+            <option value="auto">Auto (recommended)</option>
+            <option value="ondevice">On-device — free, private, no key</option>
+            <option value="groq">Groq — free (needs a key)</option>
+            <option value="openrouter">OpenRouter — premium (needs a key)</option>
+          </select>
+          <p class="rb-section-desc" style="margin-top:var(--rb-space-2);">Currently using: <strong id="active-engine-label">…</strong></p>
+          <p class="rb-section-desc" id="engine-quota" style="margin-top:var(--rb-space-1);"></p>
+          <div class="rb-key-field" id="groq-key-field" style="margin-top:var(--rb-space-3);">
+            <input class="rb-input" id="groq-api-key" type="password" placeholder="gsk_… (free Groq key)" aria-label="Groq API key" />
+            <button class="rb-key-toggle" id="groq-key-toggle" type="button" aria-label="Show key">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <p class="rb-section-desc" style="margin-top:var(--rb-space-2);">Get a free Groq key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.</p>
+        </section>
+
+        <section class="rb-section">
           <h2 class="rb-section-title">OpenRouter API key</h2>
           <p class="rb-section-desc">Stored locally in your browser. Never sent anywhere but OpenRouter.</p>
           <div class="rb-key-field">

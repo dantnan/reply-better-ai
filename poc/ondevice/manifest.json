@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "RB On-Device Probe",
+  "version": "0.0.1",
+  "description": "Throwaway probe to validate Chrome built-in AI (Gemini Nano).",
+  "minimum_chrome_version": "138",
+  "background": { "service_worker": "sw.js" },
+  "action": { "default_popup": "popup.html" }
+}
