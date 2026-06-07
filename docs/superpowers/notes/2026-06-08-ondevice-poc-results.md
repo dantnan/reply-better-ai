@@ -22,3 +22,9 @@ Known caveat: **non-English (Turkish) quality is weaker** — occasional meaning
 3. Do **not** do language-aware routing that forces non-English users to a cloud key — that would break zero-setup-free for exactly our (Turkish) audience. On-device stays the default for everyone; the user upgrades to cloud when they want more nuance.
 
 Caveat on coverage: this is a sample of one (capable) machine. On-device works *well when available*; users where it's unavailable fall back to the cloud engines, as designed.
+
+## Phase 2-3 build verification (2026-06-08)
+
+Built the engine abstraction + on-device engine into the real extension (branch `feature/v1.5-free-engines`) and loaded `dist/chrome` unpacked. Confirmed by the user: **keyless on-device improve works in both the popup and the inline panel, and is fast.** Quality is below the paid cloud models (expected for Gemini Nano) but usable. Milestone reached: free on-device default works end-to-end with no API key.
+
+Known interim gap (until Phase 5): `auto` always prefers on-device, so a user can't currently choose a paid/cloud model when on-device is available — the engine selector (Phase 5) is needed to let users opt up to cloud for better quality.
