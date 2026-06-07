@@ -1,9 +1,9 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
-import { improveText, streamImproveText } from "../lib/openrouter.js";
 import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
-import { validateSelectedModel, getModels, resolveModelSelection } from "../lib/models-cache.js";
+import { validateSelectedModel, getModels } from "../lib/models-cache.js";
+import { resolveActiveEngine } from "../engines/index.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
@@ -22,22 +22,21 @@ browser.runtime.onConnect.addListener(port => {
       const text = typeof msg.text === "string" ? msg.text : "";
       if (!text.trim()) { post({ error: "Nothing to send yet." }); return; }
       if (text.length > MAX_INPUT_LENGTH) { post({ error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` }); return; }
-      const settings = await storage.get(["apiKey", "model", "savedPrompts"]);
-      if (!settings.apiKey) { post({ error: "No API key set. Open the extension settings.", code: "NoApiKey" }); return; }
+      // No early API-key gate: the active engine decides. On-device needs no key;
+      // a cloud engine without a key throws InvalidKeyError, surfaced below.
+      const { savedPrompts } = await storage.get(["savedPrompts"]);
       const systemPrompt = msg.mode === "reply"
         ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize })
-        : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, settings.savedPrompts || []);
-      const resolved = await resolveModelSelection(msg.model || settings.model || DEFAULT_MODEL);
-      const full = await streamImproveText({
+        : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, savedPrompts || []);
+      const engine = await resolveActiveEngine();
+      const full = await engine.streamImprove({
         text,
-        apiKey: settings.apiKey,
-        ...resolved,
         systemPrompt,
         signal: controller.signal,
         onChunk: delta => post({ delta }),
         onModel: used => post({ model: used }),
       });
-      post({ done: true, full });
+      post({ done: true, full, engine: engine.label });
     } catch (err) {
       if (controller.signal.aborted) return; // panel closed; nothing to report
       console.error("[stream] relay failed:", err);
@@ -153,18 +152,12 @@ async function handleImproveText(message) {
   if (text.length > MAX_INPUT_LENGTH) {
     return { error: `Text is too long (max ${MAX_INPUT_LENGTH} characters).` };
   }
-  const settings = await storage.get(["apiKey", "model", "messageType", "savedPrompts"]);
-  if (!settings.apiKey) return { error: "No API key set. Open the extension settings.", code: "NoApiKey" };
+  const settings = await storage.get(["messageType", "savedPrompts"]);
   const messageType = message.messageType || settings.messageType || DEFAULT_STYLE;
   const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
   try {
-    const resolved = await resolveModelSelection(settings.model || DEFAULT_MODEL);
-    const improvedText = await improveText({
-      text,
-      apiKey: settings.apiKey,
-      ...resolved,
-      systemPrompt,
-    });
+    const engine = await resolveActiveEngine();
+    const improvedText = await engine.streamImprove({ text, systemPrompt });
     return { improvedText };
   } catch (err) {
     return {
