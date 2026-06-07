@@ -15,7 +15,14 @@ browser.runtime.onConnect.addListener(port => {
   // OpenRouter request so we don't keep streaming (and billing) into the void.
   const controller = new AbortController();
   port.onDisconnect.addListener(() => controller.abort());
-  const post = m => { try { port.postMessage(m); } catch { /* port already closed */ } };
+  const post = m => {
+    try { port.postMessage(m); }
+    catch (e) {
+      // Expected when the panel closed the port mid-stream; onDisconnect handles
+      // the user side. Log only if the port still looks open (unexpected throw).
+      if (port.error == null) console.warn("[stream] postMessage failed on open port:", e?.message);
+    }
+  };
   port.onMessage.addListener(async msg => {
     if (!msg || msg.action !== "stream") return;
     try {
@@ -162,7 +169,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "activeEngine") {
     describeActiveEngine()
       .then(sendResponse)
-      .catch(() => sendResponse({ id: "openrouter", label: "OpenRouter", kind: "cloud" }));
+      .catch(err => {
+        console.warn("[bg] describeActiveEngine failed, falling back to OpenRouter label:", err?.message);
+        sendResponse({ id: "openrouter", label: "OpenRouter", kind: "cloud" });
+      });
     return true;
   }
   console.warn("[bg] unknown action:", message.action);
@@ -184,7 +194,10 @@ async function handleImproveText(message) {
     let lastErr = null;
     for (const engine of engines) {
       try { return { improvedText: await engine.streamImprove({ text, systemPrompt }) }; }
-      catch (err) { lastErr = err; }
+      catch (err) {
+        lastErr = err;
+        console.warn(`[improveText] engine "${engine.id}" failed:`, err?.name, err?.message);
+      }
     }
     throw lastErr || new Error("No engine available");
   } catch (err) {

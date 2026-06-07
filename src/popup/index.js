@@ -320,7 +320,8 @@ async function updateActiveEngineLabel() {
   let d = null;
   try { d = await describeActiveEngine(); } catch { /* keep null */ }
   els.activeEngineLabel.textContent = d ? d.label : "—";
-  els.engineQuota.textContent = await engineQuotaText(d);
+  try { els.engineQuota.textContent = await engineQuotaText(d); }
+  catch (e) { console.warn("[popup] quota text failed:", e?.message); els.engineQuota.textContent = ""; }
 }
 
 async function engineQuotaText(d) {

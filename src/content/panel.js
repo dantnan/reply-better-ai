@@ -148,7 +148,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   const privacyEl = el("div", "reply-better-privacy");
   privacyEl.innerHTML = `<span>${PRIV_SVG}</span>`;
   const privTxt = el("span", "reply-better-privacy-txt");
-  privTxt.innerHTML = "Heads up: <b>Reply Better</b> sends the text you select to your chosen model via OpenRouter to draft a reply. Nothing is stored.";
+  privTxt.innerHTML = "Heads up: <b>Reply Better</b> sends the text you select to your chosen AI engine to draft a reply. With the on-device engine it stays on your device. Nothing is stored.";
   privacyEl.appendChild(privTxt);
 
   // Style label + chips
@@ -533,7 +533,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
       : code === "InvalidKeyError" ? "API key rejected"
       : code === "NoApiKey" ? "No API key set"
       : code === "ModelUnavailableError" ? "Model unavailable"
-      : code === "NetworkError" ? "Can’t reach OpenRouter"
+      : code === "NetworkError" ? "Can’t reach the AI service"
       : code === "ProviderError" ? "Model error"
       : "Something went wrong";
     errMsg.textContent = autoBusy

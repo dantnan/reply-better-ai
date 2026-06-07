@@ -25,7 +25,7 @@ export function makeCloudEngine({ id, label, baseUrl, keyName, resolveModel, quo
       // Cache the provider's reported remaining quota (from response headers, e.g.
       // Groq) so settings can show "≈N left" without spending a request to check.
       const onQuota = quotaKey
-        ? (q => { storage.set({ [quotaKey]: { ...q, at: Date.now() } }).catch(() => {}); })
+        ? (q => { storage.set({ [quotaKey]: { ...q, at: Date.now() } }).catch(e => console.debug(`[${id}] quota cache write failed:`, e?.message)); })
         : undefined;
       return streamImproveText({ text, apiKey, model, models, systemPrompt, baseUrl, signal, onChunk, onModel, onQuota });
     },
