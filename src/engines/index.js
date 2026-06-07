@@ -41,6 +41,21 @@ export async function isOnDeviceUsable() {
   return ENGINES.ondevice ? (await ENGINES.ondevice.availability()) !== "unsupported" : false;
 }
 
+// Active engine first, then the other usable engines as fallbacks (on-device,
+// then Groq, then OpenRouter — skipping unusable ones and the active dupe). The
+// caller tries each until one succeeds, so a dead free engine recovers silently.
+export async function orderedEngines() {
+  const active = await resolveActiveEngine();
+  const { groqApiKey, apiKey } = await storage.get(["groqApiKey", "apiKey"]);
+  const onDeviceAvail = await ENGINES.ondevice.availability();
+  const chain = [active];
+  const add = (eng, usable) => { if (usable && eng && !chain.includes(eng)) chain.push(eng); };
+  add(ENGINES.ondevice, onDeviceAvail === "ready" || onDeviceAvail === "downloadable");
+  add(ENGINES.groq, !!groqApiKey);
+  add(ENGINES.openrouter, !!apiKey);
+  return chain;
+}
+
 // Display info for the currently-active engine — for the popup/panel "running
 // on: …" label. Must be resolved where the on-device global exists (popup or
 // service worker), not a content script.

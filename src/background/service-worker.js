@@ -3,7 +3,7 @@ import { storage, migrateFromSync } from "../lib/storage.js";
 import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
-import { resolveActiveEngine, describeActiveEngine } from "../engines/index.js";
+import { orderedEngines, describeActiveEngine } from "../engines/index.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
@@ -28,15 +28,31 @@ browser.runtime.onConnect.addListener(port => {
       const systemPrompt = msg.mode === "reply"
         ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize })
         : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, savedPrompts || []);
-      const engine = await resolveActiveEngine();
-      const full = await engine.streamImprove({
-        text,
-        systemPrompt,
-        signal: controller.signal,
-        onChunk: delta => post({ delta }),
-        onModel: used => post({ model: used }),
-      });
-      post({ done: true, full, engine: engine.label });
+      // Try the active engine, then fall back to other usable engines — but only
+      // before any output has streamed (never double-stream a partial result).
+      const engines = await orderedEngines();
+      let emitted = false, lastErr = null, finished = false;
+      for (const engine of engines) {
+        try {
+          const full = await engine.streamImprove({
+            text,
+            systemPrompt,
+            signal: controller.signal,
+            onChunk: delta => { emitted = true; post({ delta }); },
+            onModel: used => post({ model: used }),
+          });
+          post({ done: true, full, engine: engine.label });
+          finished = true;
+          break;
+        } catch (err) {
+          lastErr = err;
+          if (controller.signal.aborted || emitted) break;
+        }
+      }
+      if (!finished && !controller.signal.aborted) {
+        console.error("[stream] all engines failed:", lastErr);
+        post({ error: lastErr?.userMessage || lastErr?.message || "Something went wrong", code: lastErr?.name });
+      }
     } catch (err) {
       if (controller.signal.aborted) return; // panel closed; nothing to report
       console.error("[stream] relay failed:", err);
@@ -164,9 +180,13 @@ async function handleImproveText(message) {
   const messageType = message.messageType || settings.messageType || DEFAULT_STYLE;
   const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
   try {
-    const engine = await resolveActiveEngine();
-    const improvedText = await engine.streamImprove({ text, systemPrompt });
-    return { improvedText };
+    const engines = await orderedEngines();
+    let lastErr = null;
+    for (const engine of engines) {
+      try { return { improvedText: await engine.streamImprove({ text, systemPrompt }) }; }
+      catch (err) { lastErr = err; }
+    }
+    throw lastErr || new Error("No engine available");
   } catch (err) {
     return {
       error: err.userMessage || err.message,
