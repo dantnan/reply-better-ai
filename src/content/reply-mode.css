@@ -94,6 +94,12 @@
 }
 .reply-better-models-retry:hover { background: #e3e6ff !important; }
 
+/* engine-fixed (on-device / Groq): the header pill is a label, not a model picker */
+.reply-better-panel.reply-better-engine-fixed .reply-better-mchev { display: none !important; }
+.reply-better-panel.reply-better-engine-fixed .reply-better-model-trigger { cursor: default !important; }
+.reply-better-panel.reply-better-engine-fixed .reply-better-model-trigger:hover { background: #f1f3f5 !important; }
+.reply-better-panel.reply-better-engine-fixed .reply-better-model-trigger:hover .reply-better-mname { color: #495057 !important; }
+
 /* divider before body in reply mode */
 .reply-better-panel.reply-better-reply .reply-better-panel-body { border-top: 1px solid #eef0f2 !important; margin-top: 12px; }
 

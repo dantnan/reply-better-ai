@@ -100,6 +100,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   const inputText = mode === "improve" ? (draft || "") : "";
   let currentModelId = settings.model || DEFAULT_MODEL;
   let lastUsedModelId = null; // which model actually answered (shown for Auto mode)
+  let activeEngine = null;    // { id, label, kind } of the engine the SW will use
 
   let busy = false;
   let hasResult = false;
@@ -229,6 +230,17 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
 
   // ── Model switcher ──────────────────────────────────────────────────
   function reflectModel() {
+    // Non-OpenRouter engines (on-device / Groq) have no model picker — show the
+    // engine label and drop the dropdown affordance.
+    if (activeEngine && activeEngine.id !== "openrouter") {
+      const onDevice = activeEngine.id === "ondevice";
+      mav.style.background = onDevice ? "#5e6ad2" : "#f55036";
+      mav.textContent = onDevice ? "⚡" : "Gq";
+      mname.textContent = activeEngine.label;
+      panel.classList.add("reply-better-engine-fixed");
+      return;
+    }
+    panel.classList.remove("reply-better-engine-fixed");
     if (currentModelId === AUTO_FREE_MODEL) {
       const used = lastUsedModelId && (modelsState?.models || []).find(x => x.id === lastUsedModelId);
       mav.style.background = "#5e6ad2";
@@ -305,6 +317,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   function closeModels() { panel.classList.remove("reply-better-models-open"); }
   modelTrigger.addEventListener("click", e => {
     e.stopPropagation();
+    if (activeEngine && activeEngine.id !== "openrouter") return; // no model picker for on-device/Groq
     panel.classList.contains("reply-better-models-open") ? closeModels() : openModels();
   });
   modelMenu.addEventListener("click", async e => {
@@ -581,6 +594,11 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
 
   // ── Go ──────────────────────────────────────────────────────────────
   reflectModel();
+  // Ask the worker which engine is active (on-device availability can only be
+  // resolved in the worker, not here in page context) and reflect it.
+  browser.runtime.sendMessage({ action: "activeEngine" })
+    .then(d => { if (d && d.id) { activeEngine = d; reflectModel(); position(); } })
+    .catch(() => {});
   buildChips();
   if (mode === "reply") { captured = captureSelection(); renderContext(); }
   position();
