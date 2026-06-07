@@ -30,6 +30,10 @@ describe("resolveSystemPrompt", () => {
   it("falls back when savedPrompts is empty", () => {
     expect(resolveSystemPrompt("custom_prompt_0", [])).toBe(STYLE_PROMPTS.improve);
   });
+
+  it("instructs the model to preserve dates/numbers/names", () => {
+    expect(resolveSystemPrompt("improve")).toMatch(/preserve all dates, numbers, names/i);
+  });
 });
 
 describe("STYLES", () => {

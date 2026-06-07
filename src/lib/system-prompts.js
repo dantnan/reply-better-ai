@@ -1,6 +1,6 @@
 import { CUSTOM_PROMPT_PREFIX, DEFAULT_STYLE } from "./constants.js";
 
-const SUFFIX = " IMPORTANT: Your response should ONLY contain the improved message without any explanations, introductions, or comments like 'Here's a rewritten version' or 'Here's the improved message'. Just output the improved message directly.";
+const SUFFIX = " IMPORTANT: Your response should ONLY contain the improved message without any explanations, introductions, or comments like 'Here's a rewritten version' or 'Here's the improved message'. Just output the improved message directly. Preserve all dates, numbers, names, and links exactly as written.";
 
 // Built-in writing styles. "improve" is the general default; the rest are
 // intent-specific. Custom prompts surface alongside these as styles too.
