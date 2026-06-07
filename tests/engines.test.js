@@ -9,7 +9,7 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId } = await import("../src/engines/index.js");
+const { resolveEngineId, ENGINES } = await import("../src/engines/index.js");
 const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
@@ -56,5 +56,18 @@ describe("onDeviceEngine.availability", () => {
   it("treats a thrown availability() as unsupported", async () => {
     globalThis.LanguageModel = { availability: async () => { throw new Error("boom"); } };
     expect(await onDeviceEngine.availability()).toBe("unsupported");
+  });
+});
+
+describe("cloud engines registry", () => {
+  it("registers ondevice, groq, and openrouter", () => {
+    expect(Object.keys(ENGINES).sort()).toEqual(["groq", "ondevice", "openrouter"]);
+    expect(ENGINES.groq.kind).toBe("cloud");
+    expect(ENGINES.openrouter.kind).toBe("cloud");
+    expect(ENGINES.ondevice.kind).toBe("on-device");
+  });
+
+  it("groq reports needs-setup when no key is stored", async () => {
+    expect(await ENGINES.groq.availability()).toBe("needs-setup");
   });
 });

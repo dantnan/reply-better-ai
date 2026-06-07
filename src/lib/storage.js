@@ -15,7 +15,7 @@ export async function setSelectedModel(id) {
 }
 
 const MIGRATABLE_KEYS = [
-  "apiKey", "model", "messageType", "savedPrompts", "snippets",
+  "apiKey", "groqApiKey", "model", "engine", "messageType", "savedPrompts", "snippets",
   "enableInlineButton", "inlineMessageType", "inlineClickMode", "customPrompt",
 ];
 
