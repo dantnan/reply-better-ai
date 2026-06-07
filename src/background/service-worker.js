@@ -3,7 +3,7 @@ import { storage, migrateFromSync } from "../lib/storage.js";
 import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
-import { resolveActiveEngine } from "../engines/index.js";
+import { resolveActiveEngine, describeActiveEngine } from "../engines/index.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
@@ -139,6 +139,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     getModels()
       .then(result => sendResponse({ models: result.models || [], stale: !!result.stale }))
       .catch(err => sendResponse({ error: err?.userMessage || err?.message || "Failed to load models" }));
+    return true;
+  }
+  // The content-script panel asks which engine is active so it can show
+  // "running on: …" (it can't resolve on-device availability in page context).
+  if (message.action === "activeEngine") {
+    describeActiveEngine()
+      .then(sendResponse)
+      .catch(() => sendResponse({ id: "openrouter", label: "OpenRouter", kind: "cloud" }));
     return true;
   }
   console.warn("[bg] unknown action:", message.action);

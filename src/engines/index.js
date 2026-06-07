@@ -41,6 +41,14 @@ export async function isOnDeviceUsable() {
   return ENGINES.ondevice ? (await ENGINES.ondevice.availability()) !== "unsupported" : false;
 }
 
+// Display info for the currently-active engine — for the popup/panel "running
+// on: …" label. Must be resolved where the on-device global exists (popup or
+// service worker), not a content script.
+export async function describeActiveEngine() {
+  const engine = await resolveActiveEngine();
+  return { id: engine.id, label: engine.label, kind: engine.kind };
+}
+
 export async function resolveActiveEngine() {
   const { engine, groqApiKey, apiKey } = await storage.get(["engine", "groqApiKey", "apiKey"]);
   const onDeviceAvail = ENGINES.ondevice ? await ENGINES.ondevice.availability() : "unsupported";

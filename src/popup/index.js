@@ -4,7 +4,7 @@ import { validateApiKey } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { getModels } from "../lib/models-cache.js";
-import { resolveActiveEngine, isOnDeviceUsable } from "../engines/index.js";
+import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine } from "../engines/index.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
@@ -35,6 +35,10 @@ const els = {
   variationLabel: $("variation-label"),
   copyBtn: $("copy-btn"),
   // settings
+  engineSelect: $("engine-select"),
+  activeEngineLabel: $("active-engine-label"),
+  groqApiKey: $("groq-api-key"),
+  groqKeyToggle: $("groq-key-toggle"),
   apiKey: $("api-key"),
   keyToggle: $("key-toggle"),
   saveKey: $("save-key"),
@@ -301,6 +305,7 @@ async function saveKey() {
     if (!result.ok && result.reason === "invalid") throw new Error("API key invalid. Check it at openrouter.ai/keys.");
     await storage.set({ apiKey: key });
     popup.classList.remove("no-key");
+    updateActiveEngineLabel();
     showStatus(result.ok ? "API key saved." : "Saved (couldn't verify — offline).");
   } catch (e) {
     showSettingsError(e.message);
@@ -310,11 +315,16 @@ async function saveKey() {
   }
 }
 
+async function updateActiveEngineLabel() {
+  try { const d = await describeActiveEngine(); els.activeEngineLabel.textContent = d.label; }
+  catch { els.activeEngineLabel.textContent = "—"; }
+}
+
 /* ── Init ────────────────────────────────────────────────────────────── */
 async function init() {
   await migrateFromSync();
   const data = await storage.get([
-    "apiKey", "model", "messageType", "savedPrompts", "snippets",
+    "apiKey", "groqApiKey", "engine", "model", "messageType", "savedPrompts", "snippets",
     "enableInlineButton", "inlineMessageType", "inlineClickMode",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
@@ -327,11 +337,14 @@ async function init() {
   const clickMode = data.inlineClickMode || "panel";
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
   if (clickRadio) clickRadio.checked = true;
+  els.engineSelect.value = data.engine || "auto";
+  if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
   renderPrompts();
   renderSnippets();
   refreshChip();
   ensureModels();
   reflectKeyState();
+  updateActiveEngineLabel();
   showFallbackIfNeeded();
 
   // header
@@ -362,6 +375,16 @@ async function init() {
   els.styleSelect.addEventListener("change", () => storage.set({ messageType: els.styleSelect.value }));
 
   // settings
+  els.engineSelect.addEventListener("change", async () => {
+    await storage.set({ engine: els.engineSelect.value }).catch(() => {});
+    updateActiveEngineLabel();
+    refreshChip();
+  });
+  els.groqApiKey.addEventListener("change", async () => {
+    await storage.set({ groqApiKey: els.groqApiKey.value.trim() }).catch(() => {});
+    updateActiveEngineLabel();
+  });
+  els.groqKeyToggle.addEventListener("click", () => { els.groqApiKey.type = els.groqApiKey.type === "password" ? "text" : "password"; });
   els.keyToggle.addEventListener("click", () => { els.apiKey.type = els.apiKey.type === "password" ? "text" : "password"; });
   els.saveKey.addEventListener("click", saveKey);
   els.openPicker.addEventListener("click", openPicker);
