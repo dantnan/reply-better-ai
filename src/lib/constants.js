@@ -5,6 +5,9 @@ export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
 export const AUTO_FREE_MODEL = "auto:fastest-free";
 export const AUTO_FREE_MODEL_LIMIT = 6; // how many free models to hand OpenRouter for routing/failover
 export const DEFAULT_STYLE = "improve";
+// Which engine powers a generation. "auto" picks on-device when available, then
+// a cloud free key, then OpenRouter. See src/engines/.
+export const DEFAULT_ENGINE = "auto"; // "auto" | "ondevice" | "groq" | "openrouter"
 export const DEFAULT_CLICK_MODE = "panel"; // inline button: "panel" | "instant"
 export const RATE_LIMIT_MS = 1000;
 export const MAX_INPUT_LENGTH = 50000;
