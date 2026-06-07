@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("../src/lib/browser.js", () => ({
   default: {
@@ -10,6 +10,7 @@ vi.mock("../src/lib/browser.js", () => ({
 }));
 
 const { resolveEngineId } = await import("../src/engines/index.js");
+const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
   it("honors an explicit, registered engine setting", () => {
@@ -30,8 +31,30 @@ describe("resolveEngineId", () => {
     expect(resolveEngineId({ engineSetting: "auto", onDeviceAvail: "unsupported", hasGroqKey: false, hasOpenRouterKey: false })).toBe("openrouter");
   });
 
-  it("ignores an explicit setting that isn't a registered engine (falls through to auto logic)", () => {
-    // "ondevice" isn't registered yet -> not in ENGINES -> auto logic applies
-    expect(resolveEngineId({ engineSetting: "ondevice", onDeviceAvail: "unsupported", hasGroqKey: false, hasOpenRouterKey: true })).toBe("openrouter");
+  it("honors an explicit on-device setting (now registered)", () => {
+    expect(resolveEngineId({ engineSetting: "ondevice", onDeviceAvail: "ready", hasGroqKey: false, hasOpenRouterKey: true })).toBe("ondevice");
+  });
+});
+
+describe("onDeviceEngine.availability", () => {
+  afterEach(() => { delete globalThis.LanguageModel; });
+
+  it("returns unsupported when LanguageModel is absent", async () => {
+    delete globalThis.LanguageModel;
+    expect(await onDeviceEngine.availability()).toBe("unsupported");
+  });
+
+  it("maps Chrome availability states", async () => {
+    globalThis.LanguageModel = { availability: async () => "available" };
+    expect(await onDeviceEngine.availability()).toBe("ready");
+    globalThis.LanguageModel = { availability: async () => "downloadable" };
+    expect(await onDeviceEngine.availability()).toBe("downloadable");
+    globalThis.LanguageModel = { availability: async () => "unavailable" };
+    expect(await onDeviceEngine.availability()).toBe("unsupported");
+  });
+
+  it("treats a thrown availability() as unsupported", async () => {
+    globalThis.LanguageModel = { availability: async () => { throw new Error("boom"); } };
+    expect(await onDeviceEngine.availability()).toBe("unsupported");
   });
 });

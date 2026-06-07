@@ -2,6 +2,7 @@ import { storage } from "../lib/storage.js";
 import { resolveModelSelection } from "../lib/models-cache.js";
 import { DEFAULT_MODEL, OPENROUTER_BASE } from "../lib/constants.js";
 import { makeCloudEngine } from "./cloud.js";
+import { onDeviceEngine } from "./ondevice.js";
 
 // Premium cloud engine: the existing OpenRouter path (model picker + Auto).
 const openrouterEngine = makeCloudEngine({
@@ -15,9 +16,9 @@ const openrouterEngine = makeCloudEngine({
   },
 });
 
-// Registry. On-device and Groq engines are added in later tasks; until then,
-// resolveEngineId may name them but resolveActiveEngine falls back to openrouter.
-export const ENGINES = { openrouter: openrouterEngine };
+// Registry. The Groq cloud-free engine is added in a later task; until then,
+// resolveEngineId may name "groq" but resolveActiveEngine falls back to openrouter.
+export const ENGINES = { ondevice: onDeviceEngine, openrouter: openrouterEngine };
 
 // Pure: pick the engine id from already-gathered inputs (unit-testable).
 export function resolveEngineId({ engineSetting, onDeviceAvail, hasGroqKey, hasOpenRouterKey }) {
