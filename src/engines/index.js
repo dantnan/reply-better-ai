@@ -23,6 +23,7 @@ const groqEngine = makeCloudEngine({
   baseUrl: GROQ_BASE,
   keyName: "groqApiKey",
   resolveModel: async () => ({ model: GROQ_DEFAULT_MODEL }),
+  quotaKey: "groqQuota",
 });
 
 export const ENGINES = { ondevice: onDeviceEngine, groq: groqEngine, openrouter: openrouterEngine };

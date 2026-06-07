@@ -63,7 +63,7 @@ export async function improveText({ text, apiKey, model, models, systemPrompt })
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
 // and resolves with the full text. Used by the popup (direct) and by the inline
 // panel via the service-worker port relay; non-streaming callers use improveText.
-export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, signal, baseUrl = OPENROUTER_BASE }) {
+export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, onQuota, signal, baseUrl = OPENROUTER_BASE }) {
   let response;
   try {
     response = await fetch(`${baseUrl}/chat/completions`, {
@@ -85,6 +85,11 @@ export async function streamImproveText({ text, apiKey, model, models, systemPro
     let body = null;
     try { body = await response.json(); } catch { /* may be empty */ }
     throw fromResponse(response, body);
+  }
+  // Providers that send rate-limit headers (e.g. Groq) let us show remaining quota.
+  if (onQuota) {
+    const rem = response.headers?.get?.("x-ratelimit-remaining-requests");
+    if (rem != null) onQuota({ remaining: Number(rem), reset: response.headers.get("x-ratelimit-reset-requests") || null });
   }
   if (!response.body) {
     // No stream support from this provider — fall back to a single read.
@@ -161,4 +166,21 @@ export async function listModels() {
   if (!response.ok) throw new ProviderError(response.status, "Failed to fetch models");
   const body = await response.json();
   return Array.isArray(body?.data) ? body.data : [];
+}
+
+// Live key info (credits/limit) for the OpenRouter key. Cheap GET that does NOT
+// consume model quota. Returns the `data` object, e.g. { limit, usage,
+// limit_remaining, is_free_tier, rate_limit }, or null on failure.
+export async function getKeyInfo(apiKey) {
+  if (!apiKey) return null;
+  try {
+    const response = await timeoutFetch(`${OPENROUTER_BASE}/key`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    }, 10000);
+    if (!response.ok) return null;
+    const body = await response.json();
+    return body?.data || null;
+  } catch {
+    return null;
+  }
 }

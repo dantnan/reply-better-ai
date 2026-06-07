@@ -6,7 +6,7 @@ import { InvalidKeyError } from "../lib/errors.js";
 // { model } or { models } for the request; `keyName` is the storage key holding
 // the user's API key (read in the service worker / popup, never sent to page
 // context). All cloud engines share the one streaming client in openrouter.js.
-export function makeCloudEngine({ id, label, baseUrl, keyName, resolveModel }) {
+export function makeCloudEngine({ id, label, baseUrl, keyName, resolveModel, quotaKey }) {
   return {
     id,
     label,
@@ -22,7 +22,12 @@ export function makeCloudEngine({ id, label, baseUrl, keyName, resolveModel }) {
       const apiKey = data[keyName];
       if (!apiKey) throw new InvalidKeyError("No API key set");
       const { model, models } = await resolveModel();
-      return streamImproveText({ text, apiKey, model, models, systemPrompt, baseUrl, signal, onChunk, onModel });
+      // Cache the provider's reported remaining quota (from response headers, e.g.
+      // Groq) so settings can show "≈N left" without spending a request to check.
+      const onQuota = quotaKey
+        ? (q => { storage.set({ [quotaKey]: { ...q, at: Date.now() } }).catch(() => {}); })
+        : undefined;
+      return streamImproveText({ text, apiKey, model, models, systemPrompt, baseUrl, signal, onChunk, onModel, onQuota });
     },
   };
 }

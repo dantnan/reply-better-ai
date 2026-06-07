@@ -1,6 +1,6 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
-import { validateApiKey } from "../lib/openrouter.js";
+import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { getModels } from "../lib/models-cache.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE } from "../lib/constants.js";
 import { describeActiveEngine } from "../engines/index.js";
@@ -14,6 +14,7 @@ const els = {
   nav: $("opt-nav"),
   engineSelect: $("engine-select"),
   activeEngineLabel: $("active-engine-label"),
+  engineQuota: $("engine-quota"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
   apiKey: $("api-key"),
@@ -158,8 +159,30 @@ async function saveKey() {
 }
 
 async function updateActiveEngineLabel() {
-  try { const d = await describeActiveEngine(); els.activeEngineLabel.textContent = d.label; }
-  catch { els.activeEngineLabel.textContent = "—"; }
+  let d = null;
+  try { d = await describeActiveEngine(); } catch { /* keep null */ }
+  els.activeEngineLabel.textContent = d ? d.label : "—";
+  els.engineQuota.textContent = await engineQuotaText(d);
+}
+
+async function engineQuotaText(d) {
+  if (!d) return "";
+  if (d.id === "ondevice") return "No usage limit — runs on your device.";
+  if (d.id === "groq") {
+    const { groqQuota } = await storage.get(["groqQuota"]);
+    if (groqQuota && Number.isFinite(groqQuota.remaining)) {
+      return `≈${groqQuota.remaining} requests left${groqQuota.reset ? ` · resets in ${groqQuota.reset}` : ""} (as of last use).`;
+    }
+    return "Use it once to see your remaining requests.";
+  }
+  if (d.id === "openrouter") {
+    const { apiKey } = await storage.get(["apiKey"]);
+    const info = await getKeyInfo(apiKey);
+    if (info && info.limit_remaining != null) return `≈$${Number(info.limit_remaining).toFixed(2)} of credits left.`;
+    if (info && info.is_free_tier) return "Free tier — limited daily :free requests.";
+    return "";
+  }
+  return "";
 }
 
 async function init() {
