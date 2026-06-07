@@ -1,6 +1,6 @@
 # Reply Better AI
 
-Write better anywhere on the web — with the AI model of *your* choice. Reply Better AI improves your drafts and helps you reply in context, powered by 500+ models on OpenRouter (Claude, GPT, Gemini, DeepSeek, Llama, and more) with a searchable picker, free/paid filtering, and live pricing right inside the extension.
+Write better anywhere on the web, free and private, with the AI engine of *your* choice. Reply Better AI improves your drafts and helps you reply in context. It runs **free on-device** (Gemini Nano: no key, nothing leaves your computer) where your browser supports it, and falls back to a **free Groq key** or **500+ models on OpenRouter** (Claude, GPT, Gemini, DeepSeek, Llama, and more) with a searchable picker, free/paid filtering, and live pricing right inside the extension.
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/reply-better-ai/dpdibbijcljdjnafjnmaljphpkfojlkb)
 [![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-FF7139?logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
@@ -24,6 +24,8 @@ Everything streams live, you can **Regenerate** for another take, and **Insert**
 
 ## Features
 
+- **Free, zero-setup engine** — on-device AI (Gemini Nano) runs locally with no key and no data leaving your computer, selected automatically when your browser supports it.
+- **Your choice of engine** — on-device, a free [Groq](https://console.groq.com/keys) key, or OpenRouter's 500+ models. **Auto** picks the best available and falls back across them if one is unavailable; the active engine is always shown inline and in settings.
 - **Context-aware inline button** — morphs between Reply and Improve based on what you've selected or typed; sits in the corner of the focused field.
 - **Reply to a conversation** — selection-first context capture, tone presets, summarize, or a free-form instruction in any language.
 - **Live streaming** — results type in as they're generated, in the popup and the inline panel alike.
@@ -36,7 +38,7 @@ Everything streams live, you can **Regenerate** for another take, and **Insert**
 - **Snippets** — TextBlaze-style triggers (`/sig`, `/welcome`) that expand as you type in plain text fields.
 - **Dark mode** — popup and options follow your system theme.
 - **Cross-browser** — one source builds Chrome MV3 and Firefox MV3.
-- **Privacy-first** — your key lives in `storage.local`, only selected text is sent, traffic goes only to OpenRouter, zero telemetry.
+- **Privacy-first** — on-device mode sends nothing off your computer; cloud engines use only your own key (stored in `storage.local`) and contact only that provider; only the text you select is ever sent; zero telemetry.
 
 ## Install
 
@@ -50,14 +52,15 @@ To run an unreleased build instead: `npm install && npm run build`, then load th
 
 [Reply Better AI on AMO](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/) — install in one click.
 
-### Get your OpenRouter key
+### Choose an engine
 
-1. Visit [openrouter.ai/keys](https://openrouter.ai/keys).
-2. Create a free account.
-3. Generate an API key.
-4. Paste it into the extension's settings.
+Open the extension's settings and pick an engine, or leave it on **Auto**:
 
-OpenRouter has both free and paid models. Free models are flagged in the picker; paid models bill per-token directly to your OpenRouter account.
+- **On-device** — free and private, no key. Runs in Chrome (desktop) where Gemini Nano is available; the first use downloads the model once, then nothing leaves your computer.
+- **Groq** — free and fast. Create a free key at [console.groq.com/keys](https://console.groq.com/keys) and paste it in.
+- **OpenRouter** — 500+ models, free and paid. Create a key at [openrouter.ai/keys](https://openrouter.ai/keys); free models are flagged in the picker, paid models bill per-token to your account.
+
+**Auto** uses on-device when your browser supports it, otherwise your Groq key, otherwise OpenRouter.
 
 ## Usage
 
@@ -139,7 +142,7 @@ Read these before opening a PR.
 
 ## Privacy
 
-Reply Better AI runs no servers and ships zero telemetry. Your API key, prompts, and snippets stay in your browser. In reply mode only the text you select (or explicitly capture) is sent, and the only network traffic is to OpenRouter when you ask for an improvement or a reply. See [docs/privacy.md](./docs/privacy.md) for the full policy.
+Reply Better AI runs no servers and ships zero telemetry. Your API keys, prompts, and snippets stay in your browser. With the on-device engine, nothing ever leaves your computer. With a cloud engine, only the text you select (or explicitly capture) is sent, and the only network traffic is to the provider you chose (Groq or OpenRouter) when you ask for an improvement or a reply. See [docs/privacy.md](./docs/privacy.md) for the full policy.
 
 ## License
 

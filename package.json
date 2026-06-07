@@ -1,7 +1,7 @@
 {
   "name": "reply-better-ai",
-  "version": "1.4.0",
-  "description": "Improve your messages using AI. Dynamic OpenRouter model picker. Chrome + Firefox.",
+  "version": "1.5.0",
+  "description": "Improve and reply to messages with AI — free on-device, Groq, or OpenRouter. Chrome + Firefox.",
   "private": true,
   "type": "module",
   "scripts": {
