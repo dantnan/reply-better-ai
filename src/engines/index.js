@@ -27,6 +27,12 @@ export function resolveEngineId({ engineSetting, onDeviceAvail, hasGroqKey, hasO
   return "openrouter";
 }
 
+// True when the on-device engine is registered and usable on this device — lets
+// surfaces (e.g. the popup first-run gate) treat a no-key user as ready.
+export async function isOnDeviceUsable() {
+  return ENGINES.ondevice ? (await ENGINES.ondevice.availability()) !== "unsupported" : false;
+}
+
 export async function resolveActiveEngine() {
   const { engine, groqApiKey, apiKey } = await storage.get(["engine", "groqApiKey", "apiKey"]);
   const onDeviceAvail = ENGINES.ondevice ? await ENGINES.ondevice.availability() : "unsupported";

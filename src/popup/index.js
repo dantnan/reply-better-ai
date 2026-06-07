@@ -1,9 +1,10 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
-import { validateApiKey, streamImproveText } from "../lib/openrouter.js";
+import { validateApiKey } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
-import { getModels, resolveModelSelection } from "../lib/models-cache.js";
+import { getModels } from "../lib/models-cache.js";
+import { resolveActiveEngine, isOnDeviceUsable } from "../engines/index.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
@@ -147,8 +148,7 @@ async function runImprove(isRegen) {
     return;
   }
 
-  const data = await storage.get(["apiKey", "model", "savedPrompts"]);
-  if (!data.apiKey) { showError("Set your OpenRouter API key in settings first.", true); return; }
+  const data = await storage.get(["model", "savedPrompts"]);
 
   state.busy = true;
   hideError();
@@ -170,16 +170,13 @@ async function runImprove(isRegen) {
   els.output.value = "";
   els.copyBtn.disabled = true;
 
-  const selectedId = data.model || state.currentModelId || DEFAULT_MODEL;
-  const isAuto = selectedId === AUTO_FREE_MODEL;
-  const resolved = await resolveModelSelection(selectedId);
+  const isAuto = (data.model || state.currentModelId) === AUTO_FREE_MODEL;
   let usedModelId = null;
 
   try {
-    const full = await streamImproveText({
+    const engine = await resolveActiveEngine();
+    const full = await engine.streamImprove({
       text,
-      apiKey: data.apiKey,
-      ...resolved,
       systemPrompt,
       onChunk: delta => {
         els.output.value += delta;
@@ -274,7 +271,10 @@ function openPicker() {
 /* ── First-run / fallback ────────────────────────────────────────────── */
 async function reflectKeyState() {
   const { apiKey } = await storage.get(["apiKey"]);
-  popup.classList.toggle("no-key", !apiKey);
+  // Show the setup card only when there's no way to run: no key AND no usable
+  // on-device engine. On-device users need no key.
+  const onDeviceOk = await isOnDeviceUsable();
+  popup.classList.toggle("no-key", !apiKey && !onDeviceOk);
   if (apiKey) els.apiKey.value = apiKey;
 }
 
