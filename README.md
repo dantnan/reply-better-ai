@@ -25,7 +25,7 @@ Everything streams live, you can **Regenerate** for another take, and **Insert**
 ## Features
 
 - **Free, zero-setup engine** — on-device AI (Gemini Nano) runs locally with no key and no data leaving your computer, selected automatically when your browser supports it.
-- **Your choice of engine** — on-device, a free [Groq](https://console.groq.com/keys) key, or OpenRouter's 500+ models. **Auto** picks the best available and falls back across them if one is unavailable; the active engine is always shown inline and in settings.
+- **Your choice of engine** — on-device, your own local [Ollama](https://ollama.com)/[LM Studio](https://lmstudio.ai) server, a free [Groq](https://console.groq.com/keys) key, or OpenRouter's 500+ models. **Auto** picks the best available and falls back across them if one is unavailable; the active engine is always shown inline and in settings.
 - **Context-aware inline button** — morphs between Reply and Improve based on what you've selected or typed; sits in the corner of the focused field.
 - **Reply to a conversation** — selection-first context capture, tone presets, summarize, or a free-form instruction in any language.
 - **Live streaming** — results type in as they're generated, in the popup and the inline panel alike.
@@ -57,10 +57,11 @@ To run an unreleased build instead: `npm install && npm run build`, then load th
 Open the extension's settings and pick an engine, or leave it on **Auto**:
 
 - **On-device** — free and private, no key. Runs in Chrome (desktop) where Gemini Nano is available; the first use downloads the model once, then nothing leaves your computer.
+- **Local (Ollama / LM Studio)** — free and private, no key, and works in any browser. Point the extension at your own [Ollama](https://ollama.com) or [LM Studio](https://lmstudio.ai) server (or any OpenAI-compatible local server) and pick from the models you've installed. See [docs/local-llm-setup.md](./docs/local-llm-setup.md) for setup, including the CORS step.
 - **Groq** — free and fast. Create a free key at [console.groq.com/keys](https://console.groq.com/keys) and paste it in.
 - **OpenRouter** — 500+ models, free and paid. Create a key at [openrouter.ai/keys](https://openrouter.ai/keys); free models are flagged in the picker, paid models bill per-token to your account.
 
-**Auto** uses on-device when your browser supports it, otherwise your Groq key, otherwise OpenRouter.
+**Auto** uses on-device when your browser supports it, otherwise your Groq key, otherwise OpenRouter. **Local** is opt-in — select it explicitly to use your own server.
 
 ## Usage
 
@@ -142,7 +143,7 @@ Read these before opening a PR.
 
 ## Privacy
 
-Reply Better AI runs no servers and ships zero telemetry. Your API keys, prompts, and snippets stay in your browser. With the on-device engine, nothing ever leaves your computer. With a cloud engine, only the text you select (or explicitly capture) is sent, and the only network traffic is to the provider you chose (Groq or OpenRouter) when you ask for an improvement or a reply. See [docs/privacy.md](./docs/privacy.md) for the full policy.
+Reply Better AI runs no servers and ships zero telemetry. Your API keys, prompts, and snippets stay in your browser. With the on-device or local (Ollama/LM Studio) engines, nothing ever leaves your computer. With a cloud engine, only the text you select (or explicitly capture) is sent, and the only network traffic is to the provider you chose (Groq or OpenRouter) when you ask for an improvement or a reply. See [docs/privacy.md](./docs/privacy.md) for the full policy.
 
 ## License
 

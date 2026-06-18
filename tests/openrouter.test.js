@@ -203,4 +203,16 @@ describe("streamImproveText baseUrl", () => {
     await streamImproveText({ text: "x", apiKey: "k", model: "m", systemPrompt: "s" });
     expect(global.fetch.mock.calls[0][0]).toBe("https://openrouter.ai/api/v1/chat/completions");
   });
+
+  it("sets the Authorization header when a key is given (cloud callers)", async () => {
+    global.fetch.mockResolvedValue(sseResponse('data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n'));
+    await streamImproveText({ text: "x", apiKey: "sk-test", model: "m", systemPrompt: "s" });
+    expect(global.fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer sk-test");
+  });
+
+  it("omits the Authorization header when no key is given (local engine)", async () => {
+    global.fetch.mockResolvedValue(sseResponse('data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n'));
+    await streamImproveText({ text: "x", model: "llama3", systemPrompt: "s", baseUrl: "http://localhost:11434/v1" });
+    expect(global.fetch.mock.calls[0][1].headers).not.toHaveProperty("Authorization");
+  });
 });
