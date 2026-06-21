@@ -63,6 +63,14 @@ export function setButtonLoading(loading) {
   if (button) button.classList.toggle("reply-better-loading", loading);
 }
 
+// Grammarly tucks its own badge into the bottom-right corner of the field too,
+// and (higher z-index) hides ours — a common "the button never showed up"
+// report. When Grammarly is on the page, shift ours left to clear its badge.
+const GRAMMARLY_OFFSET = 32;
+function competitorOffset() {
+  return document.querySelector("grammarly-desktop-integration, grammarly-extension") ? GRAMMARLY_OFFSET : 0;
+}
+
 // Tuck the button into the bottom-right corner of the field's visible box.
 // Bail when the field is detached/zero-sized so it never jumps to (0,0).
 export function positionButton(field) {
@@ -74,7 +82,7 @@ export function positionButton(field) {
   const bw = button.offsetWidth || 28;
   const bh = button.offsetHeight || 28;
   button.style.top = `${rect.bottom + sy - bh - 6}px`;
-  button.style.left = `${rect.right + sx - bw - 6}px`;
+  button.style.left = `${rect.right + sx - bw - 6 - competitorOffset()}px`;
 }
 
 export function removeButton() {
