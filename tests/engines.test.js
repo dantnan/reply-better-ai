@@ -9,7 +9,7 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId, ENGINES } = await import("../src/engines/index.js");
+const { resolveEngineId, engineKeyVisibility, ENGINES } = await import("../src/engines/index.js");
 const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
@@ -41,6 +41,25 @@ describe("resolveEngineId", () => {
 
   it("never resolves local from auto (local is opt-in only)", () => {
     expect(resolveEngineId({ engineSetting: "auto", onDeviceAvail: "unsupported", hasGroqKey: false, hasOpenRouterKey: false })).not.toBe("local");
+  });
+});
+
+describe("engineKeyVisibility", () => {
+  it("ondevice shows no key fields", () => {
+    expect(engineKeyVisibility("ondevice")).toEqual({ groq: false, openrouter: false });
+  });
+  it("local shows no key fields (keyless)", () => {
+    expect(engineKeyVisibility("local")).toEqual({ groq: false, openrouter: false });
+  });
+  it("groq shows only the Groq field", () => {
+    expect(engineKeyVisibility("groq")).toEqual({ groq: true, openrouter: false });
+  });
+  it("openrouter shows only the OpenRouter field", () => {
+    expect(engineKeyVisibility("openrouter")).toEqual({ groq: false, openrouter: true });
+  });
+  it("auto (and unknown) shows both", () => {
+    expect(engineKeyVisibility("auto")).toEqual({ groq: true, openrouter: true });
+    expect(engineKeyVisibility(undefined)).toEqual({ groq: true, openrouter: true });
   });
 });
 

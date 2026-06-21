@@ -3,7 +3,7 @@ import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { getModels } from "../lib/models-cache.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, LOCAL_PRESETS } from "../lib/constants.js";
-import { describeActiveEngine } from "../engines/index.js";
+import { describeActiveEngine, engineKeyVisibility } from "../engines/index.js";
 import { listLocalModels } from "../engines/local.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "../popup/components/settings-ui.js";
@@ -16,6 +16,8 @@ const els = {
   engineSelect: $("engine-select"),
   activeEngineLabel: $("active-engine-label"),
   engineQuota: $("engine-quota"),
+  groqKeyBlock: $("groq-key-block"),
+  openrouterKeyBlock: $("openrouter-key-block"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
   localPresets: $("local-presets"),
@@ -189,21 +191,24 @@ function closePicker() {
   els.pickerContainer.replaceChildren();
 }
 
-function setupScrollSpy() {
-  const links = [...els.nav.querySelectorAll("a")];
-  const byId = new Map(links.map(a => [a.dataset.target, a]));
-  const observer = new IntersectionObserver(entries => {
-    for (const e of entries) {
-      if (e.isIntersecting) {
-        links.forEach(a => a.classList.remove("active"));
-        byId.get(e.target.id)?.classList.add("active");
-      }
-    }
-  }, { rootMargin: "-88px 0px -60% 0px", threshold: 0 });
-  for (const a of links) {
-    const card = document.getElementById(a.dataset.target);
-    if (card) observer.observe(card);
+// Settings nav behaves as real tabs: clicking shows that card and hides the
+// rest. (It used to scroll-spy one long page, but bottom sections couldn't
+// reach the top under the sticky header, so clicks felt dead — issue #3.)
+function showTab(targetId) {
+  for (const a of els.nav.querySelectorAll("a")) {
+    a.classList.toggle("active", a.dataset.target === targetId);
   }
+  for (const card of document.querySelectorAll(".opt-card")) {
+    card.hidden = card.id !== targetId;
+  }
+}
+
+// Show only the API-key field(s) the chosen engine uses, so the user enters
+// their key in the right place (on-device needs none).
+function reflectEngineKeyFields(engine) {
+  const vis = engineKeyVisibility(engine);
+  if (els.groqKeyBlock) els.groqKeyBlock.style.display = vis.groq ? "" : "none";
+  if (els.openrouterKeyBlock) els.openrouterKeyBlock.style.display = vis.openrouter ? "" : "none";
 }
 
 async function saveKey() {
@@ -265,6 +270,7 @@ async function init() {
   state.currentModelId = data.model || DEFAULT_MODEL;
   if (data.apiKey) els.apiKey.value = data.apiKey;
   els.engineSelect.value = data.engine || "auto";
+  reflectEngineKeyFields(els.engineSelect.value);
   if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
   els.localBaseUrl.value = data.localBaseUrl || "";
   highlightPreset(data.localPreset || presetFromUrl(data.localBaseUrl || ""));
@@ -288,18 +294,19 @@ async function init() {
     console.warn("[options] models load failed:", e?.message);
   }
 
-  setupScrollSpy();
+  showTab("card-engine");
 
-  // nav smooth scroll
+  // nav tabs: click switches the visible card
   els.nav.addEventListener("click", e => {
     const a = e.target.closest("a");
     if (!a) return;
     e.preventDefault();
-    document.getElementById(a.dataset.target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    showTab(a.dataset.target);
   });
 
   els.engineSelect.addEventListener("change", async () => {
     await persist({ engine: els.engineSelect.value });
+    reflectEngineKeyFields(els.engineSelect.value);
     updateActiveEngineLabel();
     refreshChip();
   });

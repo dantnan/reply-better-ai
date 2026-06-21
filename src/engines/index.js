@@ -42,6 +42,20 @@ export function resolveEngineId({ engineSetting, onDeviceAvail, hasGroqKey, hasO
   return "openrouter";
 }
 
+// Pure: which API-key fields the settings UI should show for a chosen engine.
+// Drives the contextual key field so a user who picks OpenRouter sees the
+// OpenRouter field (not Groq's), and an on-device user sees none. "auto" can use
+// either cloud key as a fallback, so it shows both.
+export function engineKeyVisibility(engine) {
+  switch (engine) {
+    case "ondevice": return { groq: false, openrouter: false };
+    case "local": return { groq: false, openrouter: false }; // keyless; configured in the Local server card
+    case "groq": return { groq: true, openrouter: false };
+    case "openrouter": return { groq: false, openrouter: true };
+    default: return { groq: true, openrouter: true }; // auto / unknown
+  }
+}
+
 // True when the on-device engine is registered and usable on this device — lets
 // surfaces (e.g. the popup first-run gate) treat a no-key user as ready.
 export async function isOnDeviceUsable() {
