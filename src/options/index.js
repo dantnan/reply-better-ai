@@ -2,8 +2,9 @@ import browser from "../lib/browser.js";
 import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { getModels } from "../lib/models-cache.js";
-import { DEFAULT_MODEL, DEFAULT_STYLE } from "../lib/constants.js";
+import { DEFAULT_MODEL, DEFAULT_STYLE, LOCAL_PRESETS } from "../lib/constants.js";
 import { describeActiveEngine, engineKeyVisibility } from "../engines/index.js";
+import { listLocalModels } from "../engines/local.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "../popup/components/settings-ui.js";
 
@@ -19,6 +20,11 @@ const els = {
   openrouterKeyBlock: $("openrouter-key-block"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
+  localPresets: $("local-presets"),
+  localBaseUrl: $("local-base-url"),
+  localModel: $("local-model"),
+  localRefresh: $("local-refresh"),
+  localStatus: $("local-status"),
   apiKey: $("api-key"),
   keyToggle: $("key-toggle"),
   saveKey: $("save-key"),
@@ -68,6 +74,68 @@ function showKeyError(msg) {
 async function persist(values) {
   try { await storage.set(values); flashSaved(); }
   catch { showKeyError("Couldn't save — try again."); }
+}
+
+/* ── Local server (Ollama / LM Studio / OpenAI-compatible) ───────────── */
+
+// Highlight the preset button whose URL matches the current base URL (or the
+// explicitly-saved preset for the ambiguous "custom == a preset URL" case).
+function highlightPreset(preset) {
+  for (const btn of els.localPresets.querySelectorAll("button[data-preset]")) {
+    btn.classList.toggle("rb-btn-primary", btn.dataset.preset === preset);
+    btn.classList.toggle("rb-btn-secondary", btn.dataset.preset !== preset);
+  }
+}
+
+function presetFromUrl(url) {
+  const hit = Object.entries(LOCAL_PRESETS).find(([, p]) => p.baseUrl && p.baseUrl === url);
+  return hit ? hit[0] : "custom";
+}
+
+function fillLocalModelSelect(models, selectedId) {
+  els.localModel.replaceChildren();
+  if (!models.length) {
+    const opt = document.createElement("option");
+    opt.value = ""; opt.textContent = "No models found";
+    els.localModel.appendChild(opt);
+    els.localModel.disabled = true;
+    return;
+  }
+  els.localModel.disabled = false;
+  for (const m of models) {
+    const opt = document.createElement("option");
+    opt.value = m.id; opt.textContent = m.id;
+    els.localModel.appendChild(opt);
+  }
+  // Keep the stored model if it's still installed; otherwise default to the first.
+  els.localModel.value = models.some(m => m.id === selectedId) ? selectedId : models[0].id;
+}
+
+// The only reachability probe — user-initiated, off the hot path. Distinguishes
+// "can't reach" from "reachable but empty"; CORS-vs-refused can't be told apart
+// from a thrown TypeError, so both fold into one actionable message.
+async function refreshLocalModels({ persistSelection = false } = {}) {
+  const baseUrl = els.localBaseUrl.value.trim();
+  if (!baseUrl) {
+    els.localStatus.textContent = "Enter a base URL to connect.";
+    fillLocalModelSelect([], "");
+    return;
+  }
+  els.localStatus.textContent = "Connecting…";
+  const { localModel } = await storage.get(["localModel"]);
+  try {
+    const models = await listLocalModels(baseUrl);
+    fillLocalModelSelect(models, localModel);
+    els.localStatus.textContent = models.length
+      ? `● Connected · ${models.length} model${models.length === 1 ? "" : "s"}`
+      : "○ Reachable, but no models are available. Pull a model (Ollama) or load one (LM Studio).";
+    if (models.length && (persistSelection || els.localModel.value !== localModel)) {
+      await persist({ localModel: els.localModel.value });
+    }
+  } catch {
+    fillLocalModelSelect([], "");
+    els.localStatus.textContent = "○ Can't reach the server. Check it's running and that CORS is enabled — see the setup guide.";
+  }
 }
 
 function renderPrompts() {
@@ -195,6 +263,7 @@ async function init() {
   await migrateFromSync();
   const data = await storage.get([
     "apiKey", "groqApiKey", "engine", "model", "savedPrompts", "snippets", "enableInlineButton", "inlineMessageType", "inlineClickMode",
+    "localBaseUrl", "localModel", "localPreset",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
   state.snippets = Array.isArray(data.snippets) ? data.snippets : [];
@@ -203,6 +272,10 @@ async function init() {
   els.engineSelect.value = data.engine || "auto";
   reflectEngineKeyFields(els.engineSelect.value);
   if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
+  els.localBaseUrl.value = data.localBaseUrl || "";
+  highlightPreset(data.localPreset || presetFromUrl(data.localBaseUrl || ""));
+  if (data.localBaseUrl) refreshLocalModels();
+  else els.localStatus.textContent = "Enter a base URL to connect.";
   els.enableInline.checked = data.enableInlineButton !== false;
   const clickMode = data.inlineClickMode || "panel";
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
@@ -242,6 +315,26 @@ async function init() {
     updateActiveEngineLabel();
   });
   els.groqKeyToggle.addEventListener("click", () => { els.groqApiKey.type = els.groqApiKey.type === "password" ? "text" : "password"; });
+
+  els.localPresets.addEventListener("click", async e => {
+    const btn = e.target.closest("button[data-preset]");
+    if (!btn) return;
+    const preset = btn.dataset.preset;
+    const url = LOCAL_PRESETS[preset]?.baseUrl ?? "";
+    els.localBaseUrl.value = url;
+    highlightPreset(preset);
+    await persist({ localPreset: preset, localBaseUrl: url });
+    refreshLocalModels();
+  });
+  els.localBaseUrl.addEventListener("change", async () => {
+    const url = els.localBaseUrl.value.trim();
+    const preset = presetFromUrl(url);
+    highlightPreset(preset);
+    await persist({ localBaseUrl: url, localPreset: preset });
+    refreshLocalModels();
+  });
+  els.localModel.addEventListener("change", () => { if (els.localModel.value) persist({ localModel: els.localModel.value }); });
+  els.localRefresh.addEventListener("click", () => refreshLocalModels({ persistSelection: true }));
   els.keyToggle.addEventListener("click", () => { els.apiKey.type = els.apiKey.type === "password" ? "text" : "password"; });
   els.saveKey.addEventListener("click", saveKey);
   els.openPicker.addEventListener("click", openPicker);

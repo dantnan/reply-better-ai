@@ -15,6 +15,7 @@ What the extension *does* do, on your behalf and only when you ask, is process y
 You choose where your text is processed (Settings → Engine; "Auto" picks the best available):
 
 - **On-device (Gemini Nano) — free, private.** Runs entirely inside Chrome on your computer. Your text **never leaves your device**, there is no API key, and no network request is made to generate the result. This is the most private option and the default when your device supports it.
+- **Local (Ollama / LM Studio) — free, private.** Your text is sent only to an OpenAI-compatible server you run on your own machine (`localhost`); it stays on your computer, with no API key and no third party. You set the server URL in settings.
 - **Groq — free.** Your text is sent to Groq (`api.groq.com`) using **your own** free Groq API key.
 - **OpenRouter — premium.** Your text is sent to OpenRouter (`openrouter.ai`) using **your own** key, and forwarded to the model provider you picked (Anthropic, OpenAI, Google, etc.).
 
@@ -30,6 +31,7 @@ You choose where your text is processed (Settings → Engine; "Auto" picks the b
 It depends on the active engine:
 
 - **On-device:** nowhere. Generation happens locally; no network request is made.
+- **Local** (`localhost` / `127.0.0.1`): your text goes only to the OpenAI-compatible server you run yourself; it stays on your machine, with no key and no third party.
 - **Groq** (`api.groq.com`): your text + your Groq key (Authorization header), when the Groq engine is active.
 - **OpenRouter** (`openrouter.ai`): your text + your OpenRouter key, forwarded to your chosen model provider. Each request also includes two fixed identification headers (`HTTP-Referer` = this project's GitHub URL, `X-Title` = the app name) for app attribution; they contain no personal data and do not include the page you are on.
 - **Nowhere else.** No developer server, no analytics.
@@ -51,7 +53,7 @@ The OpenRouter model list is fetched from `https://openrouter.ai/api/v1/models` 
 The extension declares the minimum permissions needed:
 
 - **`storage`** — to save your API keys, settings, custom prompts, and snippets locally
-- **`https://openrouter.ai/*`** and **`https://api.groq.com/*`** — to talk to the cloud AI providers you may choose (only contacted when that engine is active; the on-device engine needs no host access)
+- **`https://openrouter.ai/*`**, **`https://api.groq.com/*`**, and **`http://localhost/*` + `http://127.0.0.1/*`** — to talk to the AI provider you choose: the cloud providers, or an OpenAI-compatible server you run locally. Only contacted when that engine is active; the on-device engine needs no host access.
 - **Content scripts on `http(s)://*/*`** — to show the inline ✍️ button on any web page where you write; the script runs in an isolated world and reads page text only when you act (clicking the button, selecting text to reply to, or capturing page text). It never silently scrapes pages.
 
 The extension does **not** request `tabs`, `activeTab`, `webRequest`, or any other permission that would allow broader access to your browsing.

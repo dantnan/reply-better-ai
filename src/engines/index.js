@@ -3,6 +3,7 @@ import { resolveModelSelection } from "../lib/models-cache.js";
 import { DEFAULT_MODEL, OPENROUTER_BASE, GROQ_BASE, GROQ_DEFAULT_MODEL } from "../lib/constants.js";
 import { makeCloudEngine } from "./cloud.js";
 import { onDeviceEngine } from "./ondevice.js";
+import { makeLocalEngine } from "./local.js";
 
 // Premium cloud engine: the existing OpenRouter path (model picker + Auto).
 const openrouterEngine = makeCloudEngine({
@@ -26,9 +27,14 @@ const groqEngine = makeCloudEngine({
   quotaKey: "groqQuota",
 });
 
-export const ENGINES = { ondevice: onDeviceEngine, groq: groqEngine, openrouter: openrouterEngine };
+// Local (Ollama / LM Studio / OpenAI-compatible): opt-in, keyless, user-run.
+const localEngine = makeLocalEngine();
 
-// Pure: pick the engine id from already-gathered inputs (unit-testable).
+export const ENGINES = { ondevice: onDeviceEngine, groq: groqEngine, openrouter: openrouterEngine, local: localEngine };
+
+// Pure: pick the engine id from already-gathered inputs (unit-testable). Local
+// is reachable only via an explicit setting (the line below) — it is never
+// chosen by "auto", so an unreachable localhost can't tax auto-resolution.
 export function resolveEngineId({ engineSetting, onDeviceAvail, hasGroqKey, hasOpenRouterKey }) {
   if (engineSetting && engineSetting !== "auto" && engineSetting in ENGINES) return engineSetting;
   if (onDeviceAvail === "ready" || onDeviceAvail === "downloadable") return "ondevice";
@@ -43,6 +49,7 @@ export function resolveEngineId({ engineSetting, onDeviceAvail, hasGroqKey, hasO
 export function engineKeyVisibility(engine) {
   switch (engine) {
     case "ondevice": return { groq: false, openrouter: false };
+    case "local": return { groq: false, openrouter: false }; // keyless; configured in the Local server card
     case "groq": return { groq: true, openrouter: false };
     case "openrouter": return { groq: false, openrouter: true };
     default: return { groq: true, openrouter: true }; // auto / unknown

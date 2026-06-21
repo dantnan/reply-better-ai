@@ -40,6 +40,8 @@ const els = {
   engineQuota: $("engine-quota"),
   groqKeyBlock: $("groq-key-block"),
   openrouterKeySection: $("openrouter-key-section"),
+  localHint: $("local-hint"),
+  openOptionsLocal: $("open-options-local"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
   apiKey: $("api-key"),
@@ -319,12 +321,14 @@ async function saveKey() {
   }
 }
 
-// Show only the API-key field(s) the chosen engine actually uses, so the user
-// pastes their key in the right place (and on-device users see none).
-function reflectEngineKeyFields(engine) {
+// Show only the field(s) the chosen engine uses: the cloud key block(s) per the
+// engine, plus a hint to the options page when Local is picked (its full config
+// lives there). On-device shows none.
+function reflectEngineFields(engine) {
   const vis = engineKeyVisibility(engine);
   if (els.groqKeyBlock) els.groqKeyBlock.style.display = vis.groq ? "" : "none";
   if (els.openrouterKeySection) els.openrouterKeySection.style.display = vis.openrouter ? "" : "none";
+  if (els.localHint) els.localHint.style.display = engine === "local" ? "" : "none";
 }
 
 async function updateActiveEngineLabel() {
@@ -377,7 +381,7 @@ async function init() {
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
   if (clickRadio) clickRadio.checked = true;
   els.engineSelect.value = data.engine || "auto";
-  reflectEngineKeyFields(els.engineSelect.value);
+  reflectEngineFields(els.engineSelect.value);
   if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
   renderPrompts();
   renderSnippets();
@@ -417,10 +421,11 @@ async function init() {
   // settings
   els.engineSelect.addEventListener("change", async () => {
     await storage.set({ engine: els.engineSelect.value }).catch(() => {});
-    reflectEngineKeyFields(els.engineSelect.value);
+    reflectEngineFields(els.engineSelect.value);
     updateActiveEngineLabel();
     refreshChip();
   });
+  els.openOptionsLocal.addEventListener("click", e => { e.preventDefault(); browser.runtime.openOptionsPage().catch(() => {}); });
   els.groqApiKey.addEventListener("change", async () => {
     await storage.set({ groqApiKey: els.groqApiKey.value.trim() }).catch(() => {});
     updateActiveEngineLabel();

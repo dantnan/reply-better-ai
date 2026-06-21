@@ -71,7 +71,9 @@ export async function streamImproveText({ text, apiKey, model, models, systemPro
       signal,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        // Local engines (Ollama/LM Studio) take no key — omit the header rather
+        // than send "Bearer undefined". Cloud callers always pass a key.
+        ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
         "HTTP-Referer": REFERER,
         "X-Title": TITLE,
       },
