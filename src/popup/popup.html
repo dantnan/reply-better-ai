@@ -125,16 +125,18 @@
           </select>
           <p class="rb-section-desc" style="margin-top:var(--rb-space-2);">Currently using: <strong id="active-engine-label">…</strong></p>
           <p class="rb-section-desc" id="engine-quota" style="margin-top:var(--rb-space-1);"></p>
-          <div class="rb-key-field" id="groq-key-field" style="margin-top:var(--rb-space-3);">
-            <input class="rb-input" id="groq-api-key" type="password" placeholder="gsk_… (free Groq key)" aria-label="Groq API key" />
-            <button class="rb-key-toggle" id="groq-key-toggle" type="button" aria-label="Show key">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
+          <div id="groq-key-block">
+            <div class="rb-key-field" id="groq-key-field" style="margin-top:var(--rb-space-3);">
+              <input class="rb-input" id="groq-api-key" type="password" placeholder="gsk_… (free Groq key)" aria-label="Groq API key" />
+              <button class="rb-key-toggle" id="groq-key-toggle" type="button" aria-label="Show key">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <p class="rb-section-desc" style="margin-top:var(--rb-space-2);">Get a free Groq key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.</p>
           </div>
-          <p class="rb-section-desc" style="margin-top:var(--rb-space-2);">Get a free Groq key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.</p>
         </section>
 
-        <section class="rb-section">
+        <section class="rb-section" id="openrouter-key-section">
           <h2 class="rb-section-title">OpenRouter API key</h2>
           <p class="rb-section-desc">Stored locally in your browser. Never sent anywhere but OpenRouter.</p>
           <div class="rb-key-field">

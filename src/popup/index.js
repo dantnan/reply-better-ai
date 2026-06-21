@@ -4,7 +4,7 @@ import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { getModels } from "../lib/models-cache.js";
-import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine } from "../engines/index.js";
+import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine, engineKeyVisibility } from "../engines/index.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
@@ -38,6 +38,8 @@ const els = {
   engineSelect: $("engine-select"),
   activeEngineLabel: $("active-engine-label"),
   engineQuota: $("engine-quota"),
+  groqKeyBlock: $("groq-key-block"),
+  openrouterKeySection: $("openrouter-key-section"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
   apiKey: $("api-key"),
@@ -275,11 +277,12 @@ function openPicker() {
 
 /* ── First-run / fallback ────────────────────────────────────────────── */
 async function reflectKeyState() {
-  const { apiKey } = await storage.get(["apiKey"]);
-  // Show the setup card only when there's no way to run: no key AND no usable
-  // on-device engine. On-device users need no key.
+  const { apiKey, groqApiKey } = await storage.get(["apiKey", "groqApiKey"]);
+  // Show the setup card only when there's no way to run: no key of any kind AND
+  // no usable on-device engine. A free Groq key (or on-device) is enough; don't
+  // demand an OpenRouter key from a user who set up a free engine.
   const onDeviceOk = await isOnDeviceUsable();
-  popup.classList.toggle("no-key", !apiKey && !onDeviceOk);
+  popup.classList.toggle("no-key", !apiKey && !groqApiKey && !onDeviceOk);
   if (apiKey) els.apiKey.value = apiKey;
 }
 
@@ -314,6 +317,14 @@ async function saveKey() {
     els.saveKey.disabled = false;
     els.saveKey.textContent = "Save key";
   }
+}
+
+// Show only the API-key field(s) the chosen engine actually uses, so the user
+// pastes their key in the right place (and on-device users see none).
+function reflectEngineKeyFields(engine) {
+  const vis = engineKeyVisibility(engine);
+  if (els.groqKeyBlock) els.groqKeyBlock.style.display = vis.groq ? "" : "none";
+  if (els.openrouterKeySection) els.openrouterKeySection.style.display = vis.openrouter ? "" : "none";
 }
 
 async function updateActiveEngineLabel() {
@@ -355,13 +366,18 @@ async function init() {
   state.snippets = Array.isArray(data.snippets) ? data.snippets : [];
   state.currentModelId = data.model || DEFAULT_MODEL;
 
-  fillStyleSelect(els.styleSelect, state.savedPrompts, data.messageType || DEFAULT_STYLE);
+  // Default the popup's style to the user's saved default. messageType is the
+  // popup's own last-used style; fall back to the inline default style (the only
+  // "Default style" control the options page exposes) so setting it there is
+  // honored here too, then the built-in default.
+  fillStyleSelect(els.styleSelect, state.savedPrompts, data.messageType || data.inlineMessageType || DEFAULT_STYLE);
   fillStyleSelect(els.inlineStyle, state.savedPrompts, data.inlineMessageType || DEFAULT_STYLE);
   els.enableInline.checked = data.enableInlineButton !== false;
   const clickMode = data.inlineClickMode || "panel";
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
   if (clickRadio) clickRadio.checked = true;
   els.engineSelect.value = data.engine || "auto";
+  reflectEngineKeyFields(els.engineSelect.value);
   if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
   renderPrompts();
   renderSnippets();
@@ -401,6 +417,7 @@ async function init() {
   // settings
   els.engineSelect.addEventListener("change", async () => {
     await storage.set({ engine: els.engineSelect.value }).catch(() => {});
+    reflectEngineKeyFields(els.engineSelect.value);
     updateActiveEngineLabel();
     refreshChip();
   });
