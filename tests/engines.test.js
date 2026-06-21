@@ -34,6 +34,14 @@ describe("resolveEngineId", () => {
   it("honors an explicit on-device setting (now registered)", () => {
     expect(resolveEngineId({ engineSetting: "ondevice", onDeviceAvail: "ready", hasGroqKey: false, hasOpenRouterKey: true })).toBe("ondevice");
   });
+
+  it("honors an explicit local setting", () => {
+    expect(resolveEngineId({ engineSetting: "local", onDeviceAvail: "unsupported", hasGroqKey: false, hasOpenRouterKey: false })).toBe("local");
+  });
+
+  it("never resolves local from auto (local is opt-in only)", () => {
+    expect(resolveEngineId({ engineSetting: "auto", onDeviceAvail: "unsupported", hasGroqKey: false, hasOpenRouterKey: false })).not.toBe("local");
+  });
 });
 
 describe("onDeviceEngine.availability", () => {
@@ -60,11 +68,12 @@ describe("onDeviceEngine.availability", () => {
 });
 
 describe("cloud engines registry", () => {
-  it("registers ondevice, groq, and openrouter", () => {
-    expect(Object.keys(ENGINES).sort()).toEqual(["groq", "ondevice", "openrouter"]);
+  it("registers ondevice, groq, openrouter, and local", () => {
+    expect(Object.keys(ENGINES).sort()).toEqual(["groq", "local", "ondevice", "openrouter"]);
     expect(ENGINES.groq.kind).toBe("cloud");
     expect(ENGINES.openrouter.kind).toBe("cloud");
     expect(ENGINES.ondevice.kind).toBe("on-device");
+    expect(ENGINES.local.kind).toBe("local");
   });
 
   it("groq reports needs-setup when no key is stored", async () => {

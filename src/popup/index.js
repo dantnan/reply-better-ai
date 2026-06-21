@@ -38,6 +38,8 @@ const els = {
   engineSelect: $("engine-select"),
   activeEngineLabel: $("active-engine-label"),
   engineQuota: $("engine-quota"),
+  localHint: $("local-hint"),
+  openOptionsLocal: $("open-options-local"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
   apiKey: $("api-key"),
@@ -316,6 +318,12 @@ async function saveKey() {
   }
 }
 
+// The popup keeps the local server's full config (URL + model) in the options
+// page; here we just point users there when they pick the Local engine.
+function reflectLocalHint() {
+  if (els.localHint) els.localHint.style.display = els.engineSelect.value === "local" ? "" : "none";
+}
+
 async function updateActiveEngineLabel() {
   let d = null;
   try { d = await describeActiveEngine(); } catch { /* keep null */ }
@@ -362,6 +370,7 @@ async function init() {
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
   if (clickRadio) clickRadio.checked = true;
   els.engineSelect.value = data.engine || "auto";
+  reflectLocalHint();
   if (data.groqApiKey) els.groqApiKey.value = data.groqApiKey;
   renderPrompts();
   renderSnippets();
@@ -401,9 +410,11 @@ async function init() {
   // settings
   els.engineSelect.addEventListener("change", async () => {
     await storage.set({ engine: els.engineSelect.value }).catch(() => {});
+    reflectLocalHint();
     updateActiveEngineLabel();
     refreshChip();
   });
+  els.openOptionsLocal.addEventListener("click", e => { e.preventDefault(); browser.runtime.openOptionsPage().catch(() => {}); });
   els.groqApiKey.addEventListener("change", async () => {
     await storage.set({ groqApiKey: els.groqApiKey.value.trim() }).catch(() => {});
     updateActiveEngineLabel();

@@ -120,9 +120,11 @@
           <select class="rb-input" id="engine-select" aria-label="Engine">
             <option value="auto">Auto (recommended)</option>
             <option value="ondevice">On-device — free, private, no key</option>
+            <option value="local">Local (Ollama / LM Studio) — private, no key</option>
             <option value="groq">Groq — free (needs a key)</option>
             <option value="openrouter">OpenRouter — premium (needs a key)</option>
           </select>
+          <p class="rb-section-desc" id="local-hint" style="margin-top:var(--rb-space-2);display:none;">Configure your local server (URL + model) in <a href="#" id="open-options-local">full settings →</a></p>
           <p class="rb-section-desc" style="margin-top:var(--rb-space-2);">Currently using: <strong id="active-engine-label">…</strong></p>
           <p class="rb-section-desc" id="engine-quota" style="margin-top:var(--rb-space-1);"></p>
           <div class="rb-key-field" id="groq-key-field" style="margin-top:var(--rb-space-3);">

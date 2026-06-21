@@ -6,8 +6,8 @@ export const AUTO_FREE_MODEL = "auto:fastest-free";
 export const AUTO_FREE_MODEL_LIMIT = 6; // how many free models to hand OpenRouter for routing/failover
 export const DEFAULT_STYLE = "improve";
 // Which engine powers a generation. "auto" picks on-device when available, then
-// a cloud free key, then OpenRouter. See src/engines/.
-export const DEFAULT_ENGINE = "auto"; // "auto" | "ondevice" | "groq" | "openrouter"
+// a cloud free key, then OpenRouter. "local" is opt-in only (never auto). See src/engines/.
+export const DEFAULT_ENGINE = "auto"; // "auto" | "ondevice" | "groq" | "openrouter" | "local"
 export const DEFAULT_CLICK_MODE = "panel"; // inline button: "panel" | "instant"
 export const RATE_LIMIT_MS = 1000;
 export const MAX_INPUT_LENGTH = 50000;
@@ -17,6 +17,15 @@ export const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 // ~1000 req/day per user (BYOK). Default to a capable, fast free model.
 export const GROQ_BASE = "https://api.groq.com/openai/v1";
 export const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// Local engine: any OpenAI-compatible server on the user's machine (Ollama,
+// LM Studio, llama.cpp, vLLM…). No API key. The base URL is itself a setting;
+// presets fill the two common defaults. See src/engines/local.js.
+export const LOCAL_PRESETS = {
+  ollama: { label: "Ollama", baseUrl: "http://localhost:11434/v1" },
+  lmstudio: { label: "LM Studio", baseUrl: "http://localhost:1234/v1" },
+  custom: { label: "Custom", baseUrl: "" },
+};
+export const DEFAULT_LOCAL_BASE_URL = LOCAL_PRESETS.ollama.baseUrl;
 export const REQUEST_TIMEOUT_MS = 60000;
 export const CUSTOM_PROMPT_PREFIX = "custom_prompt_";
 // Roughly two lines tall — enough to identify a "long message" composer

@@ -12,7 +12,9 @@
   ],
   "host_permissions": [
     "https://openrouter.ai/*",
-    "https://api.groq.com/*"
+    "https://api.groq.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "action": {
     "default_icon": "icons/icon.png",
