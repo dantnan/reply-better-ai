@@ -9,7 +9,7 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId, ENGINES } = await import("../src/engines/index.js");
+const { resolveEngineId, engineKeyVisibility, ENGINES } = await import("../src/engines/index.js");
 const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
@@ -33,6 +33,22 @@ describe("resolveEngineId", () => {
 
   it("honors an explicit on-device setting (now registered)", () => {
     expect(resolveEngineId({ engineSetting: "ondevice", onDeviceAvail: "ready", hasGroqKey: false, hasOpenRouterKey: true })).toBe("ondevice");
+  });
+});
+
+describe("engineKeyVisibility", () => {
+  it("ondevice shows no key fields", () => {
+    expect(engineKeyVisibility("ondevice")).toEqual({ groq: false, openrouter: false });
+  });
+  it("groq shows only the Groq field", () => {
+    expect(engineKeyVisibility("groq")).toEqual({ groq: true, openrouter: false });
+  });
+  it("openrouter shows only the OpenRouter field", () => {
+    expect(engineKeyVisibility("openrouter")).toEqual({ groq: false, openrouter: true });
+  });
+  it("auto (and unknown) shows both", () => {
+    expect(engineKeyVisibility("auto")).toEqual({ groq: true, openrouter: true });
+    expect(engineKeyVisibility(undefined)).toEqual({ groq: true, openrouter: true });
   });
 });
 
