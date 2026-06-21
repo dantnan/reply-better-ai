@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI",
-  "version": "1.5.0",
-  "description": "Improve and reply to messages with AI using your own free Groq or OpenRouter key. Polish drafts and reply in context, anywhere.",
+  "version": "1.6.0",
+  "description": "Improve and reply to messages with AI. Run a local model (Ollama/LM Studio) with no key, or bring your own free key.",
   "browser_specific_settings": {
     "gecko": {
       "id": "hi@antnan.com",
