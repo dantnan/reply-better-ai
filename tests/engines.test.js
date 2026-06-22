@@ -9,7 +9,7 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId, engineKeyVisibility, ENGINES } = await import("../src/engines/index.js");
+const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, ENGINES } = await import("../src/engines/index.js");
 const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
@@ -60,6 +60,19 @@ describe("engineKeyVisibility", () => {
   it("auto (and unknown) shows both", () => {
     expect(engineKeyVisibility("auto")).toEqual({ groq: true, openrouter: true });
     expect(engineKeyVisibility(undefined)).toEqual({ groq: true, openrouter: true });
+  });
+});
+
+describe("engineUsesModelPicker", () => {
+  it("shows the model picker for openrouter and auto", () => {
+    expect(engineUsesModelPicker("openrouter")).toBe(true);
+    expect(engineUsesModelPicker("auto")).toBe(true);
+    expect(engineUsesModelPicker(undefined)).toBe(true);
+  });
+  it("hides it for engines with their own model", () => {
+    expect(engineUsesModelPicker("ondevice")).toBe(false);
+    expect(engineUsesModelPicker("groq")).toBe(false);
+    expect(engineUsesModelPicker("local")).toBe(false);
   });
 });
 

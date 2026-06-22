@@ -19,9 +19,26 @@ const MIGRATABLE_KEYS = [
   "enableInlineButton", "inlineMessageType", "inlineClickMode", "customPrompt",
 ];
 
+// The default writing style used to be split across two keys: `messageType`
+// (popup) and `inlineMessageType` (the options "Default style" + inline button),
+// so setting it in options never reached the popup. Collapse to one key
+// (`messageType`); the explicit "Default style" the user set wins. Idempotent.
+export async function migrateStyleKey() {
+  try {
+    const { inlineMessageType } = await browser.storage.local.get(["inlineMessageType"]);
+    if (inlineMessageType !== undefined) {
+      await browser.storage.local.set({ messageType: inlineMessageType });
+      await browser.storage.local.remove("inlineMessageType");
+    }
+  } catch (e) {
+    console.warn("[storage] style-key migration failed:", e?.message);
+  }
+}
+
 // API key was stored in storage.sync; move it to local so it doesn't roam across devices.
 // Each startup re-runs this; leftover sync keys from a partial run are detected and re-cleaned.
 export async function migrateFromSync() {
+  await migrateStyleKey();
   let syncData;
   let localData;
   try {

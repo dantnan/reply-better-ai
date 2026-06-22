@@ -3,7 +3,7 @@ import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { getModels } from "../lib/models-cache.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, LOCAL_PRESETS } from "../lib/constants.js";
-import { describeActiveEngine, engineKeyVisibility } from "../engines/index.js";
+import { describeActiveEngine, engineKeyVisibility, engineUsesModelPicker } from "../engines/index.js";
 import { listLocalModels } from "../engines/local.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "../popup/components/settings-ui.js";
@@ -209,6 +209,15 @@ function reflectEngineKeyFields(engine) {
   const vis = engineKeyVisibility(engine);
   if (els.groqKeyBlock) els.groqKeyBlock.style.display = vis.groq ? "" : "none";
   if (els.openrouterKeyBlock) els.openrouterKeyBlock.style.display = vis.openrouter ? "" : "none";
+  // The OpenRouter model picker only applies to OpenRouter/Auto; hide its tab
+  // for engines with their own fixed model, and leave that tab if it was active.
+  const usesPicker = engineUsesModelPicker(engine);
+  const modelLink = els.nav.querySelector('a[data-target="card-model"]');
+  if (modelLink) modelLink.style.display = usesPicker ? "" : "none";
+  if (!usesPicker) {
+    const modelCard = document.getElementById("card-model");
+    if (modelCard && !modelCard.hidden) showTab("card-engine");
+  }
 }
 
 async function saveKey() {
@@ -262,7 +271,7 @@ async function engineQuotaText(d) {
 async function init() {
   await migrateFromSync();
   const data = await storage.get([
-    "apiKey", "groqApiKey", "engine", "model", "savedPrompts", "snippets", "enableInlineButton", "inlineMessageType", "inlineClickMode",
+    "apiKey", "groqApiKey", "engine", "model", "savedPrompts", "snippets", "enableInlineButton", "messageType", "inlineClickMode",
     "localBaseUrl", "localModel", "localPreset",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
@@ -280,7 +289,7 @@ async function init() {
   const clickMode = data.inlineClickMode || "panel";
   const clickRadio = document.querySelector(`#inline-click-mode input[value="${clickMode}"]`);
   if (clickRadio) clickRadio.checked = true;
-  fillStyleSelect(els.inlineStyle, state.savedPrompts, data.inlineMessageType || DEFAULT_STYLE);
+  fillStyleSelect(els.inlineStyle, state.savedPrompts, data.messageType || DEFAULT_STYLE);
   renderPrompts();
   renderSnippets();
   refreshChip();
@@ -340,7 +349,7 @@ async function init() {
   els.openPicker.addEventListener("click", openPicker);
   els.modal.addEventListener("click", e => { if (e.target === els.modal) closePicker(); });
   els.enableInline.addEventListener("change", () => persist({ enableInlineButton: els.enableInline.checked }));
-  els.inlineStyle.addEventListener("change", () => persist({ inlineMessageType: els.inlineStyle.value }));
+  els.inlineStyle.addEventListener("change", () => persist({ messageType: els.inlineStyle.value }));
   for (const radio of document.querySelectorAll('#inline-click-mode input[name="click-mode"]')) {
     radio.addEventListener("change", () => { if (radio.checked) persist({ inlineClickMode: radio.value }); });
   }

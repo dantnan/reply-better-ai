@@ -11,7 +11,7 @@ import { DEFAULT_STYLE, DEFAULT_CLICK_MODE, DEFAULT_MODEL } from "../lib/constan
 
 const DEFAULT_SETTINGS = Object.freeze({
   enableInlineButton: true,
-  inlineMessageType: DEFAULT_STYLE,
+  messageType: DEFAULT_STYLE,
   inlineClickMode: DEFAULT_CLICK_MODE,
   model: DEFAULT_MODEL,
   replyConsent: false,
@@ -25,11 +25,11 @@ let activeField = null;
 async function loadSettings() {
   try {
     const stored = await storage.get([
-      "enableInlineButton", "inlineMessageType", "inlineClickMode",
+      "enableInlineButton", "messageType", "inlineClickMode",
       "model", "replyConsent", "savedPrompts", "snippets",
     ]);
     if (stored.enableInlineButton !== undefined) settings.enableInlineButton = stored.enableInlineButton;
-    if (stored.inlineMessageType) settings.inlineMessageType = stored.inlineMessageType;
+    if (stored.messageType) settings.messageType = stored.messageType;
     if (stored.inlineClickMode) settings.inlineClickMode = stored.inlineClickMode;
     if (stored.model) settings.model = stored.model;
     if (stored.replyConsent !== undefined) settings.replyConsent = stored.replyConsent;
@@ -103,7 +103,7 @@ async function improveInstant(field) {
     const response = await sendMessage({
       action: "improveText",
       text,
-      messageType: settings.inlineMessageType,
+      messageType: settings.messageType,
     }, 60000);
     if (response?.improvedText) {
       writeText(field, response.improvedText);
@@ -201,7 +201,7 @@ function handleReposition() {
   positionButton(activeField);
 }
 
-const WATCHED_KEYS = ["enableInlineButton", "inlineMessageType", "inlineClickMode", "model", "replyConsent", "savedPrompts", "snippets"];
+const WATCHED_KEYS = ["enableInlineButton", "messageType", "inlineClickMode", "model", "replyConsent", "savedPrompts", "snippets"];
 
 async function init() {
   await loadSettings();

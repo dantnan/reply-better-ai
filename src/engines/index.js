@@ -56,6 +56,14 @@ export function engineKeyVisibility(engine) {
   }
 }
 
+// Pure: whether the OpenRouter model picker is relevant for a chosen engine.
+// on-device, Groq, and local each use their own fixed/own-configured model, so
+// the "Model" section is hidden for them; OpenRouter (and Auto, which may route
+// to it) show it.
+export function engineUsesModelPicker(engine) {
+  return engine !== "ondevice" && engine !== "groq" && engine !== "local";
+}
+
 // True when the on-device engine is registered and usable on this device — lets
 // surfaces (e.g. the popup first-run gate) treat a no-key user as ready.
 export async function isOnDeviceUsable() {

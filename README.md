@@ -145,6 +145,10 @@ Read these before opening a PR.
 
 Reply Better AI runs no servers and ships zero telemetry. Your API keys, prompts, and snippets stay in your browser. With the on-device or local (Ollama/LM Studio) engines, nothing ever leaves your computer. With a cloud engine, only the text you select (or explicitly capture) is sent, and the only network traffic is to the provider you chose (Groq or OpenRouter) when you ask for an improvement or a reply. See [docs/privacy.md](./docs/privacy.md) for the full policy.
 
+## Credits
+
+The Local engine (Ollama / LM Studio / OpenAI-compatible) was contributed by [@jtsternberg](https://github.com/jtsternberg). Reply Better AI is built and maintained by [@dantnan](https://github.com/dantnan), with thanks to everyone who has tried it and sent feedback.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Improve and reply to messages with AI. Free and private, no key: on-device or a local model (Ollama/LM Studio). Or your own key.",
   "minimum_chrome_version": "109",
   "icons": {
