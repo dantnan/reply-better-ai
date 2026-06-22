@@ -3,7 +3,7 @@ import { storage, migrateFromSync, setSelectedModel } from "../lib/storage.js";
 import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { getModels } from "../lib/models-cache.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, LOCAL_PRESETS } from "../lib/constants.js";
-import { describeActiveEngine, engineKeyVisibility, engineUsesModelPicker } from "../engines/index.js";
+import { describeActiveEngine, engineKeyVisibility, engineUsesModelPicker, engineModelSummary } from "../engines/index.js";
 import { listLocalModels } from "../engines/local.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "../popup/components/settings-ui.js";
@@ -18,6 +18,7 @@ const els = {
   engineQuota: $("engine-quota"),
   groqKeyBlock: $("groq-key-block"),
   openrouterKeyBlock: $("openrouter-key-block"),
+  modelReadonly: $("model-readonly"),
   groqApiKey: $("groq-api-key"),
   groqKeyToggle: $("groq-key-toggle"),
   localPresets: $("local-presets"),
@@ -209,15 +210,26 @@ function reflectEngineKeyFields(engine) {
   const vis = engineKeyVisibility(engine);
   if (els.groqKeyBlock) els.groqKeyBlock.style.display = vis.groq ? "" : "none";
   if (els.openrouterKeyBlock) els.openrouterKeyBlock.style.display = vis.openrouter ? "" : "none";
-  // The OpenRouter model picker only applies to OpenRouter/Auto; hide its tab
-  // for engines with their own fixed model, and leave that tab if it was active.
+  updateModelSection(engine);
+}
+
+// The Model tab stays visible for every engine: the OpenRouter picker for
+// OpenRouter/Auto, and a read-only summary of the active engine's own model
+// otherwise (on-device, Groq, local).
+async function updateModelSection(engine) {
+  const card = document.getElementById("card-model");
+  const chip = card && card.querySelector(".rb-model-chip");
   const usesPicker = engineUsesModelPicker(engine);
-  const modelLink = els.nav.querySelector('a[data-target="card-model"]');
-  if (modelLink) modelLink.style.display = usesPicker ? "" : "none";
-  if (!usesPicker) {
-    const modelCard = document.getElementById("card-model");
-    if (modelCard && !modelCard.hidden) showTab("card-engine");
+  if (chip) chip.style.display = usesPicker ? "" : "none";
+  if (!els.modelReadonly) return;
+  if (usesPicker) { els.modelReadonly.style.display = "none"; return; }
+  let text = engineModelSummary(engine);
+  if (engine === "local") {
+    const m = els.localModel?.value || (await storage.get(["localModel"])).localModel;
+    text = m ? `${m} · local server` : "Set a model in the Local server tab";
   }
+  els.modelReadonly.textContent = text;
+  els.modelReadonly.style.display = "";
 }
 
 async function saveKey() {

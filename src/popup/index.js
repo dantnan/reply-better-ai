@@ -4,7 +4,7 @@ import { validateApiKey, getKeyInfo } from "../lib/openrouter.js";
 import { resolveSystemPrompt } from "../lib/system-prompts.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { getModels } from "../lib/models-cache.js";
-import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine, engineKeyVisibility, engineUsesModelPicker } from "../engines/index.js";
+import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine, engineKeyVisibility, engineUsesModelPicker, engineModelSummary } from "../engines/index.js";
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
@@ -41,6 +41,7 @@ const els = {
   groqKeyBlock: $("groq-key-block"),
   openrouterKeySection: $("openrouter-key-section"),
   modelSection: $("model-section"),
+  modelReadonly: $("model-readonly"),
   localHint: $("local-hint"),
   openOptionsLocal: $("open-options-local"),
   groqApiKey: $("groq-api-key"),
@@ -330,9 +331,25 @@ function reflectEngineFields(engine) {
   if (els.groqKeyBlock) els.groqKeyBlock.style.display = vis.groq ? "" : "none";
   if (els.openrouterKeySection) els.openrouterKeySection.style.display = vis.openrouter ? "" : "none";
   if (els.localHint) els.localHint.style.display = engine === "local" ? "" : "none";
-  // The OpenRouter model picker only applies to OpenRouter/Auto; hide it for the
-  // engines that use their own fixed model (on-device, Groq, local).
-  if (els.modelSection) els.modelSection.style.display = engineUsesModelPicker(engine) ? "" : "none";
+  updateModelSection(engine);
+}
+
+// Keep the Model section meaningful for every engine: the OpenRouter picker for
+// OpenRouter/Auto, and a read-only summary of the model the active engine uses
+// otherwise (on-device, Groq, local), instead of hiding the section.
+async function updateModelSection(engine) {
+  const chip = els.modelSection?.querySelector(".rb-model-chip");
+  const usesPicker = engineUsesModelPicker(engine);
+  if (chip) chip.style.display = usesPicker ? "" : "none";
+  if (!els.modelReadonly) return;
+  if (usesPicker) { els.modelReadonly.style.display = "none"; return; }
+  let text = engineModelSummary(engine);
+  if (engine === "local") {
+    const { localModel } = await storage.get(["localModel"]);
+    text = localModel ? `${localModel} · local server` : "Set a model in the Local server settings";
+  }
+  els.modelReadonly.textContent = text;
+  els.modelReadonly.style.display = "";
 }
 
 async function updateActiveEngineLabel() {

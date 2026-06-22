@@ -58,10 +58,21 @@ export function engineKeyVisibility(engine) {
 
 // Pure: whether the OpenRouter model picker is relevant for a chosen engine.
 // on-device, Groq, and local each use their own fixed/own-configured model, so
-// the "Model" section is hidden for them; OpenRouter (and Auto, which may route
-// to it) show it.
+// the Model section shows a read-only summary for them instead of the picker;
+// OpenRouter (and Auto, which may route to it) show the picker.
 export function engineUsesModelPicker(engine) {
   return engine !== "ondevice" && engine !== "groq" && engine !== "local";
+}
+
+// Pure: read-only label of the model a fixed-model engine uses, for the Model
+// section when there's no picker. Returns null for picker engines (openrouter /
+// auto). The local engine's model is dynamic, so it's resolved by the caller.
+export function engineModelSummary(engine) {
+  switch (engine) {
+    case "ondevice": return "Gemini Nano · runs on your device";
+    case "groq": return "Llama 3.3 70B · via Groq";
+    default: return null;
+  }
 }
 
 // True when the on-device engine is registered and usable on this device — lets

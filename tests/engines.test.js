@@ -9,7 +9,7 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, ENGINES } = await import("../src/engines/index.js");
+const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, engineModelSummary, ENGINES } = await import("../src/engines/index.js");
 const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
@@ -73,6 +73,18 @@ describe("engineUsesModelPicker", () => {
     expect(engineUsesModelPicker("ondevice")).toBe(false);
     expect(engineUsesModelPicker("groq")).toBe(false);
     expect(engineUsesModelPicker("local")).toBe(false);
+  });
+});
+
+describe("engineModelSummary", () => {
+  it("describes the fixed-model engines", () => {
+    expect(engineModelSummary("ondevice")).toMatch(/Gemini Nano/);
+    expect(engineModelSummary("groq")).toMatch(/Groq/);
+  });
+  it("returns null for picker engines and for local (resolved by the caller)", () => {
+    expect(engineModelSummary("openrouter")).toBe(null);
+    expect(engineModelSummary("auto")).toBe(null);
+    expect(engineModelSummary("local")).toBe(null);
   });
 });
 
