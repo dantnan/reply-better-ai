@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Reply Better AI",
-  "version": "1.6.2",
-  "description": "Improve and reply to messages with AI. Run a local model (Ollama/LM Studio) with no key, or bring your own free key.",
+  "name": "Reply Better AI – Free AI Writing Assistant",
+  "version": "1.6.3",
+  "description": "Rewrite drafts and write replies anywhere on the web. Free AI writing assistant that runs on-device or on your own Ollama model.",
   "browser_specific_settings": {
     "gecko": {
       "id": "hi@antnan.com",
