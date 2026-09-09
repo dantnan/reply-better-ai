@@ -159,6 +159,23 @@
             <h2>Custom prompts</h2>
             <p>Your own instructions, available as styles in the popup and inline button.</p>
           </div>
+          <div class="opt-voice">
+            <h3 class="opt-voice-title">Learn my voice</h3>
+            <p class="opt-voice-desc">Paste a few things you actually wrote. The model reads them and writes a style instruction, saved as a "My voice" style you can pick like any other. With the on-device or local engine, your samples never leave your computer.</p>
+            <textarea class="rb-input opt-voice-input" id="voice-samples" rows="6" placeholder="Paste 3-5 emails, messages or comments you wrote…" aria-label="Writing samples"></textarea>
+            <div class="rb-add-row">
+              <button class="rb-btn rb-btn-secondary rb-btn-sm" id="voice-analyze" type="button">Analyze my writing</button>
+              <span class="opt-voice-status" id="voice-status"></span>
+            </div>
+            <div id="voice-result" style="display:none;">
+              <textarea class="rb-input opt-voice-input" id="voice-text" rows="5" aria-label="Generated style instruction"></textarea>
+              <div class="rb-add-row">
+                <button class="rb-btn rb-btn-sm" id="voice-save" type="button">Save as "My voice"</button>
+                <button class="rb-btn rb-btn-secondary rb-btn-sm" id="voice-discard" type="button">Discard</button>
+              </div>
+            </div>
+          </div>
+
           <div class="rb-manager-list" id="prompts-list"></div>
           <div class="rb-add-row">
             <input class="rb-input" id="new-prompt-name" type="text" placeholder="Name (e.g. Standup)" aria-label="Custom prompt name" style="max-width:200px;" />

@@ -1,6 +1,7 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
+import { VOICE_ANALYSIS_PROMPT, VOICE_MIN_CHARS, buildVoiceAnalysisInput, isEnoughVoiceSample } from "../lib/voice.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
 import { orderedEngines, describeActiveEngine } from "../engines/index.js";
@@ -210,6 +211,17 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+  // "Learn my voice": read the user's samples and hand back a style instruction
+  // they can edit and save as a custom prompt.
+  if (message.action === "analyzeVoice") {
+    handleAnalyzeVoice(message)
+      .then(sendResponse)
+      .catch(err => {
+        console.error("[analyzeVoice] handler error:", err);
+        sendResponse({ error: err?.userMessage || err?.message || "Unknown error", code: err?.name });
+      });
+    return true;
+  }
   console.warn("[bg] unknown action:", message.action);
   sendResponse({ error: `Unknown action: ${message.action}` });
   return true;
@@ -246,5 +258,28 @@ async function handleImproveText(message) {
       status: err.status,
       model: err.model,
     };
+  }
+}
+
+async function handleAnalyzeVoice(message) {
+  const samples = buildVoiceAnalysisInput(message.samples);
+  if (!isEnoughVoiceSample(samples)) {
+    return { error: `Paste at least ${VOICE_MIN_CHARS} characters of your own writing.` };
+  }
+  try {
+    const engines = await orderedEngines();
+    let lastErr = null;
+    for (const engine of engines) {
+      try {
+        const style = await engine.streamImprove({ text: samples, systemPrompt: VOICE_ANALYSIS_PROMPT });
+        return { style: (style || "").trim(), engine: engine.label };
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[analyzeVoice] engine "${engine.id}" failed:`, err?.name, err?.message);
+      }
+    }
+    throw lastErr || new Error("No engine available");
+  } catch (err) {
+    return { error: err.userMessage || err.message, code: err.name };
   }
 }
