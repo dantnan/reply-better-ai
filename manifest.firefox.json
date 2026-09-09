@@ -23,7 +23,8 @@
     "512": "icons/icon.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab"
   ],
   "host_permissions": [
     "https://openrouter.ai/*",
@@ -59,5 +60,14 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "commands": {
+    "improve-now": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Period",
+        "mac": "Command+Shift+Period"
+      },
+      "description": "Improve or reply in the focused text field"
+    }
   }
 }

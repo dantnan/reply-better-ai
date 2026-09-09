@@ -133,6 +133,25 @@ async function runStartupValidation() {
   }
 }
 
+// Keyboard shortcut (Ctrl+Shift+. by default, rebindable in the browser's
+// shortcut settings). Invoking a command grants activeTab for the current tab,
+// which is what lets us message its content script without a broad host
+// permission. The content script decides what to do with the focused field.
+if (browser.commands?.onCommand) {
+  browser.commands.onCommand.addListener(async command => {
+    if (command !== "improve-now") return;
+    try {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+      await browser.tabs.sendMessage(tab.id, { action: "shortcut" });
+    } catch (e) {
+      // Restricted pages (the store, about:, other extensions) have no content
+      // script to talk to. Nothing to recover from; don't spam the console.
+      console.debug("[commands] no content script on this tab:", e?.message);
+    }
+  });
+}
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message !== "object") {
     sendResponse({ error: "Invalid message" });
