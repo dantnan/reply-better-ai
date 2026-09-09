@@ -9,6 +9,17 @@ import { orderedEngines, describeActiveEngine } from "../engines/index.js";
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
 // Two modes: "improve" (rewrite the user's draft in a style) and "reply" (write
 // a reply to a captured conversation in a tone, in the instruction's language).
+// Local-only usage counter, read by the popup to decide whether to show the
+// one-time review line. Never sent anywhere.
+async function countSuccessfulRun() {
+  try {
+    const { improveCount = 0 } = await storage.get(["improveCount"]);
+    await storage.set({ improveCount: improveCount + 1 });
+  } catch (e) {
+    console.debug("[usage] could not record run:", e?.message);
+  }
+}
+
 browser.runtime.onConnect.addListener(port => {
   if (port.name !== "rb-improve-stream") return;
   // The panel disconnects the port when it closes mid-stream; abort the upstream
@@ -49,6 +60,7 @@ browser.runtime.onConnect.addListener(port => {
             onModel: used => post({ model: used }),
           });
           post({ done: true, full, engine: engine.label });
+          countSuccessfulRun();
           finished = true;
           break;
         } catch (err) {
@@ -70,6 +82,10 @@ browser.runtime.onConnect.addListener(port => {
 
 browser.runtime.onInstalled.addListener(async details => {
   await migrateFromSync();
+  // Existing users upgrading have no install date; treat the upgrade as the
+  // start so the review line still waits a few days before appearing.
+  const { installedAt } = await storage.get(["installedAt"]);
+  if (!installedAt) await storage.set({ installedAt: Date.now() });
   if (details.reason === "install") {
     const existing = await storage.get(["model", "messageType"]);
     const defaults = {};
@@ -212,7 +228,11 @@ async function handleImproveText(message) {
     const engines = await orderedEngines();
     let lastErr = null;
     for (const engine of engines) {
-      try { return { improvedText: await engine.streamImprove({ text, systemPrompt }) }; }
+      try {
+        const improvedText = await engine.streamImprove({ text, systemPrompt });
+        countSuccessfulRun();
+        return { improvedText };
+      }
       catch (err) {
         lastErr = err;
         console.warn(`[improveText] engine "${engine.id}" failed:`, err?.name, err?.message);
