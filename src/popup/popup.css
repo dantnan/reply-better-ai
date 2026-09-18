@@ -465,3 +465,30 @@ body {
 .rb-footer a { color: var(--rb-fg-subtle); text-decoration: none; font-weight: var(--rb-weight-medium); }
 .rb-footer a:hover { color: var(--rb-accent-fg); }
 .rb-footer .rb-dot { color: var(--rb-fg-faint); }
+
+/* One-time review line. Sits above the footer, never blocks anything, and is
+   gone for good once the user acts on it or dismisses it. */
+.rb-review-nudge {
+  display: flex;
+  align-items: center;
+  gap: var(--rb-space-2);
+  padding: var(--rb-space-3);
+  border-top: 1px solid var(--rb-border);
+  font-size: var(--rb-text-sm);
+  color: var(--rb-fg-muted);
+}
+.rb-review-text { flex: 1; }
+.rb-review-dismiss {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rb-radius-sm);
+  background: transparent;
+  color: var(--rb-fg-muted);
+  cursor: pointer;
+}
+.rb-review-dismiss:hover { background: var(--rb-surface-2); color: var(--rb-fg); }
+.rb-review-dismiss svg { width: 14px; height: 14px; }

@@ -201,6 +201,35 @@ function handleReposition() {
   positionButton(activeField);
 }
 
+// Keyboard shortcut relay. The worker can't see the page, so it just tells us
+// the shortcut fired; everything about which field and which mode is decided
+// here, exactly as if the inline button had been clicked.
+function handleShortcut() {
+  const focused = isTextInput(document.activeElement) ? document.activeElement : null;
+  // Only fall back to the last field in the reply flow: selecting the message
+  // you are replying to moves focus out of the composer. Otherwise the tracked
+  // field can be stale (closing the panel leaves focus on the page, and no blur
+  // fires to clear it), and the shortcut would act on a field the user left.
+  const field = focused || (activeField && hasReplySelection(activeField) ? activeField : null);
+  if (!field || !isImproveTarget(field)) {
+    showToast("Put the cursor in a text field first.", { type: "error" });
+    return;
+  }
+  if (!settings.enableInlineButton) {
+    showToast("Turn the inline button back on in settings to use the shortcut.", { type: "error" });
+    return;
+  }
+  activeField = field;
+  showButtonFor(field);
+  onButtonClick();
+}
+
+browser.runtime.onMessage.addListener(message => {
+  if (message?.action !== "shortcut") return;
+  handleShortcut();
+  return Promise.resolve({ ok: true });
+});
+
 const WATCHED_KEYS = ["enableInlineButton", "messageType", "inlineClickMode", "model", "replyConsent", "savedPrompts", "snippets"];
 
 async function init() {

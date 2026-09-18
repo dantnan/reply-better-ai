@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Reply Better AI",
-  "version": "1.6.2",
-  "description": "Improve and reply to messages with AI. Free and private, no key: on-device or a local model (Ollama/LM Studio). Or your own key.",
+  "name": "Reply Better AI – Free AI Writing Assistant",
+  "version": "1.7.0",
+  "description": "Rewrite drafts and write replies anywhere on the web. Free AI writing assistant that runs on-device or on your own Ollama model.",
   "minimum_chrome_version": "109",
   "icons": {
     "512": "icons/icon.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "activeTab"
   ],
   "host_permissions": [
     "https://openrouter.ai/*",
@@ -42,5 +43,14 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "commands": {
+    "improve-now": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Period",
+        "mac": "Command+Shift+Period"
+      },
+      "description": "Improve or reply in the focused text field"
+    }
   }
 }

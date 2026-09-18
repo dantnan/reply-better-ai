@@ -7,6 +7,7 @@ import { describeActiveEngine, engineKeyVisibility, engineUsesModelPicker, engin
 import { listLocalModels } from "../engines/local.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "../popup/components/settings-ui.js";
+import { isEnoughVoiceSample, upsertVoicePrompt, VOICE_MIN_CHARS, VOICE_PROMPT_NAME } from "../lib/voice.js";
 
 const $ = id => document.getElementById(id);
 
@@ -37,6 +38,13 @@ const els = {
   enableInline: $("enable-inline-button"),
   inlineStyle: $("inline-message-type"),
   promptsList: $("prompts-list"),
+  voiceSamples: $("voice-samples"),
+  voiceAnalyze: $("voice-analyze"),
+  voiceStatus: $("voice-status"),
+  voiceResult: $("voice-result"),
+  voiceText: $("voice-text"),
+  voiceSave: $("voice-save"),
+  voiceDiscard: $("voice-discard"),
   newPromptName: $("new-prompt-name"),
   customPrompt: $("custom-prompt"),
   saveCustomPrompt: $("save-custom-prompt"),
@@ -136,6 +144,37 @@ async function refreshLocalModels({ persistSelection = false } = {}) {
   } catch {
     fillLocalModelSelect([], "");
     els.localStatus.textContent = "○ Can't reach the server. Check it's running and that CORS is enabled — see the setup guide.";
+  }
+}
+
+function setVoiceStatus(text, isError = false) {
+  if (!els.voiceStatus) return;
+  els.voiceStatus.textContent = text;
+  els.voiceStatus.classList.toggle("is-error", !!isError);
+}
+
+// Runs through the same engine chain as everything else, so on-device and
+// local users get this without their samples leaving the machine.
+async function analyzeVoice() {
+  const samples = els.voiceSamples.value;
+  if (!isEnoughVoiceSample(samples)) {
+    setVoiceStatus(`Paste at least ${VOICE_MIN_CHARS} characters so the model has something to go on.`, true);
+    return;
+  }
+  els.voiceAnalyze.disabled = true;
+  setVoiceStatus("Reading your writing…");
+  try {
+    const response = await browser.runtime.sendMessage({ action: "analyzeVoice", samples });
+    if (response?.error) { setVoiceStatus(response.error, true); return; }
+    if (!response?.style) { setVoiceStatus("The model returned nothing. Try again.", true); return; }
+    els.voiceText.value = response.style;
+    els.voiceResult.style.display = "";
+    setVoiceStatus(response.engine ? `Written by ${response.engine}. Edit it if you like, then save.` : "Edit it if you like, then save.");
+  } catch (e) {
+    console.error("[options] voice analysis failed:", e);
+    setVoiceStatus(e?.message || "Could not reach the extension worker.", true);
+  } finally {
+    els.voiceAnalyze.disabled = false;
   }
 }
 
@@ -365,6 +404,24 @@ async function init() {
   for (const radio of document.querySelectorAll('#inline-click-mode input[name="click-mode"]')) {
     radio.addEventListener("change", () => { if (radio.checked) persist({ inlineClickMode: radio.value }); });
   }
+
+  els.voiceAnalyze?.addEventListener("click", analyzeVoice);
+  els.voiceDiscard?.addEventListener("click", () => {
+    els.voiceResult.style.display = "none";
+    setVoiceStatus("");
+  });
+  els.voiceSave?.addEventListener("click", async () => {
+    const text = els.voiceText.value.trim();
+    if (!text) { setVoiceStatus("Nothing to save.", true); return; }
+    state.savedPrompts = upsertVoicePrompt(state.savedPrompts, text);
+    await storage.set({ savedPrompts: state.savedPrompts });
+    els.voiceResult.style.display = "none";
+    els.voiceSamples.value = "";
+    setVoiceStatus(`Saved. Pick "${VOICE_PROMPT_NAME}" as a style to use it.`);
+    renderPrompts();
+    fillStyleSelect(els.inlineStyle, state.savedPrompts, els.inlineStyle.value);
+    flashSaved();
+  });
 
   els.saveCustomPrompt.addEventListener("click", async () => {
     const name = els.newPromptName.value.trim();

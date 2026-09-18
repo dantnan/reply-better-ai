@@ -8,6 +8,7 @@ import { resolveActiveEngine, isOnDeviceUsable, describeActiveEngine, engineKeyV
 import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
+import { shouldShowReviewPrompt, reviewUrl } from "../lib/review-prompt.js";
 
 const $ = id => document.getElementById(id);
 
@@ -15,6 +16,9 @@ const popup = $("rb-popup");
 const els = {
   settingsToggle: $("settings-toggle"),
   openOptions: $("open-options"),
+  reviewNudge: $("review-nudge"),
+  reviewOpen: $("review-open"),
+  reviewDismiss: $("review-dismiss"),
   closePopup: $("close-popup"),
   // banners
   statusBanner: $("status-banner"), statusText: $("status-banner-text"),
@@ -381,6 +385,30 @@ async function engineQuotaText(d) {
 }
 
 /* ── Init ────────────────────────────────────────────────────────────── */
+// The review line is opt-out by design: showing it marks it seen, so it is
+// shown at most once whatever the user does with it.
+async function maybeShowReviewPrompt() {
+  if (!els.reviewNudge) return;
+  let data;
+  try {
+    data = await storage.get(["improveCount", "reviewPromptSeen", "installedAt"]);
+  } catch (e) {
+    console.debug("[popup] review state unavailable:", e?.message);
+    return;
+  }
+  if (!shouldShowReviewPrompt(data)) return;
+  els.reviewNudge.style.display = "";
+  const dismiss = async () => {
+    els.reviewNudge.style.display = "none";
+    await storage.set({ reviewPromptSeen: true }).catch(() => {});
+  };
+  els.reviewDismiss?.addEventListener("click", dismiss);
+  els.reviewOpen?.addEventListener("click", async () => {
+    await dismiss();
+    browser.tabs.create({ url: reviewUrl(__BROWSER__) }).catch(e => console.warn("[popup] could not open the store:", e?.message));
+  });
+}
+
 async function init() {
   await migrateFromSync();
   const data = await storage.get([
@@ -490,4 +518,6 @@ async function init() {
   });
 }
 
-init().catch(e => console.error("[popup] init failed:", e));
+init()
+  .then(maybeShowReviewPrompt)
+  .catch(e => console.error("[popup] init failed:", e));

@@ -1,6 +1,6 @@
 # Reply Better AI — Privacy Policy
 
-_Last updated: 2026-06-08_
+_Last updated: 2026-09-09_
 
 Reply Better AI is a browser extension that improves the text you write and helps you reply in context, using the AI engine of your choice — including a free, private, on-device option. This page describes what data the extension touches, where it goes, and what it doesn't do.
 
@@ -23,6 +23,7 @@ You choose where your text is processed (Settings → Engine; "Auto" picks the b
 
 - **Your API key(s).** An OpenRouter key and/or a free Groq key, depending on which cloud engine you use. The on-device engine needs **no key**. Keys are stored in your browser's local extension storage (`browser.storage.local`), **not** synced across devices, and each is sent **only** to its own provider in the `Authorization` header. Like all browser-extension storage, they're held unencrypted in your browser profile on disk; if your device is compromised, revoke the keys ([openrouter.ai/keys](https://openrouter.ai/keys), [console.groq.com/keys](https://console.groq.com/keys)).
 - **Your custom prompts and snippets.** Stored locally, same place as the keys.
+- **Writing samples you paste into "Learn my voice".** Sent once to the active engine so it can describe your writing style, exactly like any other text you improve (on-device or local → stays on your machine; a cloud engine → that provider). The samples themselves are never stored; only the style description the model writes back is saved, as an ordinary custom prompt you can read, edit, or delete.
 - **The text you improve.** Sent to the active engine (on-device → stays local; Groq/OpenRouter → that provider). The extension keeps no copy.
 - **The conversation you reply to (reply mode).** When you ask for a reply, it sends the conversation text you are replying to so the model can respond in context — either the text you selected on the page, or, if you click **"Use page text"**, the conversation text from the area around the message box (up to the last ~6000 characters), together with your tone choice and any instruction you type. With the on-device engine this stays on your device; with a cloud engine it goes to that provider. Nothing is stored. A one-time notice explains this the first time you use reply mode.
 
@@ -46,6 +47,7 @@ The OpenRouter model list is fetched from `https://openrouter.ai/api/v1/models` 
 - Make network requests to anything other than the AI provider you chose (OpenRouter or Groq) — and the on-device engine makes none at all
 - Inject scripts into the page's main JavaScript world
 - Track which sites you use the extension on
+- Report how often you use the extension — a count of successful runs is kept in local storage purely so the popup can offer a store-review link once, and it is never transmitted
 - Share data with third parties (besides the AI provider you opted into by providing its key)
 
 ## Permissions
@@ -53,10 +55,11 @@ The OpenRouter model list is fetched from `https://openrouter.ai/api/v1/models` 
 The extension declares the minimum permissions needed:
 
 - **`storage`** — to save your API keys, settings, custom prompts, and snippets locally
+- **`activeTab`** — granted only at the moment you press the keyboard shortcut, so the extension can reach the tab you are on. It gives no standing access: without pressing the shortcut, the extension holds no permission over your tabs.
 - **`https://openrouter.ai/*`**, **`https://api.groq.com/*`**, and **`http://localhost/*` + `http://127.0.0.1/*`** — to talk to the AI provider you choose: the cloud providers, or an OpenAI-compatible server you run locally. Only contacted when that engine is active; the on-device engine needs no host access.
 - **Content scripts on `http(s)://*/*`** — to show the inline ✍️ button on any web page where you write; the script runs in an isolated world and reads page text only when you act (clicking the button, selecting text to reply to, or capturing page text). It never silently scrapes pages.
 
-The extension does **not** request `tabs`, `activeTab`, `webRequest`, or any other permission that would allow broader access to your browsing.
+The extension does **not** request `tabs`, `webRequest`, or any other permission that would grant standing access to your browsing history or network traffic.
 
 ## Removing your data
 

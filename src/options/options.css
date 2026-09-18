@@ -141,3 +141,19 @@ body { width: auto; }
   flex-direction: column;
 }
 .opt-modal-card .mp { max-height: 80vh; }
+
+/* Learn my voice: a sub-block of the Custom prompts card, since what it
+   produces is just another custom prompt. */
+.opt-voice {
+  padding: var(--rb-space-4);
+  margin-bottom: var(--rb-space-4);
+  border: 1px solid var(--rb-border);
+  border-radius: var(--rb-radius-md);
+  background: var(--rb-surface-2);
+}
+.opt-voice-title { margin: 0 0 var(--rb-space-1); font-size: var(--rb-text-lg); }
+.opt-voice-desc { margin: 0 0 var(--rb-space-3); font-size: var(--rb-text-sm); color: var(--rb-fg-muted); }
+.opt-voice-input { width: 100%; resize: vertical; font-family: inherit; }
+.opt-voice-status { font-size: var(--rb-text-sm); color: var(--rb-fg-muted); }
+.opt-voice-status.is-error { color: var(--rb-red-600); }
+#voice-result { margin-top: var(--rb-space-3); }

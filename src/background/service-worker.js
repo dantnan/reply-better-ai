@@ -1,6 +1,7 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
 import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
+import { VOICE_ANALYSIS_PROMPT, VOICE_MIN_CHARS, buildVoiceAnalysisInput, isEnoughVoiceSample } from "../lib/voice.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
 import { orderedEngines, describeActiveEngine } from "../engines/index.js";
@@ -9,6 +10,17 @@ import { orderedEngines, describeActiveEngine } from "../engines/index.js";
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
 // Two modes: "improve" (rewrite the user's draft in a style) and "reply" (write
 // a reply to a captured conversation in a tone, in the instruction's language).
+// Local-only usage counter, read by the popup to decide whether to show the
+// one-time review line. Never sent anywhere.
+async function countSuccessfulRun() {
+  try {
+    const { improveCount = 0 } = await storage.get(["improveCount"]);
+    await storage.set({ improveCount: improveCount + 1 });
+  } catch (e) {
+    console.debug("[usage] could not record run:", e?.message);
+  }
+}
+
 browser.runtime.onConnect.addListener(port => {
   if (port.name !== "rb-improve-stream") return;
   // The panel disconnects the port when it closes mid-stream; abort the upstream
@@ -49,6 +61,7 @@ browser.runtime.onConnect.addListener(port => {
             onModel: used => post({ model: used }),
           });
           post({ done: true, full, engine: engine.label });
+          countSuccessfulRun();
           finished = true;
           break;
         } catch (err) {
@@ -70,6 +83,10 @@ browser.runtime.onConnect.addListener(port => {
 
 browser.runtime.onInstalled.addListener(async details => {
   await migrateFromSync();
+  // Existing users upgrading have no install date; treat the upgrade as the
+  // start so the review line still waits a few days before appearing.
+  const { installedAt } = await storage.get(["installedAt"]);
+  if (!installedAt) await storage.set({ installedAt: Date.now() });
   if (details.reason === "install") {
     const existing = await storage.get(["model", "messageType"]);
     const defaults = {};
@@ -133,6 +150,25 @@ async function runStartupValidation() {
   }
 }
 
+// Keyboard shortcut (Ctrl+Shift+. by default, rebindable in the browser's
+// shortcut settings). Invoking a command grants activeTab for the current tab,
+// which is what lets us message its content script without a broad host
+// permission. The content script decides what to do with the focused field.
+if (browser.commands?.onCommand) {
+  browser.commands.onCommand.addListener(async command => {
+    if (command !== "improve-now") return;
+    try {
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) return;
+      await browser.tabs.sendMessage(tab.id, { action: "shortcut" });
+    } catch (e) {
+      // Restricted pages (the store, about:, other extensions) have no content
+      // script to talk to. Nothing to recover from; don't spam the console.
+      console.debug("[commands] no content script on this tab:", e?.message);
+    }
+  });
+}
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (!message || typeof message !== "object") {
     sendResponse({ error: "Invalid message" });
@@ -175,6 +211,17 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+  // "Learn my voice": read the user's samples and hand back a style instruction
+  // they can edit and save as a custom prompt.
+  if (message.action === "analyzeVoice") {
+    handleAnalyzeVoice(message)
+      .then(sendResponse)
+      .catch(err => {
+        console.error("[analyzeVoice] handler error:", err);
+        sendResponse({ error: err?.userMessage || err?.message || "Unknown error", code: err?.name });
+      });
+    return true;
+  }
   console.warn("[bg] unknown action:", message.action);
   sendResponse({ error: `Unknown action: ${message.action}` });
   return true;
@@ -193,7 +240,11 @@ async function handleImproveText(message) {
     const engines = await orderedEngines();
     let lastErr = null;
     for (const engine of engines) {
-      try { return { improvedText: await engine.streamImprove({ text, systemPrompt }) }; }
+      try {
+        const improvedText = await engine.streamImprove({ text, systemPrompt });
+        countSuccessfulRun();
+        return { improvedText };
+      }
       catch (err) {
         lastErr = err;
         console.warn(`[improveText] engine "${engine.id}" failed:`, err?.name, err?.message);
@@ -207,5 +258,28 @@ async function handleImproveText(message) {
       status: err.status,
       model: err.model,
     };
+  }
+}
+
+async function handleAnalyzeVoice(message) {
+  const samples = buildVoiceAnalysisInput(message.samples);
+  if (!isEnoughVoiceSample(samples)) {
+    return { error: `Paste at least ${VOICE_MIN_CHARS} characters of your own writing.` };
+  }
+  try {
+    const engines = await orderedEngines();
+    let lastErr = null;
+    for (const engine of engines) {
+      try {
+        const style = await engine.streamImprove({ text: samples, systemPrompt: VOICE_ANALYSIS_PROMPT });
+        return { style: (style || "").trim(), engine: engine.label };
+      } catch (err) {
+        lastErr = err;
+        console.warn(`[analyzeVoice] engine "${engine.id}" failed:`, err?.name, err?.message);
+      }
+    }
+    throw lastErr || new Error("No engine available");
+  } catch (err) {
+    return { error: err.userMessage || err.message, code: err.name };
   }
 }
