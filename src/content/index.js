@@ -206,7 +206,11 @@ function handleReposition() {
 // here, exactly as if the inline button had been clicked.
 function handleShortcut() {
   const focused = isTextInput(document.activeElement) ? document.activeElement : null;
-  const field = focused || activeField;
+  // Only fall back to the last field in the reply flow: selecting the message
+  // you are replying to moves focus out of the composer. Otherwise the tracked
+  // field can be stale (closing the panel leaves focus on the page, and no blur
+  // fires to clear it), and the shortcut would act on a field the user left.
+  const field = focused || (activeField && hasReplySelection(activeField) ? activeField : null);
   if (!field || !isImproveTarget(field)) {
     showToast("Put the cursor in a text field first.", { type: "error" });
     return;
