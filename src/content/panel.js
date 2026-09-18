@@ -135,6 +135,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   const closeBtn = document.createElement("button");
   closeBtn.type = "button"; closeBtn.className = "reply-better-panel-close";
   closeBtn.setAttribute("aria-label", "Close"); closeBtn.innerHTML = CLOSE_SVG;
+  closeBtn.addEventListener("click", () => closePanel());
   head.append(mark, title, modelTrigger, closeBtn);
 
   const modelMenu = document.createElement("div");
