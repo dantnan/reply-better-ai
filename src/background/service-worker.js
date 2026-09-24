@@ -1,6 +1,6 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
-import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
+import { resolveSystemPrompt, buildReplyPrompt, wrapConversation } from "../lib/system-prompts.js";
 import { VOICE_ANALYSIS_PROMPT, VOICE_MIN_CHARS, buildVoiceAnalysisInput, isEnoughVoiceSample } from "../lib/voice.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
@@ -54,7 +54,9 @@ browser.runtime.onConnect.addListener(port => {
       for (const engine of engines) {
         try {
           const full = await engine.streamImprove({
-            text,
+            // Reply mode sends page text the user did not write, so it goes in
+            // fenced. Improve mode sends the user's own draft, untouched.
+            text: msg.mode === "reply" ? wrapConversation(text) : text,
             systemPrompt,
             signal: controller.signal,
             onChunk: delta => { emitted = true; post({ delta }); },
