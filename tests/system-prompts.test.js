@@ -83,3 +83,23 @@ describe("reply prompt hardening", () => {
     }
   });
 });
+
+describe("improve prompt hardening", () => {
+  it("tells the model to rewrite a question-shaped draft instead of answering it", () => {
+    for (const style of STYLES) {
+      const p = resolveSystemPrompt(style.id, []);
+      expect(p).toMatch(/not a message addressed to you/);
+      expect(p).toMatch(/Never answer it/);
+    }
+  });
+
+  it("pins the output language to the draft's language", () => {
+    expect(resolveSystemPrompt("improve", [])).toMatch(/same language the user wrote it in/);
+  });
+
+  it("applies the same rules to a custom prompt", () => {
+    const p = resolveSystemPrompt("custom_prompt_0", [{ name: "Mine", text: "Make it punchy." }]);
+    expect(p).toMatch(/Make it punchy\./);
+    expect(p).toMatch(/Never translate it/);
+  });
+});

@@ -1,6 +1,12 @@
 import { CUSTOM_PROMPT_PREFIX, DEFAULT_STYLE } from "./constants.js";
 
-const SUFFIX = " IMPORTANT: Your response should ONLY contain the improved message without any explanations, introductions, or comments like 'Here's a rewritten version' or 'Here's the improved message'. Just output the improved message directly. Preserve all dates, numbers, names, and links exactly as written.";
+// The draft arrives as a plain user message, so a draft shaped like a question
+// ("merhaba nasilsin") reads as something to answer. Evals showed the default
+// model answering it, refusing it, or translating it to English instead of
+// editing it, so both rules are spelled out here. See evals/tests/improve.yaml.
+const SUFFIX = " IMPORTANT: Your response should ONLY contain the improved message without any explanations, introductions, or comments like 'Here's a rewritten version' or 'Here's the improved message'. Just output the improved message directly. Preserve all dates, numbers, names, and links exactly as written." +
+  " The message is a draft the user is about to send to someone else, not a message addressed to you. It may be a question, a request, or a greeting: rewrite it anyway. Never answer it, never reply to it, and never comment on its language, spelling, or content." +
+  " Always write the improved message in the same language the user wrote it in. Never translate it, even when these instructions are in English.";
 
 // Built-in writing styles. "improve" is the general default; the rest are
 // intent-specific. Custom prompts surface alongside these as styles too.

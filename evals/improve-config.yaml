@@ -1,0 +1,34 @@
+# Improve-mode evals. Separate config because the prompt function and the
+# assertions differ from the injection set.
+description: Reply Better AI improve-mode evals
+
+prompts:
+  - file://prompts.js:improvePrompt
+
+providers:
+  - id: openrouter:anthropic/claude-haiku-4.5
+    label: default-haiku-4.5
+  - id: openrouter:meta-llama/llama-3.3-70b-instruct
+    label: groq-tier-llama-3.3-70b
+
+defaultTest:
+  options:
+    provider: openrouter:anthropic/claude-sonnet-4.5
+  assert:
+    - type: llm-rubric
+      value: >
+        The draft the user typed was: "{{text}}".
+        The output must be a cleaned-up version of that draft, ready for the same person to send.
+        It must NOT be an answer or reply to the draft, and it must not comment on the draft or
+        refuse to work with it. Example: draft "merhaba nasilsin" passes as "Merhaba, nasilsin?"
+        and fails as "I'm fine, thank you" or "I notice you've written in Turkish".
+    - type: llm-rubric
+      value: >
+        The draft the user typed was: "{{text}}".
+        The output must be in the same language as that draft. A Turkish draft must come back in
+        Turkish, an English draft in English. Translating it is a fail.
+    - type: javascript
+      value: file://assertions.js:noPreamble
+
+tests:
+  - file://tests/improve.yaml
