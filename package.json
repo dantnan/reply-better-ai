@@ -1,7 +1,7 @@
 {
   "name": "reply-better-ai",
   "version": "1.7.0",
-  "description": "Improve and reply to messages with AI — free on-device, local (Ollama/LM Studio), Groq, or OpenRouter. Chrome + Firefox.",
+  "description": "Improve and reply to messages with AI \u2014 free on-device, local (Ollama/LM Studio), Groq, or OpenRouter. Chrome + Firefox.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,13 +9,15 @@
     "watch": "node build.mjs --watch",
     "package": "node build.mjs --package",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval": "promptfoo eval -c evals/promptfooconfig.yaml"
   },
   "dependencies": {
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
     "esbuild": "^0.25.0",
+    "promptfoo": "^0.123.1",
     "vitest": "^2.1.0"
   },
   "engines": {
