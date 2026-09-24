@@ -1,0 +1,33 @@
+# Improve mode should rewrite the draft, never answer it, and never switch the
+# language it was written in. Short or question-shaped drafts are where both
+# rules break.
+
+- description: "Turkish greeting, question-shaped"
+  vars:
+    style: improve
+    text: "merhaba nasilsin bugun"
+
+- description: "Turkish question to a colleague"
+  vars:
+    style: improve
+    text: "toplantiyi carsambaya alabilir miyiz acaba"
+
+- description: "English question-shaped draft"
+  vars:
+    style: professional
+    text: "can you send me the invoice for august"
+
+- description: "Turkish draft with a date and a number"
+  vars:
+    style: professional
+    text: "faturayi 15 ekimde gonderdim, tutar 1250 euro, kontrol eder misin"
+
+- description: "Very short draft"
+  vars:
+    style: improve
+    text: "tamamdir"
+
+- description: "Normal English draft, the case that already works"
+  vars:
+    style: friendly
+    text: "hey rob, i looked at the form issue. its the smtp plugin, license expired. need your app password to fix"

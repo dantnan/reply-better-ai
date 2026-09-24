@@ -1,6 +1,7 @@
 import browser from "../lib/browser.js";
 import { storage, migrateFromSync } from "../lib/storage.js";
-import { resolveSystemPrompt, buildReplyPrompt } from "../lib/system-prompts.js";
+import { resolveSystemPrompt, buildReplyPrompt, wrapConversation } from "../lib/system-prompts.js";
+import { stripUnsolicitedUrls } from "../lib/link-guard.js";
 import { VOICE_ANALYSIS_PROMPT, VOICE_MIN_CHARS, buildVoiceAnalysisInput, isEnoughVoiceSample } from "../lib/voice.js";
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
@@ -54,13 +55,28 @@ browser.runtime.onConnect.addListener(port => {
       for (const engine of engines) {
         try {
           const full = await engine.streamImprove({
-            text,
+            // Reply mode sends page text the user did not write, so it goes in
+            // fenced. Improve mode sends the user's own draft, untouched.
+            text: msg.mode === "reply" ? wrapConversation(text) : text,
             systemPrompt,
             signal: controller.signal,
             onChunk: delta => { emitted = true; post({ delta }); },
             onModel: used => post({ model: used }),
           });
-          post({ done: true, full, engine: engine.label });
+          // A reply must never carry a link the conversation did not have: that
+          // is how a hidden instruction turns the user's own message into a
+          // phishing message. The panel renders and inserts this `full`.
+          let out = full;
+          if (msg.mode === "reply") {
+            // Only the user's own instruction can authorise a link. The
+            // conversation cannot: an attacker writes that.
+            const guarded = stripUnsolicitedUrls(full, msg.instruction);
+            if (guarded.removed.length) {
+              console.warn(`[stream] dropped ${guarded.removed.length} link(s) not present in the conversation`);
+            }
+            out = guarded.text;
+          }
+          post({ done: true, full: out, engine: engine.label });
           countSuccessfulRun();
           finished = true;
           break;

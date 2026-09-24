@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI – Free AI Writing Assistant",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Rewrite drafts and write replies anywhere on the web. Free AI writing assistant that runs on-device or on your own Ollama model.",
   "minimum_chrome_version": "109",
   "icons": {
