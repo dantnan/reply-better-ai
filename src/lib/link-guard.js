@@ -15,32 +15,48 @@
 // never sees an unfiltered link it could insert.
 
 // What counts as a link. Successive reviews found shapes an earlier version did
-// not know: endings outside a curated list (.ai, .zip, .store), punycode
-// endings, and a host followed by "?" or "#" rather than "/". So the ending is
-// no longer a list once something follows the host: any letters, or a punycode
-// label, count. The short list survives only for a bare host with nothing after
-// it, where it keeps "node.js" and "i.e." from being read as links.
+// not know, each one a difference between this pattern and what a client will
+// turn into a clickable link: endings outside a curated list (.ai, .zip), a
+// punycode ending, a host followed by "?" or "#", a non-ASCII host, a label
+// separator that is not an ASCII dot, and invisible characters inside a host.
+//
+// So: the ending is not a list once something follows the host, the separator
+// is any character IDNA maps to a dot, hosts may be any script, and the
+// characters IDNA throws away are allowed inside a host so a name wearing them
+// still matches. The short list survives only for a bare host with nothing
+// after it, where it keeps "node.js" and "i.e." from reading as links.
 //
 // This will never match a mail client's linkifier exactly, and it is not meant
 // to: the prompt fence is what stops the model obeying the page, and this only
 // limits the damage when it does.
 const BARE_HOST_TLDS = "com|net|org|io|co|dev|app|xyz|info|biz|link|click|site|online|shop|live|me|ru|cn|tk|top|ly|gl|gd|to|cc|sh|ws|pw|su|ai|zip|mov|page|store|vip|pro";
-const CHARS = String.raw`[^\s<>()[\]{}"'\u0060]`;
-const HOST = String.raw`[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?(?:\.[\p{L}\p{N}-]+)*`;
-const TLD = String.raw`(?:xn--[a-z0-9-]{2,24}|\p{L}{2,24})`;
+const CHARS = String.raw`[^\s<>()[\]{}"']`;
+// A browser reads each of these as the label separator, so "evil。com/x"
+// resolves exactly like "evil.com/x".
+const DOT = String.raw`[.。．｡]`;
+// Characters IDNA strips before resolving a host. Left in, they are invisible
+// to the reader and hide the real domain from a naive pattern.
+const INV = String.raw`­​-‏⁠﻿`;
+const HOSTCH = String.raw`[\p{L}\p{N}` + INV + `]`;
+const HOST = HOSTCH + String.raw`(?:[\p{L}\p{N}\-` + INV + String.raw`]*` + HOSTCH + `)?` +
+  String.raw`(?:${DOT}[\p{L}\p{N}\-` + INV + String.raw`]+)*`;
+const TLD = String.raw`(?:xn--[a-z0-9\-]{2,24}|[\p{L}` + INV + String.raw`]{2,24})`;
 // A port, then "/", "?" or "#": each starts the part after the host, and a
 // client linkifies the whole run.
 const TAIL = String.raw`(?::\d{1,5})?[\/?#]` + CHARS + `*`;
+// \b is ASCII-only, so it finds no boundary before a Cyrillic or Greek host.
+// Look behind for anything that could belong to a host instead.
+const START = String.raw`(?<![\p{L}\p{N}@` + INV + String.raw`]|${DOT})`;
 const URL_RE = new RegExp(
   // explicit scheme or www, the unambiguous cases
-  String.raw`\b(?:https?:\/\/|www\.)` + CHARS + `+` +
+  START + String.raw`(?:https?:\/\/|www${DOT})` + CHARS + `+` +
   // host + any ending + something after it
-  String.raw`|\b${HOST}\.${TLD}${TAIL}` +
+  `|` + START + String.raw`${HOST}${DOT}${TLD}${TAIL}` +
   // bare host, nothing after it: only the endings people get phished with
-  String.raw`|\b${HOST}\.(?:${BARE_HOST_TLDS})(?::\d{1,5})?\b` +
+  `|` + START + String.raw`${HOST}${DOT}(?:${BARE_HOST_TLDS})(?::\d{1,5})?\b` +
   // bare IPv4, but only with something after it: a plain "1.2.3.4" is a version
   // number as often as a host, and clients do not linkify it on its own
-  String.raw`|\b\d{1,3}(?:\.\d{1,3}){3}${TAIL}`,
+  `|` + START + String.raw`\d{1,3}(?:${DOT}\d{1,3}){3}${TAIL}`,
   "giu",
 );
 

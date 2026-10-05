@@ -151,3 +151,28 @@ describe("shapes found by later review rounds", () => {
     expect(stripUnsolicitedUrls(t, "")).toEqual({ text: t, removed: [] });
   });
 });
+
+describe("hosts that do not look like ASCII hosts", () => {
+  it("catches a separator a browser treats as a dot", () => {
+    for (const t of ["evil。com/verify", "evil．com/verify", "evil｡com/verify"]) {
+      expect(stripUnsolicitedUrls(`go to ${t}`, "").removed).toEqual([t]);
+    }
+  });
+
+  it("catches a host written in another script", () => {
+    expect(stripUnsolicitedUrls("go to район.рф/x", "").removed)
+      .toEqual(["район.рф/x"]);
+  });
+
+  it("catches invisible characters hidden inside a host", () => {
+    for (const t of ["evil​-login.com/x", "evil­.com/x"]) {
+      expect(stripUnsolicitedUrls(`go to ${t}`, "").removed).toEqual([t]);
+    }
+  });
+
+  it("leaves ordinary non-English prose alone", () => {
+    for (const t of ["Merhaba, nasilsin bugun?", "Toplantiyi carsambaya alalim mi", "Gracias, lo reviso hoy."]) {
+      expect(stripUnsolicitedUrls(t, "")).toEqual({ text: t, removed: [] });
+    }
+  });
+});
