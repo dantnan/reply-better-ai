@@ -93,3 +93,20 @@ describe("bare domains", () => {
     }
   });
 });
+
+describe("bare IPv4 links", () => {
+  it("removes a bare IP link", () => {
+    const r = stripUnsolicitedUrls("Open 1.2.3.4/verify to fix it.", "");
+    expect(r.removed).toEqual(["1.2.3.4/verify"]);
+  });
+
+  it("keeps one the user asked for", () => {
+    expect(stripUnsolicitedUrls("go to 10.0.0.5/admin", "send him 10.0.0.5/admin").removed).toEqual([]);
+  });
+
+  it("leaves version numbers and plain figures alone", () => {
+    for (const t of ["version 1.7.2 shipped", "1.2.3.4 is the build", "costs 1.250 euro"]) {
+      expect(stripUnsolicitedUrls(t, "")).toEqual({ text: t, removed: [] });
+    }
+  });
+});
