@@ -104,10 +104,10 @@ const UNTRUSTED_INPUT_RULE = " The conversation is given inside <conversation> t
 // Fence the untrusted text. A closing tag inside the text would end the fence
 // early, so neutralize any the sender wrote themselves.
 export function wrapConversation(text) {
-  // Anything that a parser (or a model) could read as the fence tag has to go,
-  // not just the exact string: "</conversation >" and "</ conversation>" close
-  // it just as well in the model's eyes.
-  const safe = String(text ?? "").replace(/<\s*\/?\s*conversation\s*>/gi, m => m.replace(/</g, "&lt;"));
+  // Neutralize anything that starts like the fence tag, without requiring a
+  // closing ">": "</conversation/>" and "</conversation foo>" read as the tag
+  // to a model just as well, and matching the full tag missed both.
+  const safe = String(text ?? "").replace(/<\s*\/?\s*conversation/gi, m => m.replace(/</g, "&lt;"));
   return `<conversation>\n${safe}\n</conversation>`;
 }
 
