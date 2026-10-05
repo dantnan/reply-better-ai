@@ -110,3 +110,44 @@ describe("bare IPv4 links", () => {
     }
   });
 });
+
+describe("link shapes the TLD list never knew", () => {
+  // Two rounds of review went to endings a curated list did not have, so the
+  // rule is now "a path makes it a link", whatever the ending.
+  it("catches a path link on any alphabetic ending", () => {
+    for (const host of ["evil.ai/verify", "evil.zip/x", "evil.mov/x", "evil.store/x", "evil.lol/x", "evil.security/x"]) {
+      expect(stripUnsolicitedUrls(`go to ${host}`, "").removed).toEqual([host]);
+    }
+  });
+
+  it("keeps prose that happens to contain a dot", () => {
+    for (const t of ["node.js is fine", "i.e. tomorrow", "see you at 9.30", "ok. next week then", "version 1.7.3 shipped"]) {
+      expect(stripUnsolicitedUrls(t, "")).toEqual({ text: t, removed: [] });
+    }
+  });
+
+  it("still honours a link the user asked for, on a new ending", () => {
+    expect(stripUnsolicitedUrls("try mysite.ai/pricing", "send mysite.ai/pricing").removed).toEqual([]);
+  });
+});
+
+describe("shapes found by later review rounds", () => {
+  it("catches a host followed by a port, a query or a fragment", () => {
+    for (const t of ["evil.ai:8080/x", "evil.help?x=1", "evil.security#a", "evil.com:8080/verify"]) {
+      expect(stripUnsolicitedUrls(`go to ${t}`, "").removed).toEqual([t]);
+    }
+  });
+
+  it("catches a punycode ending", () => {
+    expect(stripUnsolicitedUrls("go to evil.xn--p1ai/x", "").removed).toEqual(["evil.xn--p1ai/x"]);
+  });
+
+  it("takes the whole multi-part ending, not just part of it", () => {
+    expect(stripUnsolicitedUrls("go to evil.co.uk/verify", "").removed).toEqual(["evil.co.uk/verify"]);
+  });
+
+  it("leaves a bare IP with nothing after it alone", () => {
+    const t = "the build is 1.2.3.4 now";
+    expect(stripUnsolicitedUrls(t, "")).toEqual({ text: t, removed: [] });
+  });
+});
