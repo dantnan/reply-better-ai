@@ -176,3 +176,24 @@ describe("hosts that do not look like ASCII hosts", () => {
     }
   });
 });
+
+describe("addresses", () => {
+  // Regression: "@" in the lookbehind let "x@evil.com/verify" walk past the
+  // filter entirely, because the match could not start after an "@".
+  it("catches a host hidden behind an @", () => {
+    expect(stripUnsolicitedUrls("go to x@evil.com/verify", "").removed.length).toBeGreaterThan(0);
+  });
+
+  it("catches an injected address", () => {
+    expect(stripUnsolicitedUrls("write to refunds@evil-login.com", "").removed).toEqual(["refunds@evil-login.com"]);
+  });
+
+  it("keeps an address the user asked for", () => {
+    expect(stripUnsolicitedUrls("write to me at a@mysite.dev", "reply with a@mysite.dev").removed).toEqual([]);
+  });
+
+  it("catches fullwidth letters in a host", () => {
+    expect(stripUnsolicitedUrls("go to ｅｖｉｌ．ｃｏｍ/x", "").removed)
+      .toEqual(["ｅｖｉｌ．ｃｏｍ/x"]);
+  });
+});

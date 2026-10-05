@@ -46,10 +46,15 @@ const TLD = String.raw`(?:xn--[a-z0-9\-]{2,24}|[\p{L}` + INV + String.raw`]{2,24
 const TAIL = String.raw`(?::\d{1,5})?[\/?#]` + CHARS + `*`;
 // \b is ASCII-only, so it finds no boundary before a Cyrillic or Greek host.
 // Look behind for anything that could belong to a host instead.
-const START = String.raw`(?<![\p{L}\p{N}@` + INV + String.raw`]|${DOT})`;
+// An address is its own shape below, so "@" must not appear here: with it,
+// writing "x@evil.com/verify" walked straight past the filter.
+const START = String.raw`(?<![\p{L}\p{N}` + INV + String.raw`]|${DOT})`;
 const URL_RE = new RegExp(
+  // an address: injected ones ask the reader to write to the attacker, and a
+  // real one the user wants is in their own instruction like any link
+  START + String.raw`[\p{L}\p{N}._%+\-]+@${HOST}${DOT}${TLD}` +
   // explicit scheme or www, the unambiguous cases
-  START + String.raw`(?:https?:\/\/|www${DOT})` + CHARS + `+` +
+  `|` + START + String.raw`(?:https?:\/\/|www${DOT})` + CHARS + `+` +
   // host + any ending + something after it
   `|` + START + String.raw`${HOST}${DOT}${TLD}${TAIL}` +
   // bare host, nothing after it: only the endings people get phished with
