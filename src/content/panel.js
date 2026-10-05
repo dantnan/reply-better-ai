@@ -211,6 +211,12 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   document.body.appendChild(panel);
 
   // ── Helpers ─────────────────────────────────────────────────────────
+  // Same reasoning as the inline button: the panel is in the page's DOM, so
+  // every handler that generates text, inserts it, or changes a saved setting
+  // has to come from a real user gesture. Cosmetic handlers (close, tab switch)
+  // are left alone so nothing breaks if a test or the page pokes them.
+  const fromUser = e => !e || e.isTrusted === true;
+
   function el(tag, cls) { const e = document.createElement(tag); if (cls) e.className = cls; return e; }
   function chipBtn(label, { style, action, custom, sm } = {}) {
     const c = document.createElement("button");
@@ -322,6 +328,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
     panel.classList.contains("reply-better-models-open") ? closeModels() : openModels();
   });
   modelMenu.addEventListener("click", async e => {
+    if (!fromUser(e)) return;
     const item = e.target.closest(".reply-better-model-item");
     if (!item) return;
     currentModelId = item.dataset.id;
@@ -446,8 +453,8 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
     panel.classList.add("reply-better-has-error");
     position();
   }
-  stylesRow.addEventListener("click", onChipClick);
-  instructTones.addEventListener("click", onChipClick);
+  stylesRow.addEventListener("click", e => { if (fromUser(e)) onChipClick(e); });
+  instructTones.addEventListener("click", e => { if (fromUser(e)) onChipClick(e); });
   instructBox.addEventListener("keydown", e => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && !busy) {
       const active = panel.querySelector(".reply-better-instruct-tones .reply-better-chip.reply-better-active")
@@ -547,8 +554,8 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   }
   errFix.addEventListener("click", e => { e.stopPropagation(); openModels(); });
 
-  regen.addEventListener("click", () => { if (!busy && lastGen) run(lastGen, true); });
-  insert.addEventListener("click", () => { if (result) { onInsert?.(result); closePanel(); } });
+  regen.addEventListener("click", e => { if (fromUser(e) && !busy && lastGen) run(lastGen, true); });
+  insert.addEventListener("click", e => { if (fromUser(e) && result) { onInsert?.(result); closePanel(); } });
 
   // ── Position / events ───────────────────────────────────────────────
   function position() {
