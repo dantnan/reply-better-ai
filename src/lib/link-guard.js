@@ -14,10 +14,18 @@
 // This runs on the finished reply, in the service worker, so the content script
 // never sees an unfiltered link it could insert.
 
-// http(s) URLs and bare www. hosts. Deliberately not matching bare domains:
-// "see you at 9.30" and "node.js" would become false positives, and the attack
-// needs a clickable link anyway.
-const URL_RE = /\b(?:https?:\/\/|www\.)[^\s<>()[\]{}"'`]+/gi;
+// http(s) URLs, bare www. hosts, and bare domains on a TLD people actually get
+// phished with. Mail and chat clients auto-link "evil-login.com/verify", so
+// leaving those out left the hole open. The TLD list keeps "node.js" and
+// "see you at 9.30" from matching.
+// Includes the short TLDs the common shorteners use (bit.ly, goo.gl, t.co),
+// since a shortened link is the easiest way to hide where it really goes.
+const LINKED_TLDS = "com|net|org|io|co|dev|app|xyz|info|biz|link|click|site|online|shop|live|me|ru|cn|tk|top|ly|gl|gd|to|cc|sh|ws|pw|su";
+const URL_RE = new RegExp(
+  String.raw`\b(?:https?:\/\/|www\.)[^\s<>()[\]{}"'\`]+` +
+  String.raw`|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)*\.(?:${LINKED_TLDS})\b(?:\/[^\s<>()[\]{}"'\`]*)?`,
+  "gi",
+);
 
 // Trailing punctuation belongs to the sentence, not the link.
 function trimUrl(u) {
