@@ -1,6 +1,6 @@
 {
   "name": "reply-better-ai",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "Improve and reply to messages with AI \u2014 free on-device, local (Ollama/LM Studio), Groq, or OpenRouter. Chrome + Firefox.",
   "private": true,
   "type": "module",
