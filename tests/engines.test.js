@@ -9,7 +9,8 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, engineModelSummary, ENGINES } = await import("../src/engines/index.js");
+const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, engineModelSummary, ENGINES, orderedEngines } = await import("../src/engines/index.js");
+const mockBrowser = (await import("../src/lib/browser.js")).default;
 const { onDeviceEngine } = await import("../src/engines/ondevice.js");
 
 describe("resolveEngineId", () => {
@@ -122,5 +123,32 @@ describe("cloud engines registry", () => {
 
   it("groq reports needs-setup when no key is stored", async () => {
     expect(await ENGINES.groq.availability()).toBe("needs-setup");
+  });
+});
+
+describe("orderedEngines respects an explicit choice", () => {
+  afterEach(() => { delete globalThis.LanguageModel; mockBrowser.storage.local.get.mockResolvedValue({}); });
+
+  it("does not fall back to the cloud when the user picked local", async () => {
+    mockBrowser.storage.local.get.mockResolvedValue({
+      engine: "local", groqApiKey: "gsk_x", apiKey: "sk-or-x",
+      localBaseUrl: "http://localhost:11434/v1", localModel: "qwen2.5",
+    });
+    expect((await orderedEngines()).map(e => e.id)).toEqual(["local"]);
+  });
+
+  it("does not fall back when the user picked on-device", async () => {
+    globalThis.LanguageModel = { availability: async () => "available" };
+    mockBrowser.storage.local.get.mockResolvedValue({ engine: "ondevice", groqApiKey: "gsk_x", apiKey: "sk-or-x" });
+    expect((await orderedEngines()).map(e => e.id)).toEqual(["ondevice"]);
+  });
+
+  it("still chains fallbacks on auto", async () => {
+    globalThis.LanguageModel = { availability: async () => "available" };
+    mockBrowser.storage.local.get.mockResolvedValue({ engine: "auto", groqApiKey: "gsk_x", apiKey: "sk-or-x" });
+    const ids = (await orderedEngines()).map(e => e.id);
+    expect(ids[0]).toBe("ondevice");
+    expect(ids).toContain("groq");
+    expect(ids).toContain("openrouter");
   });
 });

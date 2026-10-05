@@ -38,7 +38,14 @@ export function ensureButton(onClick) {
       '<span class="reply-better-spin"></span>' +
     '</span>';
   button.addEventListener("mousedown", e => e.preventDefault());
-  button.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); onClick(); });
+  button.addEventListener("click", e => {
+    e.preventDefault(); e.stopPropagation();
+    // The button lives in the page's own DOM, so a script on the page can call
+    // .click() on it. Synthetic events would let a hostile page generate text
+    // on the user's key without them touching anything.
+    if (!e.isTrusted) return;
+    onClick();
+  });
   document.body.appendChild(button);
   return button;
 }

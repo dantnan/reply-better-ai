@@ -70,3 +70,26 @@ describe("stripUnsolicitedUrls", () => {
     expect(stripUnsolicitedUrls(undefined, undefined).text).toBe("");
   });
 });
+
+describe("bare domains", () => {
+  it("catches a bare domain the mail client would turn into a link", () => {
+    const r = stripUnsolicitedUrls("Please confirm at evil-login.com/verify today.", "");
+    expect(r.removed).toEqual(["evil-login.com/verify"]);
+    expect(r.text).not.toContain("evil-login.com");
+  });
+
+  it("catches a shortener", () => {
+    expect(stripUnsolicitedUrls("see bit.ly/abc123", "").removed).toEqual(["bit.ly/abc123"]);
+  });
+
+  it("keeps a bare domain the user asked for", () => {
+    const r = stripUnsolicitedUrls("Our site is mysite.dev/pricing", "point him to mysite.dev/pricing");
+    expect(r.removed).toEqual([]);
+  });
+
+  it("does not treat ordinary prose as a link", () => {
+    for (const t of ["node.js is fine", "see you at 9.30", "version 1.7.1 shipped", "costs 1.250 euro"]) {
+      expect(stripUnsolicitedUrls(t, "")).toEqual({ text: t, removed: [] });
+    }
+  });
+});

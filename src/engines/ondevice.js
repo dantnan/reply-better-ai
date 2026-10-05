@@ -38,7 +38,7 @@ export const onDeviceEngine = {
         full += chunk;
         onChunk?.(chunk);
       }
-      const cleaned = cleanModelOutput(full);
+      const cleaned = cleanModelOutput(full, text);
       if (!cleaned) throw new ProviderError(0, "Empty on-device response");
       return cleaned;
     } finally {

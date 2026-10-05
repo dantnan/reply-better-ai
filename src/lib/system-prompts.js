@@ -42,6 +42,14 @@ export const STYLE_LABELS = {
   customer: "Service",
 };
 
+// Style ids arrive from the popup, the options page and the inline panel, so a
+// value like "constructor" or "toString" would otherwise resolve to something
+// off Object.prototype: resolveSystemPrompt returned `function Object()` and the
+// model got no rules at all. Own properties only.
+function ownProp(obj, key) {
+  return typeof key === "string" && Object.prototype.hasOwnProperty.call(obj, key) ? obj[key] : undefined;
+}
+
 export function styleLabel(styleId, savedPrompts = []) {
   if (typeof styleId === "string" && styleId.startsWith(CUSTOM_PROMPT_PREFIX)) {
     const idx = parseInt(styleId.slice(CUSTOM_PROMPT_PREFIX.length), 10);
@@ -50,7 +58,7 @@ export function styleLabel(styleId, savedPrompts = []) {
     }
     return "Custom";
   }
-  return STYLE_LABELS[styleId] || STYLE_LABELS[DEFAULT_STYLE];
+  return ownProp(STYLE_LABELS, styleId) || STYLE_LABELS[DEFAULT_STYLE];
 }
 
 export function resolveSystemPrompt(styleId, savedPrompts = []) {
@@ -60,7 +68,7 @@ export function resolveSystemPrompt(styleId, savedPrompts = []) {
       return savedPrompts[idx].text + SUFFIX;
     }
   }
-  return STYLE_PROMPTS[styleId] || STYLE_PROMPTS[DEFAULT_STYLE];
+  return ownProp(STYLE_PROMPTS, styleId) || STYLE_PROMPTS[DEFAULT_STYLE];
 }
 
 // ── Reply Mode ────────────────────────────────────────────────────────────
@@ -96,7 +104,10 @@ const UNTRUSTED_INPUT_RULE = " The conversation is given inside <conversation> t
 // Fence the untrusted text. A closing tag inside the text would end the fence
 // early, so neutralize any the sender wrote themselves.
 export function wrapConversation(text) {
-  const safe = String(text ?? "").replace(/<\/?conversation>/gi, m => m.replace(/</g, "&lt;"));
+  // Anything that a parser (or a model) could read as the fence tag has to go,
+  // not just the exact string: "</conversation >" and "</ conversation>" close
+  // it just as well in the model's eyes.
+  const safe = String(text ?? "").replace(/<\s*\/?\s*conversation\s*>/gi, m => m.replace(/</g, "&lt;"));
   return `<conversation>\n${safe}\n</conversation>`;
 }
 
@@ -108,7 +119,7 @@ export function buildReplyPrompt({ tone = "match", instruction = "", summarize =
     return "You are helping the user reply in a conversation. Read the conversation the user provides and write a short, recap-style summary they can post as a reply: capture the key points and where things landed. " +
       "Reply in the same language as the conversation." + REPLY_OUTPUT_RULE + UNTRUSTED_INPUT_RULE;
   }
-  const guidance = REPLY_TONE_GUIDANCE[tone] || REPLY_TONE_GUIDANCE.match;
+  const guidance = ownProp(REPLY_TONE_GUIDANCE, tone) || REPLY_TONE_GUIDANCE.match;
   const trimmed = (instruction || "").trim();
   const want = trimmed
     ? `The user wants the reply to convey: ${trimmed}. Reply in the same language as that instruction.`
