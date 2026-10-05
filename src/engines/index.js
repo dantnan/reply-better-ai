@@ -1,6 +1,6 @@
 import { storage } from "../lib/storage.js";
 import { resolveModelSelection } from "../lib/models-cache.js";
-import { DEFAULT_MODEL, OPENROUTER_BASE, GROQ_BASE, GROQ_DEFAULT_MODEL } from "../lib/constants.js";
+import { DEFAULT_MODEL, DEFAULT_ENGINE, OPENROUTER_BASE, GROQ_BASE, GROQ_DEFAULT_MODEL } from "../lib/constants.js";
 import { makeCloudEngine } from "./cloud.js";
 import { onDeviceEngine } from "./ondevice.js";
 import { makeLocalEngine } from "./local.js";
@@ -81,12 +81,17 @@ export async function isOnDeviceUsable() {
   return ENGINES.ondevice ? (await ENGINES.ondevice.availability()) !== "unsupported" : false;
 }
 
-// Active engine first, then the other usable engines as fallbacks (on-device,
-// then Groq, then OpenRouter — skipping unusable ones and the active dupe). The
-// caller tries each until one succeeds, so a dead free engine recovers silently.
+// Active engine first, then fallbacks — but only when the user left the setting
+// on "auto". Picking On-device or Local is a statement about where the text may
+// go, and docs/privacy.md promises it stays there; silently retrying on Groq or
+// OpenRouter because a key happens to exist would send the text to a cloud the
+// user deliberately did not choose. An explicit choice fails loudly instead.
 export async function orderedEngines() {
   const active = await resolveActiveEngine();
-  const { groqApiKey, apiKey } = await storage.get(["groqApiKey", "apiKey"]);
+  const { engine, groqApiKey, apiKey } = await storage.get(["engine", "groqApiKey", "apiKey"]);
+  const setting = engine || DEFAULT_ENGINE;
+  if (setting !== "auto") return [active];
+
   const onDeviceAvail = await ENGINES.ondevice.availability();
   const chain = [active];
   const add = (eng, usable) => { if (usable && eng && !chain.includes(eng)) chain.push(eng); };
