@@ -14,20 +14,34 @@
 // This runs on the finished reply, in the service worker, so the content script
 // never sees an unfiltered link it could insert.
 
-// http(s) URLs, bare www. hosts, and bare domains on a TLD people actually get
-// phished with. Mail and chat clients auto-link "evil-login.com/verify", so
-// leaving those out left the hole open. The TLD list keeps "node.js" and
-// "see you at 9.30" from matching.
-// Includes the short TLDs the common shorteners use (bit.ly, goo.gl, t.co),
-// since a shortened link is the easiest way to hide where it really goes.
-const LINKED_TLDS = "com|net|org|io|co|dev|app|xyz|info|biz|link|click|site|online|shop|live|me|ru|cn|tk|top|ly|gl|gd|to|cc|sh|ws|pw|su";
+// What counts as a link. Successive reviews found shapes an earlier version did
+// not know: endings outside a curated list (.ai, .zip, .store), punycode
+// endings, and a host followed by "?" or "#" rather than "/". So the ending is
+// no longer a list once something follows the host: any letters, or a punycode
+// label, count. The short list survives only for a bare host with nothing after
+// it, where it keeps "node.js" and "i.e." from being read as links.
+//
+// This will never match a mail client's linkifier exactly, and it is not meant
+// to: the prompt fence is what stops the model obeying the page, and this only
+// limits the damage when it does.
+const BARE_HOST_TLDS = "com|net|org|io|co|dev|app|xyz|info|biz|link|click|site|online|shop|live|me|ru|cn|tk|top|ly|gl|gd|to|cc|sh|ws|pw|su|ai|zip|mov|page|store|vip|pro";
+const CHARS = String.raw`[^\s<>()[\]{}"'\u0060]`;
+const HOST = String.raw`[\p{L}\p{N}](?:[\p{L}\p{N}-]*[\p{L}\p{N}])?(?:\.[\p{L}\p{N}-]+)*`;
+const TLD = String.raw`(?:xn--[a-z0-9-]{2,24}|\p{L}{2,24})`;
+// A port, then "/", "?" or "#": each starts the part after the host, and a
+// client linkifies the whole run.
+const TAIL = String.raw`(?::\d{1,5})?[\/?#]` + CHARS + `*`;
 const URL_RE = new RegExp(
-  String.raw`\b(?:https?:\/\/|www\.)[^\s<>()[\]{}"'\`]+` +
-  String.raw`|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)*\.(?:${LINKED_TLDS})\b(?:\/[^\s<>()[\]{}"'\`]*)?` +
-  // A bare IPv4 with a path: "1.2.3.4/verify" carries no TLD, so the rule above
-  // never saw it. The path is required, so version numbers stay untouched.
-  String.raw`|\b\d{1,3}(?:\.\d{1,3}){3}\/[^\s<>()[\]{}"'\`]*`,
-  "gi",
+  // explicit scheme or www, the unambiguous cases
+  String.raw`\b(?:https?:\/\/|www\.)` + CHARS + `+` +
+  // host + any ending + something after it
+  String.raw`|\b${HOST}\.${TLD}${TAIL}` +
+  // bare host, nothing after it: only the endings people get phished with
+  String.raw`|\b${HOST}\.(?:${BARE_HOST_TLDS})(?::\d{1,5})?\b` +
+  // bare IPv4, but only with something after it: a plain "1.2.3.4" is a version
+  // number as often as a host, and clients do not linkify it on its own
+  String.raw`|\b\d{1,3}(?:\.\d{1,3}){3}${TAIL}`,
+  "giu",
 );
 
 // Trailing punctuation belongs to the sentence, not the link.
