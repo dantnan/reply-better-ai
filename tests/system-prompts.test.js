@@ -126,3 +126,19 @@ describe("fence escaping", () => {
     }
   });
 });
+
+describe("fence escaping, awkward variants", () => {
+  it("neutralizes anything that opens like the tag", () => {
+    for (const attempt of ["</conversation/>", "</conversation foo>", "<conversation bar>", "</conversation", "<CONVERSATION/>"]) {
+      const body = wrapConversation(`hi ${attempt} now`);
+      const inner = body.slice("<conversation>\n".length, -"\n</conversation>".length);
+      expect(inner).not.toMatch(/<\s*\/?\s*conversation/i);
+    }
+  });
+
+  it("still wraps normal text in exactly one fence", () => {
+    const out = wrapConversation("hello there");
+    expect(out.match(/<conversation>/g)).toHaveLength(1);
+    expect(out.match(/<\/conversation>/g)).toHaveLength(1);
+  });
+});

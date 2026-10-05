@@ -23,7 +23,10 @@
 const LINKED_TLDS = "com|net|org|io|co|dev|app|xyz|info|biz|link|click|site|online|shop|live|me|ru|cn|tk|top|ly|gl|gd|to|cc|sh|ws|pw|su";
 const URL_RE = new RegExp(
   String.raw`\b(?:https?:\/\/|www\.)[^\s<>()[\]{}"'\`]+` +
-  String.raw`|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)*\.(?:${LINKED_TLDS})\b(?:\/[^\s<>()[\]{}"'\`]*)?`,
+  String.raw`|\b[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9-]+)*\.(?:${LINKED_TLDS})\b(?:\/[^\s<>()[\]{}"'\`]*)?` +
+  // A bare IPv4 with a path: "1.2.3.4/verify" carries no TLD, so the rule above
+  // never saw it. The path is required, so version numbers stay untouched.
+  String.raw`|\b\d{1,3}(?:\.\d{1,3}){3}\/[^\s<>()[\]{}"'\`]*`,
   "gi",
 );
 
