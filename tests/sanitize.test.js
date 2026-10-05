@@ -43,3 +43,26 @@ describe("cleanModelOutput", () => {
     expect(cleanModelOutput(undefined)).toBe(undefined);
   });
 });
+
+describe("cleanModelOutput keeps what the user wrote", () => {
+  it("does not delete a closing line the draft already had", () => {
+    const draft = "Hi Rob,\n\nThe report is attached.\n\nLet me know if you have any questions.";
+    expect(cleanModelOutput(draft, draft)).toBe(draft);
+  });
+
+  it("still strips the same line when the model added it", () => {
+    const draft = "Hi Rob, the report is attached.";
+    const out = "Hi Rob, the report is attached.\n\nLet me know if you have any questions.";
+    expect(cleanModelOutput(out, draft)).toBe("Hi Rob, the report is attached.");
+  });
+
+  it("keeps a reworded closing that the user wrote", () => {
+    const draft = "Thanks for the update.\n\nHappy to help with the next one.";
+    expect(cleanModelOutput(draft, draft)).toContain("Happy to help");
+  });
+
+  it("behaves as before when no draft is passed", () => {
+    const out = "Hi there!\n\nWould you like me to rewrite it again?";
+    expect(cleanModelOutput(out)).toBe("Hi there!");
+  });
+});

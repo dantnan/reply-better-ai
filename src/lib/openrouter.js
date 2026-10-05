@@ -55,7 +55,7 @@ export async function improveText({ text, apiKey, model, models, systemPrompt })
   if (!response.ok) throw fromResponse(response, body);
   const out = body?.choices?.[0]?.message?.content;
   if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
-  const cleaned = cleanModelOutput(out);
+  const cleaned = cleanModelOutput(out, text);
   if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
   return cleaned;
 }
@@ -98,7 +98,7 @@ export async function streamImproveText({ text, apiKey, model, models, systemPro
     const body = await response.json().catch(() => null);
     const out = body?.choices?.[0]?.message?.content;
     if (typeof out !== "string") throw new ProviderError(response.status, "Empty response from model");
-    const cleaned = cleanModelOutput(out);
+    const cleaned = cleanModelOutput(out, text);
     if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
     if (body?.model) onModel?.(body.model);
     onChunk?.(cleaned);
@@ -137,7 +137,7 @@ export async function streamImproveText({ text, apiKey, model, models, systemPro
     throw e.name === "AbortError" ? new NetworkError("Request aborted") : new NetworkError(e.message);
   }
   if (!full) throw new ProviderError(response.status, "Empty response from model");
-  const cleaned = cleanModelOutput(full);
+  const cleaned = cleanModelOutput(full, text);
   if (!cleaned) throw new ProviderError(response.status, "Empty response from model");
   return cleaned;
 }
