@@ -215,4 +215,26 @@ describe("streamImproveText baseUrl", () => {
     await streamImproveText({ text: "x", model: "llama3", systemPrompt: "s", baseUrl: "http://localhost:11434/v1" });
     expect(global.fetch.mock.calls[0][1].headers).not.toHaveProperty("Authorization");
   });
+
+  it("merges request extras into the body (Groq reasoning_effort)", async () => {
+    global.fetch.mockResolvedValue(sseResponse('data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n'));
+    await streamImproveText({ text: "x", apiKey: "k", model: "openai/gpt-oss-120b", systemPrompt: "s", extras: { reasoning_effort: "low" } });
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe("low");
+    expect(body.model).toBe("openai/gpt-oss-120b");
+  });
+
+  it("sends no extras when none are given", async () => {
+    global.fetch.mockResolvedValue(sseResponse('data: {"choices":[{"delta":{"content":"hi"}}]}\n\ndata: [DONE]\n\n'));
+    await streamImproveText({ text: "x", apiKey: "k", model: "m", systemPrompt: "s" });
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).not.toHaveProperty("reasoning_effort");
+  });
+
+  it("keeps only content when a reasoning model streams reasoning deltas first", async () => {
+    global.fetch.mockResolvedValue(sseResponse(
+      'data: {"choices":[{"delta":{"role":"assistant","reasoning":"thinking","channel":"analysis"}}]}\n\n' +
+      'data: {"choices":[{"delta":{"content":"Hello there."}}]}\n\ndata: [DONE]\n\n'));
+    const full = await streamImproveText({ text: "x", apiKey: "k", model: "openai/gpt-oss-120b", systemPrompt: "s" });
+    expect(full).toBe("Hello there.");
+  });
 });

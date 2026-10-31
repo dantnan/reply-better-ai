@@ -16,7 +16,12 @@ export const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 // Groq: the cloud-free engine. OpenAI-compatible API; fast (LPU); free tier is
 // ~1000 req/day per user (BYOK). Default to a capable, fast free model.
 export const GROQ_BASE = "https://api.groq.com/openai/v1";
-export const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// Groq shut down llama-3.3-70b-versatile (Aug 2026); gpt-oss-120b is its
+// recommended replacement. It reasons before answering, so ask for "low" effort
+// to keep replies fast. The reasoning arrives in a separate delta field that the
+// stream reader already ignores.
+export const GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b";
+export const GROQ_REQUEST_EXTRAS = { reasoning_effort: "low" };
 // Local engine: any OpenAI-compatible server on the user's machine (Ollama,
 // LM Studio, llama.cpp, vLLM…). No API key. The base URL is itself a setting;
 // presets fill the two common defaults. See src/engines/local.js.

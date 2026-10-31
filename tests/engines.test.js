@@ -81,6 +81,7 @@ describe("engineModelSummary", () => {
   it("describes the fixed-model engines", () => {
     expect(engineModelSummary("ondevice")).toMatch(/Gemini Nano/);
     expect(engineModelSummary("groq")).toMatch(/Groq/);
+    expect(engineModelSummary("groq")).not.toMatch(/Llama/);
   });
   it("returns null for picker engines and for local (resolved by the caller)", () => {
     expect(engineModelSummary("openrouter")).toBe(null);
