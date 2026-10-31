@@ -1,0 +1,50 @@
+---
+import Base from "./Base.astro";
+import { CHROME_URL, FIREFOX_URL } from "../data/links.js";
+
+// Frontmatter of the markdown page that uses this layout.
+const { frontmatter: fm } = Astro.props;
+
+const jsonLd = fm.faq?.length
+  ? {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: fm.faq.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    }
+  : undefined;
+---
+<Base title={fm.title} description={fm.description} jsonLd={jsonLd}>
+  <section class="hero">
+    <div class="wrap narrow">
+      <span class="eyebrow">{fm.eyebrow}</span>
+      <h1>{fm.h1}</h1>
+      <p class="lead">{fm.lead}</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href={CHROME_URL}>Add to Chrome — it's free</a>
+        <a class="btn btn-ghost" href={FIREFOX_URL}>Firefox</a>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap narrow prose">
+      <slot />
+      {fm.faq?.length > 0 && (
+        <>
+          <h2>Questions</h2>
+          {fm.faq.map((f) => (
+            <details>
+              <summary>{f.q}</summary>
+              <p>{f.a}</p>
+            </details>
+          ))}
+        </>
+      )}
+      <p class="cta-note" style="margin-top:32px">{fm.checked}</p>
+    </div>
+  </section>
+</Base>

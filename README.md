@@ -2,6 +2,7 @@
 
 Write better anywhere on the web, free and private, with the AI engine of *your* choice. Reply Better AI improves your drafts and helps you reply in context. It runs **free on-device** (Gemini Nano: no key, nothing leaves your computer) where your browser supports it, and falls back to a **free Groq key** or **500+ models on OpenRouter** (Claude, GPT, Gemini, DeepSeek, Llama, and more) with a searchable picker, free/paid filtering, and live pricing right inside the extension.
 
+[![Website](https://img.shields.io/badge/Website-replybetterai.com-5E6AD2)](https://replybetterai.com)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome-Web%20Store-4285F4?logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/reply-better-ai/dpdibbijcljdjnafjnmaljphpkfojlkb)
 [![Firefox Add-on](https://img.shields.io/badge/Firefox-Add--on-FF7139?logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/reply-better-ai/)
 [![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://www.loom.com/share/b8781d769fb940d7a1d8aff09b6f1648?sid=26fb5f18-27af-4938-bbc9-fe952a3e211e)

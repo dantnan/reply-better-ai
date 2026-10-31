@@ -1,0 +1,57 @@
+---
+import "../styles/global.css";
+import { CHROME_URL, GITHUB_URL } from "../data/links.js";
+
+const { title, description, jsonLd } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL("/img/reply-mode-og.png", Astro.site).href;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+    <!-- Cloudflare Web Analytics: cookie-free visit counts (public site token) -->
+    <script is:inline defer src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "b40b79d973b3466fb54d3262d5881611"}'></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/"><img src="/img/icon-128.png" alt="" width="28" height="28" />Reply Better AI</a>
+        <nav class="site-nav">
+          <a href="/#how-it-works" class="hide-sm">How it works</a>
+          <a href="/vs/grammarly" class="hide-sm">Compare</a>
+          <a href="/privacy">Privacy</a>
+        </nav>
+        <a class="btn btn-primary btn-sm" href={CHROME_URL}>Add to Chrome</a>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© {new Date().getFullYear()} Reply Better AI</span>
+        <a href="/privacy">Privacy</a>
+        <a href={GITHUB_URL}>GitHub (MIT)</a>
+        <a href="/vs/grammarly">Grammarly alternative</a>
+      </div>
+    </footer>
+  </body>
+</html>
