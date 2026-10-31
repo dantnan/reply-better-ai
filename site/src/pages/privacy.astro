@@ -1,0 +1,14 @@
+---
+import Base from "../layouts/Base.astro";
+// Single source of truth: the same policy file the stores link to.
+import { Content } from "../../../docs/privacy.md";
+---
+<Base
+  title="Privacy Policy – Reply Better AI"
+  description="Reply Better AI runs no servers and collects no data. On-device and local engines keep your text on your computer.">
+  <section>
+    <div class="wrap narrow prose">
+      <Content />
+    </div>
+  </section>
+</Base>

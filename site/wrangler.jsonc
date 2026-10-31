@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "reply-better-ai-site",
+  "compatibility_date": "2026-11-01",
+  // Assets-only Worker: no server code, just the Astro build output.
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    { "pattern": "replybetterai.com", "custom_domain": true },
+    { "pattern": "www.replybetterai.com", "custom_domain": true }
+  ],
+  "workers_dev": false
+}

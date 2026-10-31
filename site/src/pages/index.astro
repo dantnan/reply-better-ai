@@ -1,0 +1,181 @@
+---
+import Base from "../layouts/Base.astro";
+import { CHROME_URL, FIREFOX_URL, VIDEO_ID } from "../data/links.js";
+
+const title = "Reply Better AI – Free AI Email Reply & Writing Assistant";
+const description =
+  "Improve your drafts and reply to any message with AI, right where you type. Free, no account, no usage limits, and it can run entirely on your device.";
+
+const faq = [
+  {
+    q: "Is it really free?",
+    a: "Yes. There is no account, no subscription and no usage cap. The default on-device engine runs on your computer, so it costs nothing to run. If you prefer a cloud model, Groq gives free API keys, and OpenRouter has free models too.",
+  },
+  {
+    q: "Do I need an account or an API key?",
+    a: "No account, ever. On Chrome desktop with on-device AI available, you don't need a key either. Otherwise you can paste a free Groq key in about a minute, or point it at Ollama or LM Studio on your own machine.",
+  },
+  {
+    q: "Which languages does it support?",
+    a: "Replies and rewrites work in any language with Groq, OpenRouter or a local model. Chrome's on-device model currently supports English, German, Spanish, French and Japanese; for other languages, use one of the other engines.",
+  },
+  {
+    q: "What happens to my text?",
+    a: "With on-device or local engines, nothing leaves your computer. With a cloud engine, only the text you select is sent, directly to the provider you chose, using your own key. We run no servers and collect no analytics.",
+  },
+  {
+    q: "Where does it work?",
+    a: "In regular text fields and editors on most websites: webmail, social networks, chat apps, support desks, CMS editors and more. Google Docs is not supported yet because it draws text on a canvas.",
+  },
+  {
+    q: "Which browsers?",
+    a: "Chrome and other Chromium browsers (Edge, Brave, Arc) through the Chrome Web Store, and Firefox through Firefox Add-ons.",
+  },
+];
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Reply Better AI",
+    applicationCategory: "BrowserApplication",
+    operatingSystem: "Chrome, Firefox",
+    description,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    url: "https://replybetterai.com/",
+    downloadUrl: CHROME_URL,
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faq.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  },
+];
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <section class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Free · No account · Private</span>
+      <h1>Write and reply better,<br />right where you type.</h1>
+      <p class="lead">
+        Select a message and get a reply in your tone, or polish your own draft with one click.
+        No sign-up, no limits, and it can run entirely on your device.
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href={CHROME_URL}>Add to Chrome — it's free</a>
+        <a class="btn btn-ghost" href={FIREFOX_URL}>Get it for Firefox</a>
+      </div>
+      <img class="shot" src="/img/before-after.webp" width="1280" height="800"
+        alt="A rough email draft and the clear version Reply Better AI wrote, side by side" />
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="grid-3">
+        <div class="card">
+          <h3>No account, no limits</h3>
+          <p>Install it and start writing. There is nothing to sign up for and no monthly quota to run out of.</p>
+        </div>
+        <div class="card">
+          <h3>Private by design</h3>
+          <p>Run it on-device or on your own Ollama / LM Studio server and your text never leaves your computer. No servers, no analytics.</p>
+        </div>
+        <div class="card">
+          <h3>Stays out of your way</h3>
+          <p>A small button appears only in real message boxes, not on every search field. Nothing gets covered, nothing pops up.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works">
+    <div class="wrap">
+      <div class="split">
+        <div>
+          <span class="eyebrow">Reply mode</span>
+          <h2>Select the conversation. Get a reply.</h2>
+          <p class="lead">
+            Highlight the message you're answering and pick a tone: match the thread, professional,
+            friendly, concise. Or type what you want to say in any language and get a ready reply.
+          </p>
+        </div>
+        <img class="shot" style="margin-top:0" src="/img/reply-panel.webp" width="1200" height="1151" loading="lazy"
+          alt="Reply panel with tone options, drafting an answer to a selected chat message" />
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="split">
+        <img class="shot" style="margin-top:0" src="/img/diff.webp" width="1280" height="800" loading="lazy"
+          alt="Improve mode showing a word-by-word diff of the edited draft" />
+        <div>
+          <span class="eyebrow">Improve mode</span>
+          <h2>Polish your draft and see every change.</h2>
+          <p class="lead">
+            Type as usual, click the pencil, and get a clearer version. A word-by-word diff shows
+            exactly what changed. Regenerate for another take, or undo in one tap.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap narrow">
+      <h2>Watch it in 60 seconds</h2>
+      <a class="video" href={`https://www.youtube.com/watch?v=${VIDEO_ID}`} rel="noopener">
+        <img src="/img/video-thumb.webp" width="1280" height="720" loading="lazy"
+          alt="Reply Better AI demo video — opens on YouTube" />
+        <span class="play" aria-hidden="true"></span>
+      </a>
+      <p class="cta-note">Opens on YouTube. We don't embed it, so this page loads no third-party trackers.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Pick where your text is processed</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Engine</th><th>Cost</th><th>Setup</th><th>Where your text goes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>On-device</strong> (Chrome's Gemini Nano)</td><td><span class="badge-free">Free</span></td><td>None</td><td>Stays on your computer</td></tr>
+            <tr><td><strong>Local</strong> (Ollama, LM Studio)</td><td><span class="badge-free">Free</span></td><td>Your own model server</td><td>Stays on your computer</td></tr>
+            <tr><td><strong>Groq</strong></td><td><span class="badge-free">Free</span></td><td>Free API key, ~1 minute</td><td>Groq, with your key</td></tr>
+            <tr><td><strong>OpenRouter</strong></td><td>Free and paid models</td><td>Your API key</td><td>The model provider you pick</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cta-note">Leave it on Auto and it uses the best engine available, falling back to the next one if needed.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap narrow">
+      <h2>Questions</h2>
+      {faq.map((f) => (
+        <details>
+          <summary>{f.q}</summary>
+          <p>{f.a}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap narrow" style="text-align:center">
+      <h2>Try it on your next reply</h2>
+      <div class="cta-row" style="justify-content:center">
+        <a class="btn btn-primary" href={CHROME_URL}>Add to Chrome — it's free</a>
+        <a class="btn btn-ghost" href={FIREFOX_URL}>Firefox</a>
+      </div>
+    </div>
+  </section>
+</Base>
