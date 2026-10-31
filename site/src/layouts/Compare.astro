@@ -44,7 +44,7 @@ const jsonLd = fm.faq?.length
           ))}
         </>
       )}
-      <p class="cta-note" style="margin-top:32px">{fm.checked}</p>
+      {fm.checked && <p class="cta-note" style="margin-top:32px">{fm.checked}</p>}
     </div>
   </section>
 </Base>
