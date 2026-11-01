@@ -7,4 +7,7 @@ export const VIDEO_ID = "iPgsJnVaMWg";
 
 export const COMPARISONS = [
   { slug: "grammarly", name: "Grammarly" },
+  { slug: "wordtune", name: "Wordtune" },
+  { slug: "compose-ai", name: "Compose AI" },
+  { slug: "jetwriter", name: "Jetwriter" },
 ];
