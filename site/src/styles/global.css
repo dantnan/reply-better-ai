@@ -91,6 +91,9 @@ tbody tr:last-child td { border-bottom: 0; }
 .prose h3 { margin-top: 28px; }
 .prose p, .prose li { color: var(--rb-fg-muted); }
 .prose strong { color: var(--rb-fg); }
+.prose pre { padding: 14px 18px; border-radius: var(--rb-radius-md); overflow-x: auto; font-size: 14px; line-height: 1.6; margin: 12px 0 20px; }
+.prose code { font-family: var(--rb-font-mono); font-size: 0.9em; }
+.prose :not(pre) > code { background: var(--rb-surface-3); padding: 1px 6px; border-radius: 4px; }
 
 /* — FAQ — */
 details { border-bottom: 1px solid var(--rb-border); padding: 16px 0; }
