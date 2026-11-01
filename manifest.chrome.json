@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI – Free AI Writing Assistant",
-  "version": "1.7.6",
-  "description": "Rewrite drafts and write replies anywhere on the web. Free AI writing assistant that runs on-device or on your own Ollama model.",
+  "version": "1.7.7",
+  "homepage_url": "https://replybetterai.com",
+  "description": "Write email replies and rewrite drafts anywhere on the web. Free, no account, no limits. Runs on-device or with Ollama.",
   "minimum_chrome_version": "109",
   "icons": {
     "512": "icons/icon.png"
