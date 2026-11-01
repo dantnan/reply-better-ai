@@ -25,12 +25,14 @@ function timeoutFetch(url, options, ms = REQUEST_TIMEOUT_MS) {
 // Build the request body. With a `models` array (Auto · Fastest free) OpenRouter
 // picks the fastest available and fails over automatically; with a single model
 // we keep default routing (throughput only for free models, no cost downside).
-function buildBody({ model, models, systemPrompt, text, stream }) {
+// `extras` carries provider-specific fields for a single-model request (e.g.
+// Groq's reasoning_effort).
+function buildBody({ model, models, systemPrompt, text, stream, extras }) {
   const messages = [{ role: "system", content: systemPrompt }, { role: "user", content: text }];
   const streamPart = stream ? { stream: true } : {};
   const body = Array.isArray(models) && models.length
     ? { models, provider: { sort: "throughput" }, ...streamPart, messages }
-    : { model, ...routingExtras(model), ...streamPart, messages };
+    : { model, ...routingExtras(model), ...extras, ...streamPart, messages };
   return JSON.stringify(body);
 }
 
@@ -63,7 +65,7 @@ export async function improveText({ text, apiKey, model, models, systemPrompt })
 // Streams a rewrite token-by-token. Calls onChunk(deltaText) as content arrives
 // and resolves with the full text. Used by the popup (direct) and by the inline
 // panel via the service-worker port relay; non-streaming callers use improveText.
-export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, onQuota, signal, baseUrl = OPENROUTER_BASE }) {
+export async function streamImproveText({ text, apiKey, model, models, systemPrompt, onChunk, onModel, onQuota, signal, baseUrl = OPENROUTER_BASE, extras }) {
   let response;
   try {
     response = await fetch(`${baseUrl}/chat/completions`, {
@@ -77,7 +79,7 @@ export async function streamImproveText({ text, apiKey, model, models, systemPro
         "HTTP-Referer": REFERER,
         "X-Title": TITLE,
       },
-      body: buildBody({ model, models, systemPrompt, text, stream: true }),
+      body: buildBody({ model, models, systemPrompt, text, stream: true, extras }),
     });
   } catch (e) {
     throw new NetworkError(e.name === "AbortError" ? "Request aborted" : e.message);

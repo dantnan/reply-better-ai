@@ -1,6 +1,6 @@
 import { storage } from "../lib/storage.js";
 import { resolveModelSelection } from "../lib/models-cache.js";
-import { DEFAULT_MODEL, DEFAULT_ENGINE, OPENROUTER_BASE, GROQ_BASE, GROQ_DEFAULT_MODEL } from "../lib/constants.js";
+import { DEFAULT_MODEL, DEFAULT_ENGINE, OPENROUTER_BASE, GROQ_BASE, GROQ_DEFAULT_MODEL, GROQ_REQUEST_EXTRAS } from "../lib/constants.js";
 import { makeCloudEngine } from "./cloud.js";
 import { onDeviceEngine } from "./ondevice.js";
 import { makeLocalEngine } from "./local.js";
@@ -24,6 +24,7 @@ const groqEngine = makeCloudEngine({
   baseUrl: GROQ_BASE,
   keyName: "groqApiKey",
   resolveModel: async () => ({ model: GROQ_DEFAULT_MODEL }),
+  requestExtras: GROQ_REQUEST_EXTRAS,
   quotaKey: "groqQuota",
 });
 
@@ -70,7 +71,7 @@ export function engineUsesModelPicker(engine) {
 export function engineModelSummary(engine) {
   switch (engine) {
     case "ondevice": return "Gemini Nano · runs on your device";
-    case "groq": return "Llama 3.3 70B · via Groq";
+    case "groq": return "GPT-OSS 120B · via Groq";
     default: return null;
   }
 }
