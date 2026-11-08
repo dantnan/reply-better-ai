@@ -8,6 +8,8 @@ import { listLocalModels } from "../engines/local.js";
 import { ModelPicker } from "../popup/components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "../popup/components/settings-ui.js";
 import { isEnoughVoiceSample, upsertVoicePrompt, VOICE_MIN_CHARS, VOICE_PROMPT_NAME } from "../lib/voice.js";
+import { AI_PHRASES, MAX_PHRASES, normalizePhrases } from "../lib/avoid-phrases.js";
+import { withSiteEnabled } from "../lib/sites.js";
 
 const $ = id => document.getElementById(id);
 
@@ -52,11 +54,17 @@ const els = {
   newSnippetTrigger: $("new-snippet-trigger"),
   newSnippetContent: $("new-snippet-content"),
   saveSnippet: $("save-snippet"),
+  disabledSitesList: $("disabled-sites-list"),
+  disabledSitesEmpty: $("disabled-sites-empty"),
+  avoidAi: $("avoid-ai-phrases"),
+  aiPhrasesList: $("ai-phrases-list"),
+  avoidPhrases: $("avoid-phrases"),
+  avoidPhrasesCount: $("avoid-phrases-count"),
   modal: $("picker-modal"),
   pickerContainer: $("model-picker-container"),
 };
 
-const state = { savedPrompts: [], snippets: [], modelsCache: [], currentModelId: DEFAULT_MODEL };
+const state = { savedPrompts: [], snippets: [], disabledSites: [], modelsCache: [], currentModelId: DEFAULT_MODEL };
 
 let savedTimer;
 function flashSaved() {
@@ -209,6 +217,42 @@ function renderSnippets() {
   });
 }
 
+/* ── Sites turned off from the panel ──────────────────────────────────── */
+function renderDisabledSites() {
+  els.disabledSitesList.replaceChildren();
+  els.disabledSitesEmpty.hidden = state.disabledSites.length > 0;
+  for (const site of state.disabledSites) {
+    const item = document.createElement("div");
+    item.className = "rb-manager-item";
+    const body = document.createElement("div");
+    body.className = "rb-mi-body";
+    const t = document.createElement("div"); t.className = "rb-mi-title"; t.textContent = site;
+    body.appendChild(t);
+    const on = document.createElement("button");
+    on.type = "button"; on.className = "rb-btn rb-btn-secondary rb-btn-sm"; on.textContent = "Turn back on";
+    on.addEventListener("click", async () => {
+      state.disabledSites = withSiteEnabled(state.disabledSites, site);
+      await persist({ disabledSites: state.disabledSites });
+      renderDisabledSites();
+    });
+    item.append(body, on);
+    els.disabledSitesList.appendChild(item);
+  }
+}
+
+/* ── Writing rules ("never use") ──────────────────────────────────────── */
+function renderAvoidCount() {
+  const n = normalizePhrases(els.avoidPhrases.value).length;
+  els.avoidPhrasesCount.textContent = n ? `${n} of up to ${MAX_PHRASES}.` : "";
+}
+
+async function saveAvoidPhrases() {
+  const list = normalizePhrases(els.avoidPhrases.value);
+  els.avoidPhrases.value = list.join("\n");
+  renderAvoidCount();
+  await persist({ avoidPhrases: list });
+}
+
 function openPicker() {
   els.modal.classList.add("show");
   const picker = new ModelPicker({
@@ -323,7 +367,7 @@ async function init() {
   await migrateFromSync();
   const data = await storage.get([
     "apiKey", "groqApiKey", "engine", "model", "savedPrompts", "snippets", "enableInlineButton", "messageType", "inlineClickMode",
-    "localBaseUrl", "localModel", "localPreset",
+    "localBaseUrl", "localModel", "localPreset", "disabledSites", "avoidAiPhrases", "avoidPhrases",
   ]);
   state.savedPrompts = Array.isArray(data.savedPrompts) ? data.savedPrompts : [];
   state.snippets = Array.isArray(data.snippets) ? data.snippets : [];
@@ -343,6 +387,12 @@ async function init() {
   fillStyleSelect(els.inlineStyle, state.savedPrompts, data.messageType || DEFAULT_STYLE);
   renderPrompts();
   renderSnippets();
+  state.disabledSites = Array.isArray(data.disabledSites) ? data.disabledSites : [];
+  renderDisabledSites();
+  els.avoidAi.checked = !!data.avoidAiPhrases;
+  els.aiPhrasesList.textContent = `Includes: ${AI_PHRASES.map(p => (p === "—" ? "— (long dash)" : `“${p}”`)).join(", ")}.`;
+  els.avoidPhrases.value = normalizePhrases(data.avoidPhrases).join("\n");
+  renderAvoidCount();
   refreshChip();
   updateActiveEngineLabel();
 
@@ -354,7 +404,9 @@ async function init() {
     console.warn("[options] models load failed:", e?.message);
   }
 
-  showTab("card-engine");
+  // The panel's "New" line opens settings straight on a tab (options.html#card-rules).
+  const fromHash = location.hash.slice(1);
+  showTab(fromHash && document.getElementById(fromHash)?.classList.contains("opt-card") ? fromHash : "card-engine");
 
   // nav tabs: click switches the visible card
   els.nav.addEventListener("click", e => {
@@ -404,6 +456,16 @@ async function init() {
   for (const radio of document.querySelectorAll('#inline-click-mode input[name="click-mode"]')) {
     radio.addEventListener("change", () => { if (radio.checked) persist({ inlineClickMode: radio.value }); });
   }
+
+  els.avoidAi.addEventListener("change", () => persist({ avoidAiPhrases: els.avoidAi.checked }));
+  els.avoidPhrases.addEventListener("input", renderAvoidCount);
+  els.avoidPhrases.addEventListener("change", saveAvoidPhrases);
+  // A site turned off from a panel while this page is open shows up right away.
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes.disabledSites) return;
+    state.disabledSites = Array.isArray(changes.disabledSites.newValue) ? changes.disabledSites.newValue : [];
+    renderDisabledSites();
+  });
 
   els.voiceAnalyze?.addEventListener("click", analyzeVoice);
   els.voiceDiscard?.addEventListener("click", () => {

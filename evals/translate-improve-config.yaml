@@ -1,0 +1,34 @@
+# "Write in" + "never use" evals for improve mode (1.8).
+#
+# Run: npx promptfoo eval -c evals/translate-improve-config.yaml --no-cache
+description: Reply Better AI write-in and never-use evals (improve)
+
+prompts:
+  - file://prompts.js:improvePrompt
+
+providers:
+  - id: openrouter:anthropic/claude-haiku-4.5
+    label: default-haiku-4.5
+  - id: openrouter:meta-llama/llama-3.3-70b-instruct
+    label: groq-tier-llama-3.3-70b
+  # What the Groq engine actually runs since Aug 2026.
+  - id: openrouter:openai/gpt-oss-120b
+    label: groq-gpt-oss-120b
+    config:
+      reasoning:
+        effort: low
+      # The extension reads only the answer, never the reasoning; promptfoo
+      # would otherwise prepend it and the checks would grade the model's notes.
+      showThinking: false
+
+defaultTest:
+  options:
+    provider: openrouter:anthropic/claude-sonnet-4.5
+  assert:
+    - type: javascript
+      value: file://assertions.js:noPreamble
+    - type: javascript
+      value: file://assertions.js:noAvoidedPhrases
+
+tests:
+  - file://tests/translate-improve.yaml

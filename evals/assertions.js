@@ -49,3 +49,11 @@ export function looksLikeAReply(output) {
   }
   return ok("Reads as a reply.");
 }
+
+// "Never use" list: none of the phrases in vars.avoid may appear (same matcher
+// the extension uses after generation).
+export async function noAvoidedPhrases(output, context) {
+  const { findAvoided } = await import("../src/lib/avoid-phrases.js");
+  const hits = findAvoided(output, context.vars.avoid || []);
+  return hits.length ? no(`Used phrases it was told to avoid: ${hits.join(", ")}`) : ok("No avoided phrases.");
+}

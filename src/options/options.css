@@ -157,3 +157,4 @@ body { width: auto; }
 .opt-voice-status { font-size: var(--rb-text-sm); color: var(--rb-fg-muted); }
 .opt-voice-status.is-error { color: var(--rb-red-600); }
 #voice-result { margin-top: var(--rb-space-3); }
+.opt-hint { margin: var(--rb-space-1) 0 var(--rb-space-2); font-size: var(--rb-text-sm); color: var(--rb-fg-muted); }

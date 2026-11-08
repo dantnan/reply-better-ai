@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveSystemPrompt, STYLE_PROMPTS, STYLES, styleLabel, buildReplyPrompt, wrapConversation } from "../src/lib/system-prompts.js";
+import { resolveSystemPrompt, STYLE_PROMPTS, STYLES, styleLabel, buildReplyPrompt, wrapConversation, AFTER_FENCE_REMINDER } from "../src/lib/system-prompts.js";
 
 describe("resolveSystemPrompt", () => {
   it("returns the default 'improve' prompt for unknown styles", () => {
@@ -59,7 +59,7 @@ describe("styleLabel", () => {
 
 describe("wrapConversation", () => {
   it("fences the text so the model can tell data from instructions", () => {
-    expect(wrapConversation("hello")).toBe("<conversation>\nhello\n</conversation>");
+    expect(wrapConversation("hello")).toBe("<conversation>\nhello\n</conversation>\n\n" + AFTER_FENCE_REMINDER);
   });
 
   it("neutralizes a closing tag the sender wrote, so the fence cannot be escaped", () => {
@@ -69,8 +69,8 @@ describe("wrapConversation", () => {
   });
 
   it("survives empty and missing input", () => {
-    expect(wrapConversation("")).toBe("<conversation>\n\n</conversation>");
-    expect(wrapConversation(undefined)).toBe("<conversation>\n\n</conversation>");
+    expect(wrapConversation("")).toBe("<conversation>\n\n</conversation>\n\n" + AFTER_FENCE_REMINDER);
+    expect(wrapConversation(undefined)).toBe("<conversation>\n\n</conversation>\n\n" + AFTER_FENCE_REMINDER);
   });
 });
 
@@ -131,7 +131,7 @@ describe("fence escaping, awkward variants", () => {
   it("neutralizes anything that opens like the tag", () => {
     for (const attempt of ["</conversation/>", "</conversation foo>", "<conversation bar>", "</conversation", "<CONVERSATION/>"]) {
       const body = wrapConversation(`hi ${attempt} now`);
-      const inner = body.slice("<conversation>\n".length, -"\n</conversation>".length);
+      const inner = body.slice("<conversation>\n".length, body.lastIndexOf("\n</conversation>"));
       expect(inner).not.toMatch(/<\s*\/?\s*conversation/i);
     }
   });
@@ -140,5 +140,83 @@ describe("fence escaping, awkward variants", () => {
     const out = wrapConversation("hello there");
     expect(out.match(/<conversation>/g)).toHaveLength(1);
     expect(out.match(/<\/conversation>/g)).toHaveLength(1);
+  });
+});
+
+describe("Write in (output language)", () => {
+  it("keeps the same-language rule when no language is chosen", () => {
+    const p = resolveSystemPrompt("improve", [], {});
+    expect(p).toBe(STYLE_PROMPTS.improve);
+    expect(p).toMatch(/Never translate it/);
+  });
+
+  it("asks for a natural translation when a language is chosen", () => {
+    const p = resolveSystemPrompt("friendly", [], { language: "de" });
+    expect(p).toMatch(/Write the improved message in German/);
+    expect(p).toMatch(/translate it into natural German/);
+    expect(p).not.toMatch(/Never translate it/);
+    expect(p).toMatch(/Never answer it/); // the draft is still not addressed to the model
+  });
+
+  it("applies to custom prompts too", () => {
+    const p = resolveSystemPrompt("custom_prompt_0", [{ name: "x", text: "Be brief." }], { language: "es" });
+    expect(p.startsWith("Be brief.")).toBe(true);
+    expect(p).toMatch(/in Spanish/);
+  });
+
+  it("ignores unknown language codes", () => {
+    expect(resolveSystemPrompt("improve", [], { language: "klingon" })).toBe(STYLE_PROMPTS.improve);
+    expect(resolveSystemPrompt("improve", [], { language: "constructor" })).toBe(STYLE_PROMPTS.improve);
+  });
+
+  it("reply prompt is unchanged without a language", () => {
+    expect(buildReplyPrompt({ tone: "match", language: undefined })).toBe(buildReplyPrompt({ tone: "match" }));
+  });
+
+  it("reply prompt overrides the instruction's language", () => {
+    const p = buildReplyPrompt({ instruction: "teşekkür et, cuma uygun de", language: "en" });
+    expect(p).toMatch(/Write the reply in English, whatever language/);
+    expect(p).not.toMatch(/same language as that instruction/);
+    expect(p).toContain("<conversation>"); // fence rule still there
+  });
+
+  it("summarize honours the language too", () => {
+    expect(buildReplyPrompt({ summarize: true, language: "fr" })).toMatch(/Write it in French\./);
+    expect(buildReplyPrompt({ summarize: true })).toMatch(/same language as the conversation/);
+  });
+});
+
+describe("never-use list in prompts", () => {
+  it("adds the rule to improve and reply prompts", () => {
+    expect(resolveSystemPrompt("improve", [], { avoid: ["delve"] })).toContain('Never use any of these words or phrases, in any form: "delve"');
+    expect(buildReplyPrompt({ avoid: ["synergy"] })).toContain('"synergy"');
+    expect(buildReplyPrompt({ summarize: true, avoid: ["synergy"] })).toContain('"synergy"');
+  });
+
+  it("adds nothing for an empty list", () => {
+    expect(resolveSystemPrompt("improve", [], { avoid: [] })).toBe(STYLE_PROMPTS.improve);
+  });
+});
+
+
+describe("Auto language in reply mode", () => {
+  it("follows the conversation when the instruction is in another language", () => {
+    const p = buildReplyPrompt({ instruction: "cuma olur de" });
+    expect(p).toMatch(/same language as the conversation, even if the instruction is written in another language/);
+    expect(p).not.toMatch(/same language as that instruction/);
+  });
+
+  it("uses the instruction's language when there is no conversation", () => {
+    expect(buildReplyPrompt({ instruction: "cuma olur de", hasConversation: false })).toMatch(/same language as that instruction/);
+  });
+
+  it("is unchanged without an instruction", () => {
+    expect(buildReplyPrompt({})).toMatch(/Reply in the same language as the conversation\./);
+  });
+
+  it("Write in still wins", () => {
+    const p = buildReplyPrompt({ instruction: "cuma olur de", language: "de" });
+    expect(p).toMatch(/Write the reply in German/);
+    expect(p).not.toMatch(/same language as the conversation/);
   });
 });

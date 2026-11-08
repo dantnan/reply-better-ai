@@ -180,3 +180,62 @@
 .reply-better-vari { font-size: 12px !important; color: #adb5bd !important; font-variant-numeric: tabular-nums; align-self: center; }
 .reply-better-pbtn-primary { margin-left: auto !important; }
 
+
+/* ── Label row: "How should I…" + "Write in" language picker ────────────── */
+.reply-better-label-row {
+  display: flex !important; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 13px 13px 6px !important;
+}
+.reply-better-label-row .reply-better-style-label { margin: 0 !important; }
+.reply-better-lang {
+  display: inline-flex !important; align-items: center; gap: 6px; flex: none; cursor: pointer;
+}
+/* matches .reply-better-style-label (the reset keeps both in normal case) */
+.reply-better-lang-txt { font-size: 10.5px !important; font-weight: 700 !important; color: #adb5bd !important; }
+.reply-better-panel .reply-better-lang-select {
+  -webkit-appearance: menulist !important; appearance: auto !important;
+  height: 26px !important; max-width: 150px;
+  padding: 2px 6px !important;
+  font-size: 12px !important; font-weight: 600 !important; color: #495057 !important;
+  background: #f1f3f5 !important; border: 1px solid #e6e8ef !important; border-radius: 7px !important;
+  cursor: pointer !important;
+}
+.reply-better-panel .reply-better-lang-select:hover { background: #e9ecef !important; }
+.reply-better-panel .reply-better-lang-select:focus { outline: 2px solid #c6ccff !important; outline-offset: 1px !important; }
+
+/* ── "Turn off on this site" header button (sits left of ✕) ─────────────── */
+.reply-better-panel .reply-better-panel-off { margin-left: 0 !important; }
+.reply-better-panel .reply-better-panel-off svg { width: 15px !important; height: 15px !important; }
+
+/* ── Note under the result ("never use" fix pass / leftovers) ───────────── */
+.reply-better-note {
+  display: none !important;
+  margin-top: 8px !important;
+  font-size: 11.5px !important; line-height: 1.4 !important; color: #868e96 !important;
+}
+.reply-better-note.reply-better-note-show { display: block !important; }
+.reply-better-note.reply-better-note-warn { color: #a3600b !important; }
+.reply-better-panel.reply-better-has-error .reply-better-note { display: none !important; }
+
+/* ── One-time "New" line (lib/whats-new.js) ─────────────────────────────── */
+.reply-better-whatsnew {
+  display: flex !important; align-items: flex-start; gap: 6px;
+  margin: 11px 13px 0 !important;
+  padding: 8px 8px 8px 10px !important;
+  background: #f3f4ff !important; border: 1px solid #dfe2ff !important; border-radius: 9px !important;
+}
+.reply-better-whatsnew-txt { flex: 1 1 auto; font-size: 11.5px !important; line-height: 1.45 !important; color: #3d468f !important; }
+.reply-better-whatsnew-txt b { font-weight: 700 !important; color: #3d468f !important; }
+.reply-better-whatsnew-link {
+  border: 0 !important; background: transparent !important; padding: 0 !important; cursor: pointer !important;
+  font-size: 11.5px !important; font-weight: 700 !important; color: #4f5bc4 !important; text-decoration: underline !important;
+  display: inline !important;
+}
+.reply-better-whatsnew-close {
+  flex: none; width: 20px; height: 20px;
+  border: 0 !important; background: transparent !important; border-radius: 5px !important;
+  color: #7c84c9 !important; cursor: pointer !important;
+  display: inline-flex !important; align-items: center; justify-content: center;
+}
+.reply-better-whatsnew-close:hover { background: #e3e6ff !important; color: #3d468f !important; }
+.reply-better-whatsnew-close svg { width: 12px !important; height: 12px !important; stroke: currentColor !important; fill: none !important; }
