@@ -1,4 +1,4 @@
-export const DEFAULT_MODEL = "anthropic/claude-haiku-4.5";
+export const DEFAULT_MODEL = "anthropic/claude-haiku-5.5";
 // Sentinel "model": let OpenRouter pick the fastest available free model and
 // auto-fail-over to another when one errors/rate-limits (resolved to a models[]
 // list at request time — see resolveModelSelection in models-cache.js).

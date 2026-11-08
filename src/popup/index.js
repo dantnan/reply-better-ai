@@ -308,9 +308,17 @@ async function reflectKeyState() {
 }
 
 async function showFallbackIfNeeded() {
-  const { modelFallbackNotice } = await storage.get(["modelFallbackNotice"]);
-  if (!modelFallbackNotice) return;
-  els.fallbackText.textContent = `"${modelFallbackNotice.from}" is no longer available — switched to "${modelFallbackNotice.to}".`;
+  const { modelFallbackNotice, modelChangeNotice } = await storage.get(["modelFallbackNotice", "modelChangeNotice"]);
+  if (modelFallbackNotice) {
+    els.fallbackText.textContent = `"${modelFallbackNotice.from}" is no longer available — switched to "${modelFallbackNotice.to}".`;
+  } else if (modelChangeNotice) {
+    els.fallbackText.textContent = "The default model is now Claude Haiku 5.5: better rewrites at about a seventh of the cost. You can switch back in Settings.";
+    // Shown once: closing it, or picking any model, clears it for good.
+    els.fallbackBanner.querySelector(".rb-banner-close")
+      .addEventListener("click", () => storage.remove("modelChangeNotice").catch(() => {}), { once: true });
+  } else {
+    return;
+  }
   els.fallbackBanner.classList.add("show");
 }
 

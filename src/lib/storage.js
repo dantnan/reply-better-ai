@@ -11,7 +11,7 @@ export const storage = {
 // already moved on to a working model.
 export async function setSelectedModel(id) {
   await browser.storage.local.set({ model: id });
-  await browser.storage.local.remove("modelFallbackNotice");
+  await browser.storage.local.remove(["modelFallbackNotice", "modelChangeNotice"]);
 }
 
 const MIGRATABLE_KEYS = [

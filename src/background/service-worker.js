@@ -9,6 +9,7 @@ import { orderedEngines, describeActiveEngine } from "../engines/index.js";
 import { isLanguage, languageFromInstruction, languageFromDetection } from "../lib/languages.js";
 import { effectivePhrases, enforceAvoided } from "../lib/avoid-phrases.js";
 import { whatsNewDismissed } from "../lib/whats-new.js";
+import { defaultModelMigration } from "../lib/model-default.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
@@ -161,6 +162,15 @@ browser.runtime.onInstalled.addListener(async details => {
     defaults.whatsNew = whatsNewDismissed();
     if (Object.keys(defaults).length > 0) await storage.set(defaults);
     browser.runtime.openOptionsPage().catch(err => console.warn("openOptionsPage:", err.message));
+  }
+  if (details.reason === "update") {
+    try {
+      const { model } = await storage.get(["model"]);
+      const change = defaultModelMigration(model, DEFAULT_MODEL);
+      if (change) await storage.set(change);
+    } catch (err) {
+      console.warn("[update] could not move to the new default model:", err?.message);
+    }
   }
   await runStartupValidation();
 });

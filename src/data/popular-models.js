@@ -1,6 +1,7 @@
 // OpenRouter uses dots for Anthropic ids (claude-haiku-4.5, not -4-5).
 // Order is preserved by the picker; entries missing from OpenRouter silently drop.
 export const POPULAR_IDS = [
+  "anthropic/claude-haiku-5.5",
   "anthropic/claude-haiku-4.5",
   "anthropic/claude-sonnet-4.6",
   "anthropic/claude-opus-4.7",
