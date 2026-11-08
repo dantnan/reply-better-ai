@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reply Better AI – Free AI Writing Assistant",
-  "version": "1.7.7",
+  "version": "1.8.0",
   "homepage_url": "https://replybetterai.com",
   "description": "Write email replies and rewrite drafts anywhere on the web. Free, no account, no limits. Runs on-device or with Ollama.",
   "browser_specific_settings": {
