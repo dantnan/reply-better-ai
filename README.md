@@ -148,7 +148,7 @@ Reply Better AI runs no servers and ships zero telemetry. Your API keys, prompts
 
 ## Credits
 
-The Local engine (Ollama / LM Studio / OpenAI-compatible) was contributed by [@jtsternberg](https://github.com/jtsternberg). Reply Better AI is built and maintained by [@dantnan](https://github.com/dantnan), with thanks to everyone who has tried it and sent feedback.
+The Local engine (Ollama / LM Studio / OpenAI-compatible) was contributed by [@jtsternberg](https://github.com/jtsternberg). Reply Better AI is built and maintained by [Adnan Bekir](https://antnan.com) ([@dantnan](https://github.com/dantnan)), with thanks to everyone who has tried it and sent feedback.
 
 ## License
 
