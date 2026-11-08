@@ -1,0 +1,79 @@
+# Model comparison for improve mode: quality, cost and speed across models.
+# Run: npx promptfoo eval -c evals/compare-config.yaml --no-cache -o evals/out/compare.json
+# Then: node evals/summarize-compare.mjs evals/out/compare.json
+#
+# Needs OPENROUTER_API_KEY in the environment. Never put a key in this file.
+# All models go through OpenRouter so cost and latency are measured the same way.
+description: Reply Better AI model comparison (improve mode)
+
+prompts:
+  - file://prompts.js:improvePrompt
+
+providers:
+  - id: openrouter:anthropic/claude-haiku-4.5
+    label: haiku-4.5 (current default)
+    config: { showThinking: false, max_tokens: 4000 }
+  - id: openrouter:anthropic/claude-haiku-5.5
+    label: haiku-5.5
+    config: { showThinking: false, max_tokens: 4000 }
+  - id: openrouter:meta-llama/llama-3.3-70b-instruct
+    label: llama-3.3-70b (Groq tier)
+    config: { showThinking: false, max_tokens: 4000 }
+  - id: openrouter:google/gemini-3.6-flash
+    label: gemini-3.6-flash
+    config: { showThinking: false, max_tokens: 4000 }
+  - id: openrouter:openai/gpt-5.4-mini
+    label: gpt-5.4-mini
+    config: { showThinking: false, max_tokens: 4000 }
+
+defaultTest:
+  options:
+    # Judge is a stronger model than any model under test.
+    provider: openrouter:anthropic/claude-sonnet-5.5
+  assert:
+    - type: javascript
+      value: file://assertions.js:keepsFacts
+      metric: facts
+    - type: javascript
+      value: file://assertions.js:noPreamble
+      metric: no-preamble
+    - type: llm-rubric
+      metric: rewrite-same-language
+      value: >
+        The user typed this draft: "{{text}}". The output must be a rewritten version of that
+        draft for the same person to send, in the same language as the draft. It fails if it
+        answers or replies to the draft, comments on it, or translates it. Keep the reason under 20 words.
+    - type: llm-rubric
+      metric: meaning
+      value: >
+        Draft: "{{text}}". Criterion: MEANING KEPT. Nothing the writer said is lost and nothing
+        new is added (no new promises, facts, apologies or details). 5 = identical meaning,
+        1 = meaning changed. Rate only this, on a 1-5 scale, then set score = (rating - 1) / 4
+        and pass = rating >= 3. Keep the reason under 20 words.
+    - type: llm-rubric
+      metric: tone
+      value: >
+        Draft: "{{text}}". Requested style: "{{style}}" (improve = fix grammar and clarity while
+        keeping the writer's own voice and warmth; professional = polished and suitable for work).
+        Criterion: TONE FITS THE STYLE. 5 = exactly right, 1 = wrong tone. Rate only this, on a
+        1-5 scale, then set score = (rating - 1) / 4 and pass = rating >= 3. Keep the reason under 20 words.
+    - type: llm-rubric
+      metric: natural
+      value: >
+        Draft: "{{text}}". Criterion: SOUNDS HUMAN. Reads like something a real person would send:
+        no inflated words, no stock phrases, no corporate filler. 5 = fully natural, 1 = obviously
+        machine-written. Rate only this, on a 1-5 scale, then set score = (rating - 1) / 4 and
+        pass = rating >= 3. Keep the reason under 20 words.
+    - type: llm-rubric
+      metric: length
+      value: >
+        Draft: "{{text}}". Criterion: RIGHT LENGTH. Not padded beyond what the draft needs, and not
+        cut so short that something is lost. 5 = right length, 1 = badly padded or cut. Rate only
+        this, on a 1-5 scale, then set score = (rating - 1) / 4 and pass = rating >= 3. Keep the reason under 20 words.
+
+scenarios:
+  - description: improve and professional styles
+    config:
+      - vars: { style: improve }
+      - vars: { style: professional }
+    tests: file://tests/compare.yaml

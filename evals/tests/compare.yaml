@@ -1,0 +1,35 @@
+# Model comparison set: 30 drafts people actually write, each run in two styles.
+# Mixed Turkish and English, typos and missing punctuation left in on purpose,
+# and most drafts carry a fact (date, amount, name, link) that must survive.
+# Names and personal details are made up.
+
+- vars: { text: "hey mark, i looked at the form issue. its the smtp plugin, license expired. need your app password to fix" }
+- vars: { text: "hi daniel, the server migration is planned for jan 12. downtime should be under 30 min. ok for you?" }
+- vars: { text: "sorry for the late reply, was sick last week. will send the report by friday" }
+- vars: { text: "can you send me the invoice for august, i need it for my accountant before the 20th" }
+- vars: { text: "thanks for the quick fix!! everything works now, the checkout page loads in 2 seconds instead of 9" }
+- vars: { text: "i think we should not ship this today, there are 3 open bugs in the payment flow" }
+- vars: { text: "the new design looks good but the logo is too small on mobile, see https://example.com/staging/home" }
+- vars: { text: "quick reminder that the domain renews on march 3 for $11.17, auto renew is on" }
+- vars: { text: "i can do the update tomorrow between 10 and 12 my time (UTC+2). plugins + php 8.4" }
+- vars: { text: "unfortunately i cant take this project right now, fully booked until december. maybe elif can help" }
+- vars: { text: "the client says the contact form sends nothing since monday. i checked, emails go to spam because no SPF record" }
+- vars: { text: "hey, are we still on for dinner saturday 8pm? anna asked if she can bring her sister" }
+- vars: { text: "please dont change the price on the landing page yet, legal has to approve the 49 eur plan first" }
+- vars: { text: "great talk today. as promised here is the repo: https://github.com/example/project, let me know if setup fails" }
+- vars: { text: "we lost about 120 orders over the weekend because of the stripe webhook. fixed now, refunds are going out" }
+- vars: { text: "merhaba nasilsin, uzun zamandir konusamadik. bu hafta bir kahve icelim mi" }
+- vars: { text: "toplantiyi carsambaya alabilir miyiz acaba, sali gunu doktorum var" }
+- vars: { text: "faturayi 15 ekimde gonderdim, tutar 1250 euro, kontrol eder misin" }
+- vars: { text: "abi siteyi guncelledim, 3 eklenti eskiydi onlari da yeniledim. bi bakarsan sevinirim" }
+- vars: { text: "kusura bakmayin gec donus icin, bu hafta cok yogundu. dosyalari yarin aksama kadar gonderirim" }
+- vars: { text: "kira sozlesmesi 01.03.2027de basliyor, depozito 800 euro. imzalamadan once maddeleri tekrar okumak istiyorum" }
+- vars: { text: "urun linki burda https://example.com/urun/123 ama fiyat yanlis gorunuyor, 89 tl olmasi lazim" }
+- vars: { text: "bugun gelemeyecegim, kedim hasta veterinere goturuyorum. yarin telafi ederim" }
+- vars: { text: "yeni ev cok iyi geldi, internet de 500 mbps. haftaya herkesi bir aksam yemege cagiriyorum" }
+- vars: { text: "musteri 3 kere ayni seyi sordu, bence dokumantasyonu guncellememiz lazim yoksa bu devam edecek" }
+- vars: { text: "selam, ahmet'e 3500 tl gonderdim, odeme tablosunu da guncelledim. bi kontrol eder misin" }
+- vars: { text: "sunucu 2 saat boyunca coktu, sebebi disk dolmasiydi. loglari temizledim ve uyari kurdum" }
+- vars: { text: "tesekkurler yardimin icin, sen olmasan bu isi cuma gununden once bitiremezdim" }
+- vars: { text: "bu fiyat bize biraz yuksek geldi, 10 yerine 8 saatlik paket yapabilir miyiz" }
+- vars: { text: "toplanti notlarini paylasiyorum: karar 1 yayin 20 kasimda, karar 2 eski site 301 ile yonlenecek" }

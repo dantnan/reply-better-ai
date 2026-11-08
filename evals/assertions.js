@@ -50,6 +50,30 @@ export function looksLikeAReply(output) {
   return ok("Reads as a reply.");
 }
 
+// Small numbers a good rewrite may spell out ("3 open bugs" -> "three open bugs").
+const NUMBER_WORDS = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  // "bir" and "on" are left out: they are also everyday words ("a", English "on").
+  iki: 2, üç: 3, dört: 4, beş: 5, altı: 6, yedi: 7, sekiz: 8, dokuz: 9,
+};
+
+// Facts in the draft must survive the rewrite: links and numbers.
+// Numbers are compared without thousands separators so "1250" and "1,250" match.
+export function keepsFacts(output, context) {
+  const src = context.vars.text || "";
+  const digits = s => (s.match(/\d[\d.,:]*\d|\d/g) || []).map(n => n.replace(/[.,]/g, ""));
+  const links = (src.match(/https?:\/\/\S+/g) || []).map(u => u.replace(/[.,)]+$/, ""));
+  const words = (output.toLocaleLowerCase("tr").match(/\p{L}+/gu) || [])
+    .filter(w => w in NUMBER_WORDS)
+    .map(w => String(NUMBER_WORDS[w]));
+  const outDigits = new Set([...digits(output), ...words]);
+  const missing = [
+    ...links.filter(u => !output.includes(u)),
+    ...digits(src).filter(n => !outDigits.has(n) && ![...outDigits].some(o => o.includes(n))),
+  ];
+  return missing.length ? no(`Dropped or changed: ${missing.join(", ")}`) : ok("All facts kept.");
+}
+
 // "Never use" list: none of the phrases in vars.avoid may appear (same matcher
 // the extension uses after generation).
 export async function noAvoidedPhrases(output, context) {
