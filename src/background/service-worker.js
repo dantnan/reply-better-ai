@@ -6,6 +6,9 @@ import { VOICE_ANALYSIS_PROMPT, VOICE_MIN_CHARS, buildVoiceAnalysisInput, isEnou
 import { DEFAULT_MODEL, DEFAULT_STYLE, MAX_INPUT_LENGTH, AUTO_FREE_MODEL } from "../lib/constants.js";
 import { validateSelectedModel, getModels } from "../lib/models-cache.js";
 import { orderedEngines, describeActiveEngine } from "../engines/index.js";
+import { isLanguage, languageFromInstruction, languageFromDetection } from "../lib/languages.js";
+import { effectivePhrases, enforceAvoided } from "../lib/avoid-phrases.js";
+import { whatsNewDismissed } from "../lib/whats-new.js";
 
 // Streaming relay for the inline panel: the content script opens a port and we
 // stream the rewrite back chunk by chunk. The API key never leaves the worker.
@@ -20,6 +23,34 @@ async function countSuccessfulRun() {
   } catch (e) {
     console.debug("[usage] could not record run:", e?.message);
   }
+}
+
+const OPTIONS_TABS = new Set(["card-rules", "card-inline"]);
+
+// The user's "never use" list, as applied to every generation.
+async function loadAvoidList() {
+  const { avoidAiPhrases, avoidPhrases } = await storage.get(["avoidAiPhrases", "avoidPhrases"]);
+  return effectivePhrases({ avoidAiPhrases: !!avoidAiPhrases, avoidPhrases });
+}
+
+// Language of the conversation, from the browser's own on-device detector
+// (CLD, no permission, nothing leaves the device). Used when the user typed an
+// instruction in another language: models kept copying the instruction's
+// language even when told to follow the conversation, but obey a named one.
+async function detectConversationLanguage(text) {
+  try {
+    if (!browser.i18n?.detectLanguage) return undefined;
+    const sample = String(text).slice(0, 4000);
+    return languageFromDetection(await browser.i18n.detectLanguage(sample), sample) || undefined;
+  } catch (e) {
+    console.debug("[lang] detectLanguage failed:", e?.message);
+    return undefined;
+  }
+}
+
+// "Write in" arrives from the page-side panel; only known codes are honoured.
+function pickLanguage(code) {
+  return isLanguage(code) ? code : undefined;
 }
 
 browser.runtime.onConnect.addListener(port => {
@@ -45,9 +76,19 @@ browser.runtime.onConnect.addListener(port => {
       // No early API-key gate: the active engine decides. On-device needs no key;
       // a cloud engine without a key throws InvalidKeyError, surfaced below.
       const { savedPrompts } = await storage.get(["savedPrompts"]);
+      // Reply language, most explicit first: "Write in"; a clear "reply in
+      // English" in the instruction; then, when the user typed an instruction
+      // next to a real conversation, the conversation's detected language.
+      // Models obey a named language far better than "same as the conversation".
+      const isReply = msg.mode === "reply" && !msg.summarize;
+      const hasInstruction = typeof msg.instruction === "string" && msg.instruction.trim() !== "";
+      const language = pickLanguage(msg.language)
+        || (isReply ? languageFromInstruction(msg.instruction) || undefined : undefined)
+        || (isReply && hasInstruction && msg.hasConversation !== false ? await detectConversationLanguage(text) : undefined);
+      const avoid = await loadAvoidList();
       const systemPrompt = msg.mode === "reply"
-        ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize })
-        : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, savedPrompts || []);
+        ? buildReplyPrompt({ tone: msg.tone, instruction: msg.instruction, summarize: !!msg.summarize, language, avoid, hasConversation: msg.hasConversation !== false })
+        : resolveSystemPrompt(msg.style || msg.messageType || DEFAULT_STYLE, savedPrompts || [], { language, avoid });
       // Try the active engine, then fall back to other usable engines — but only
       // before any output has streamed (never double-stream a partial result).
       const engines = await orderedEngines();
@@ -59,14 +100,22 @@ browser.runtime.onConnect.addListener(port => {
             // fenced. Improve mode sends the user's own draft, untouched.
             text: msg.mode === "reply" ? wrapConversation(text) : text,
             systemPrompt,
+            outputLanguage: language,
             signal: controller.signal,
             onChunk: delta => { emitted = true; post({ delta }); },
             onModel: used => post({ model: used }),
           });
+          // Models still slip on the "never use" list, so check the output and
+          // run one fix pass when something got through. The panel swaps in
+          // the final `full` below, replacing what streamed.
+          const checked = await enforceAvoided({
+            engine, text: full, phrases: avoid, signal: controller.signal,
+            onFixStart: () => post({ status: "fixing" }),
+          });
           // A reply must never carry a link the conversation did not have: that
           // is how a hidden instruction turns the user's own message into a
           // phishing message. The panel renders and inserts this `full`.
-          let out = full;
+          let out = checked.text;
           if (msg.mode === "reply") {
             // Only the user's own instruction can authorise a link. The
             // conversation cannot: an attacker writes that.
@@ -76,7 +125,7 @@ browser.runtime.onConnect.addListener(port => {
             }
             out = guarded.text;
           }
-          post({ done: true, full: out, engine: engine.label });
+          post({ done: true, full: out, engine: engine.label, avoided: checked.remaining });
           countSuccessfulRun();
           finished = true;
           break;
@@ -108,6 +157,8 @@ browser.runtime.onInstalled.addListener(async details => {
     const defaults = {};
     if (!existing.model) defaults.model = DEFAULT_MODEL;
     if (!existing.messageType) defaults.messageType = DEFAULT_STYLE;
+    // A new user has nothing to compare with; the "New" line is for upgraders.
+    defaults.whatsNew = whatsNewDismissed();
     if (Object.keys(defaults).length > 0) await storage.set(defaults);
     browser.runtime.openOptionsPage().catch(err => console.warn("openOptionsPage:", err.message));
   }
@@ -167,9 +218,9 @@ async function runStartupValidation() {
 }
 
 // Keyboard shortcut (Ctrl+Shift+. by default, rebindable in the browser's
-// shortcut settings). Invoking a command grants activeTab for the current tab,
-// which is what lets us message its content script without a broad host
-// permission. The content script decides what to do with the focused field.
+// shortcut settings). Messaging our own content script needs no extra
+// permission, so we just tell the active tab the shortcut fired; the content
+// script decides what to do with the focused field.
 if (browser.commands?.onCommand) {
   browser.commands.onCommand.addListener(async command => {
     if (command !== "improve-now") return;
@@ -227,6 +278,15 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     return true;
   }
+  // The panel's "New" line links to a settings tab. Only known tabs, so a
+  // message can't be used to open arbitrary extension URLs.
+  if (message.action === "openOptions") {
+    const tab = OPTIONS_TABS.has(message.tab) ? `#${message.tab}` : "";
+    browser.tabs.create({ url: browser.runtime.getURL(`options.html${tab}`) })
+      .then(() => sendResponse({ ok: true }))
+      .catch(err => sendResponse({ error: err?.message || "Could not open settings" }));
+    return true;
+  }
   // "Learn my voice": read the user's samples and hand back a style instruction
   // they can edit and save as a custom prompt.
   if (message.action === "analyzeVoice") {
@@ -251,15 +311,18 @@ async function handleImproveText(message) {
   }
   const settings = await storage.get(["messageType", "savedPrompts"]);
   const messageType = message.messageType || settings.messageType || DEFAULT_STYLE;
-  const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || []);
+  const language = pickLanguage(message.language);
+  const avoid = await loadAvoidList();
+  const systemPrompt = resolveSystemPrompt(messageType, settings.savedPrompts || [], { language, avoid });
   try {
     const engines = await orderedEngines();
     let lastErr = null;
     for (const engine of engines) {
       try {
-        const improvedText = await engine.streamImprove({ text, systemPrompt });
+        const full = await engine.streamImprove({ text, systemPrompt, outputLanguage: language });
+        const checked = await enforceAvoided({ engine, text: full, phrases: avoid });
         countSuccessfulRun();
-        return { improvedText };
+        return { improvedText: checked.text, avoided: checked.remaining };
       }
       catch (err) {
         lastErr = err;

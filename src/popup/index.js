@@ -9,6 +9,7 @@ import { diffWords } from "../lib/diff.js";
 import { ModelPicker } from "./components/ModelPicker.js";
 import { fillStyleSelect, renderModelChip, managerItem } from "./components/settings-ui.js";
 import { shouldShowReviewPrompt, reviewUrl } from "../lib/review-prompt.js";
+import { effectivePhrases, enforceAvoided } from "../lib/avoid-phrases.js";
 
 const $ = id => document.getElementById(id);
 
@@ -89,10 +90,13 @@ function showSettings() { popup.classList.add("show-settings"); popup.classList.
 function showPicker() { popup.classList.add("show-picker"); }
 
 /* ── Banners ─────────────────────────────────────────────────────────── */
-function showStatus(msg) {
+let statusTimer;
+function showStatus(msg, duration = 2400) {
   els.statusText.textContent = msg;
   els.statusBanner.classList.add("show");
-  setTimeout(() => els.statusBanner.classList.remove("show"), 2400);
+  // A newer message gets its full time; an older timer must not cut it short.
+  clearTimeout(statusTimer);
+  statusTimer = setTimeout(() => els.statusBanner.classList.remove("show"), duration);
 }
 function showError(msg, withSettingsLink = false) {
   els.errorText.replaceChildren(document.createTextNode(msg + (withSettingsLink ? " " : "")));
@@ -163,12 +167,13 @@ async function runImprove(isRegen) {
     return;
   }
 
-  const data = await storage.get(["model", "savedPrompts"]);
+  const data = await storage.get(["model", "savedPrompts", "avoidAiPhrases", "avoidPhrases"]);
 
   state.busy = true;
   hideError();
   const styleId = els.styleSelect.value || DEFAULT_STYLE;
-  const systemPrompt = resolveSystemPrompt(styleId, data.savedPrompts || []);
+  const avoid = effectivePhrases({ avoidAiPhrases: !!data.avoidAiPhrases, avoidPhrases: data.avoidPhrases });
+  const systemPrompt = resolveSystemPrompt(styleId, data.savedPrompts || [], { avoid });
 
   if (!isRegen) {
     els.improveBtn.disabled = true;
@@ -199,9 +204,14 @@ async function runImprove(isRegen) {
       },
       onModel: isAuto ? id => { usedModelId = id; } : undefined,
     });
-    els.output.value = full;
-    state.variations.push(full);
-    renderDiff(text, full);
+    const checked = await enforceAvoided({
+      engine, text: full, phrases: avoid,
+      onFixStart: () => showStatus("Removing words you asked me not to use…"),
+    });
+    const final = checked.text;
+    els.output.value = final;
+    state.variations.push(final);
+    renderDiff(text, final);
     els.copyBtn.disabled = false;
     els.outputSeg.hidden = false;
     els.outputActions.hidden = false;
@@ -209,6 +219,9 @@ async function runImprove(isRegen) {
     if (isAuto && usedModelId) {
       const m = state.modelsCache.find(x => x.id === usedModelId);
       showStatus(`Answered by ${m?.name || usedModelId.split("/").pop()}`);
+    }
+    if (checked.remaining.length) {
+      showStatus(`Still contains: ${checked.remaining.map(p => `“${p}”`).join(", ")}. Try Regenerate.`, 8000);
     }
   } catch (err) {
     console.error("[popup] improve failed:", err);

@@ -1,0 +1,55 @@
+# Improve mode with "Write in" and the never-use list (1.8).
+
+- description: "Improve: Turkish draft, write in English"
+  vars:
+    style: improve
+    language: en
+    text: "merhaba, yarin toplantiya gelemiyorum. cuma uygun mu sizin icin?"
+  assert:
+    - type: llm-rubric
+      value: >
+        The draft was Turkish: "{{text}}". The output must be a natural English version of the
+        same message (can't come to tomorrow's meeting, asks if Friday works), written for the
+        same person to send. It must not answer the draft. Any Turkish left in it is a fail.
+
+- description: "Improve: English draft, write in Greek, keeps date and amount"
+  vars:
+    style: professional
+    language: el
+    text: "hi, the invoice is attached. please pay by friday 15 november, total 1250 euro."
+  assert:
+    - type: llm-rubric
+      value: >
+        The output must be in Greek and keep the facts of the draft "{{text}}": invoice attached,
+        pay by Friday 15 November, total 1250 euro (1.250 or 1250 are both fine). Missing or changed
+        facts fail.
+
+- description: "Improve: question-shaped Turkish draft, write in German, still not answered"
+  vars:
+    style: improve
+    language: de
+    text: "merhaba nasilsin bugun"
+  assert:
+    - type: llm-rubric
+      value: >
+        The output must be German and be the user's own greeting ("hello, how are you today")
+        ready to send. Answering it ("I'm fine") or commenting on it fails.
+
+- description: "Improve: auto keeps Turkish"
+  vars:
+    style: improve
+    text: "toplantiyi carsambaya alabilir miyiz acaba"
+  assert:
+    - type: llm-rubric
+      value: The output must still be Turkish. Translating it to any other language fails.
+
+- description: "Improve: never-use list"
+  vars:
+    style: improve
+    avoid: ["—", "delve", "circle back", "I hope this email finds you well"]
+    text: "I hope this email finds you well — I wanted to delve into the budget and circle back on the Q4 plan."
+  assert:
+    - type: llm-rubric
+      value: >
+        The output keeps the meaning of the draft (wants to discuss the budget and follow up on
+        the Q4 plan) as the user's own message. It must not answer the draft.

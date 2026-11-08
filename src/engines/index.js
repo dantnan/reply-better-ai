@@ -112,7 +112,10 @@ export async function describeActiveEngine() {
 
 export async function resolveActiveEngine() {
   const { engine, groqApiKey, apiKey } = await storage.get(["engine", "groqApiKey", "apiKey"]);
-  const onDeviceAvail = ENGINES.ondevice ? await ENGINES.ondevice.availability() : "unsupported";
+  // An explicit choice doesn't depend on on-device availability, so don't ask
+  // (the browser API can be slow or hang; see ondevice.js).
+  const explicit = engine && engine !== "auto" && engine in ENGINES;
+  const onDeviceAvail = !explicit && ENGINES.ondevice ? await ENGINES.ondevice.availability() : "unsupported";
   const id = resolveEngineId({
     engineSetting: engine,
     onDeviceAvail,

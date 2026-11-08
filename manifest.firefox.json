@@ -24,8 +24,7 @@
     "512": "icons/icon.png"
   },
   "permissions": [
-    "storage",
-    "activeTab"
+    "storage"
   ],
   "host_permissions": [
     "https://openrouter.ai/*",

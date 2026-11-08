@@ -27,6 +27,7 @@
         <a href="#card-local" data-target="card-local"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Local server</a>
         <a href="#card-model" data-target="card-model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h6"/></svg> Model</a>
         <a href="#card-inline" data-target="card-inline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> Inline button</a>
+        <a href="#card-rules" data-target="card-rules"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg> Writing rules</a>
         <a href="#card-prompts" data-target="card-prompts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/></svg> Custom prompts</a>
         <a href="#card-snippets" data-target="card-snippets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg> Snippets</a>
         <a href="#card-about" data-target="card-about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg> About</a>
@@ -152,6 +153,31 @@
             <label class="rb-label" for="inline-message-type">Default style</label>
             <select class="rb-select" id="inline-message-type"></select>
           </div>
+          <div style="margin-top:var(--rb-space-4);">
+            <span class="rb-label">Turned off on these sites</span>
+            <p class="opt-hint">Use the eye icon in the panel to turn Reply Better AI off on a site. The button, panel, snippets and shortcut all stay off there.</p>
+            <div class="rb-manager-list" id="disabled-sites-list"></div>
+            <p class="opt-hint" id="disabled-sites-empty">None.</p>
+          </div>
+        </section>
+
+        <!-- Writing rules -->
+        <section class="opt-card" id="card-rules">
+          <div class="opt-card-head">
+            <h2>Writing rules</h2>
+            <p>Words and phrases Reply Better AI should never write for you. They apply to every reply and rewrite. If the model still uses one, the text gets one automatic fix, and the panel tells you if anything is left.</p>
+          </div>
+          <div class="rb-toggle-row">
+            <span class="rb-toggle-label">Avoid common AI phrases</span>
+            <label class="rb-switch">
+              <input type="checkbox" id="avoid-ai-phrases" />
+              <span class="rb-track"></span><span class="rb-thumb"></span>
+            </label>
+          </div>
+          <p class="opt-hint" id="ai-phrases-list"></p>
+          <label class="rb-label" for="avoid-phrases" style="margin-top:var(--rb-space-4);">Never use these (one per line)</label>
+          <textarea class="rb-input opt-voice-input" id="avoid-phrases" rows="6" spellcheck="false" placeholder="circle back&#10;synergy&#10;Best regards" aria-label="Words and phrases to never use"></textarea>
+          <p class="opt-hint" id="avoid-phrases-count"></p>
         </section>
 
         <!-- Custom prompts -->

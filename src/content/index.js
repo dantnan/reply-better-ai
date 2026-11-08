@@ -8,6 +8,8 @@ import {
 import { tryExpandSnippet } from "./snippet-expander.js";
 import { openPanel, isPanelOpen, closePanel } from "./panel.js";
 import { DEFAULT_STYLE, DEFAULT_CLICK_MODE, DEFAULT_MODEL } from "../lib/constants.js";
+import { isSiteDisabled, withSiteDisabled, withSiteEnabled, languageForSite, withSiteLanguage } from "../lib/sites.js";
+import { shouldShowWhatsNew, whatsNewAfterShown, whatsNewDismissed } from "../lib/whats-new.js";
 
 const DEFAULT_SETTINGS = Object.freeze({
   enableInlineButton: true,
@@ -17,6 +19,9 @@ const DEFAULT_SETTINGS = Object.freeze({
   replyConsent: false,
   savedPrompts: [],
   snippets: [],
+  disabledSites: [],
+  languageBySite: {},
+  whatsNew: null,
 });
 const settings = { ...DEFAULT_SETTINGS };
 
@@ -26,7 +31,7 @@ async function loadSettings() {
   try {
     const stored = await storage.get([
       "enableInlineButton", "messageType", "inlineClickMode",
-      "model", "replyConsent", "savedPrompts", "snippets",
+      "model", "replyConsent", "savedPrompts", "snippets", "disabledSites", "languageBySite", "whatsNew",
     ]);
     if (stored.enableInlineButton !== undefined) settings.enableInlineButton = stored.enableInlineButton;
     if (stored.messageType) settings.messageType = stored.messageType;
@@ -35,11 +40,64 @@ async function loadSettings() {
     if (stored.replyConsent !== undefined) settings.replyConsent = stored.replyConsent;
     if (Array.isArray(stored.savedPrompts)) settings.savedPrompts = stored.savedPrompts;
     if (Array.isArray(stored.snippets)) settings.snippets = stored.snippets;
+    if (Array.isArray(stored.disabledSites)) settings.disabledSites = stored.disabledSites;
+    if (stored.languageBySite && typeof stored.languageBySite === "object") settings.languageBySite = stored.languageBySite;
+    if (stored.whatsNew && typeof stored.whatsNew === "object") settings.whatsNew = stored.whatsNew;
   } catch (e) {
     // Fail closed: a user who turned the inline button off shouldn't see it back when storage hiccups.
     console.warn("[content] settings load failed; disabling inline UI:", e?.message);
     settings.enableInlineButton = false;
   }
+}
+
+// "Turn off on this site": no button, no panel, no snippets, no shortcut here.
+function siteOff() {
+  return isSiteDisabled(settings.disabledSites, location.hostname);
+}
+
+function siteLanguage() {
+  return languageForSite(settings.languageBySite, location.hostname);
+}
+
+async function rememberSiteLanguage(code) {
+  try {
+    const { languageBySite } = await storage.get(["languageBySite"]);
+    const next = withSiteLanguage(languageBySite, location.hostname, code);
+    settings.languageBySite = next;
+    await storage.set({ languageBySite: next });
+  } catch (e) {
+    console.warn("[content] could not save the site language:", e?.message);
+  }
+}
+
+async function setSiteDisabled(off) {
+  const { disabledSites } = await storage.get(["disabledSites"]);
+  const next = off ? withSiteDisabled(disabledSites, location.hostname) : withSiteEnabled(disabledSites, location.hostname);
+  settings.disabledSites = next;
+  await storage.set({ disabledSites: next });
+}
+
+function saveWhatsNew(next) {
+  settings.whatsNew = next;
+  storage.set({ whatsNew: next }).catch(e => console.warn("[content] could not save the New line state:", e?.message));
+}
+
+async function turnOffOnThisSite() {
+  closePanel();
+  removeButton();
+  activeField = null;
+  try {
+    await setSiteDisabled(true);
+  } catch (e) {
+    console.error("[content] could not turn off on this site:", e);
+    showToast("Couldn't save that. Try again.", { type: "error" });
+    return;
+  }
+  showToast(`Reply Better AI is off on ${location.hostname}. Turn it back on in settings.`, {
+    type: "info",
+    duration: 8000,
+    action: { label: "Undo", fn: () => { setSiteDisabled(false).catch(() => {}); } },
+  });
 }
 
 // Reply when the user has selected text elsewhere on the page; improve when
@@ -81,6 +139,12 @@ function openPanelFor(field, mode) {
     mode,
     draft: previous,
     settings,
+    language: siteLanguage(),
+    onLanguageChange: rememberSiteLanguage,
+    onTurnOffSite: turnOffOnThisSite,
+    showWhatsNew: shouldShowWhatsNew(settings.whatsNew),
+    onWhatsNewShown: () => saveWhatsNew(whatsNewAfterShown(settings.whatsNew)),
+    onWhatsNewDismiss: () => saveWhatsNew(whatsNewDismissed()),
     onInsert: result => {
       writeText(field, result);
       field.focus();
@@ -104,11 +168,13 @@ async function improveInstant(field) {
       action: "improveText",
       text,
       messageType: settings.messageType,
+      language: siteLanguage(),
     }, 60000);
     if (response?.improvedText) {
       writeText(field, response.improvedText);
       field.focus();
-      showToast("Text improved.", {
+      const left = Array.isArray(response.avoided) ? response.avoided : [];
+      showToast(left.length ? `Text improved. Still contains: ${left.join(", ")}` : "Text improved.", {
         type: "success",
         duration: 6000,
         action: { label: "Undo", fn: () => { writeText(field, previous); field.focus(); } },
@@ -144,7 +210,7 @@ function sendMessage(payload, timeoutMs = 5000) {
 
 // Show + position the morph button for a field, reflecting the current mode.
 function showButtonFor(field) {
-  if (!settings.enableInlineButton || !isImproveTarget(field)) return;
+  if (!settings.enableInlineButton || siteOff() || !isImproveTarget(field)) return;
   ensureButton(onButtonClick);
   setButtonMode(detectMode(field));
   setButtonVisible(true);
@@ -164,7 +230,10 @@ function refreshButton() {
 function handleFocus(event) {
   if (!isTextInput(event.target)) return;
   activeField = event.target;
-  showButtonFor(activeField);
+  // A field that doesn't get the button (a one-line search box, or the site is
+  // off) must also take it away from the field focus just left.
+  if (settings.enableInlineButton && !siteOff() && isImproveTarget(activeField)) showButtonFor(activeField);
+  else hideButton();
 }
 
 function handleBlur(event) {
@@ -179,6 +248,10 @@ function handleBlur(event) {
     // when the reply button is needed. Reposition stays anchored to the field.
     const sel = window.getSelection();
     if (sel && !sel.isCollapsed && sel.toString().trim()) { setButtonMode("reply"); return; }
+    // Focus moved straight to another field: its focus handler already showed
+    // or hid the button for it. Hiding here would take the button away from
+    // the field the user is now typing in.
+    if (activeField && activeField !== target && document.activeElement === activeField) return;
     hideButton();
     if (activeField === target) activeField = null;
   }, 200);
@@ -188,7 +261,7 @@ function handleInput(event) {
   const element = event.target;
   if (!isTextInput(element)) return;
   if (settings.enableInlineButton && activeField === element) refreshButton();
-  if (settings.snippets.length > 0) tryExpandSnippet(element, settings.snippets);
+  if (settings.snippets.length > 0 && !siteOff()) tryExpandSnippet(element, settings.snippets);
 }
 
 function handleSelectionChange() {
@@ -219,6 +292,10 @@ function handleShortcut() {
     showToast("Turn the inline button back on in settings to use the shortcut.", { type: "error" });
     return;
   }
+  if (siteOff()) {
+    showToast("Reply Better AI is off on this site. Turn it back on in settings.", { type: "error" });
+    return;
+  }
   activeField = field;
   showButtonFor(field);
   onButtonClick();
@@ -230,7 +307,7 @@ browser.runtime.onMessage.addListener(message => {
   return Promise.resolve({ ok: true });
 });
 
-const WATCHED_KEYS = ["enableInlineButton", "messageType", "inlineClickMode", "model", "replyConsent", "savedPrompts", "snippets"];
+const WATCHED_KEYS = ["enableInlineButton", "messageType", "inlineClickMode", "model", "replyConsent", "savedPrompts", "snippets", "disabledSites", "languageBySite", "whatsNew"];
 
 async function init() {
   await loadSettings();
@@ -252,10 +329,11 @@ async function init() {
       settings[key] = newValue !== undefined ? newValue : DEFAULT_SETTINGS[key];
       touched = true;
     }
-    if (touched && !isPanelOpen()) {
-      if (!settings.enableInlineButton) { closePanel(); removeButton(); activeField = null; }
-      else if (activeField) showButtonFor(activeField);
-    }
+    if (!touched) return;
+    // Turning the site off (here or from settings) closes everything at once,
+    // even mid-panel; other changes wait until the panel is closed.
+    if (!settings.enableInlineButton || siteOff()) { closePanel(); removeButton(); activeField = null; }
+    else if (!isPanelOpen() && activeField) showButtonFor(activeField);
   });
 }
 

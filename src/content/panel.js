@@ -7,6 +7,7 @@ import {
 } from "../lib/models-cache.js";
 import { storage, setSelectedModel } from "../lib/storage.js";
 import { CUSTOM_PROMPT_PREFIX, DEFAULT_MODEL, AUTO_FREE_MODEL } from "../lib/constants.js";
+import { LANGUAGES, AUTO_LANGUAGE, isLanguage } from "../lib/languages.js";
 
 // ── Static icon markup (safe to use via innerHTML — no dynamic data) ───────
 const MARK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>';
@@ -20,6 +21,8 @@ const ERR_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 // avoid <rect>/<circle> and use paths only.
 const FIX_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4 3 8l4 4"/><path d="M3 8h13"/><path d="m17 20 4-4-4-4"/><path d="M21 16H8"/></svg>';
 const CTX_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+// Eye-off, paths only (same CSS-reset reason as FIX_SVG).
+const OFF_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="m1 1 22 22"/></svg>';
 const PRIV_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>';
 
 // Reply-mode chips: tones + Summarize + the free-form "You tell me".
@@ -49,9 +52,10 @@ export function closePanel() {
 }
 
 // Stream a generation through the service-worker port. The API key never enters
-// the page. onDelta(text), onModel(usedId), resolves with the full text, rejects
+// the page. onDelta(text), onModel(usedId), onStatus(name); resolves with
+// { full, avoided } (avoided = "never use" phrases still in the text), rejects
 // with {code}.
-function streamThroughWorker(payload, onDelta, onModel) {
+function streamThroughWorker(payload, onDelta, onModel, onStatus) {
   return new Promise((resolve, reject) => {
     let port;
     try { port = browser.runtime.connect({ name: "rb-improve-stream" }); }
@@ -62,7 +66,8 @@ function streamThroughWorker(payload, onDelta, onModel) {
     port.onMessage.addListener(msg => {
       if (msg.delta) onDelta(msg.delta);
       else if (msg.model) onModel?.(msg.model);
-      else if (msg.done) { settled = true; resolve(msg.full); finish(); }
+      else if (msg.status) onStatus?.(msg.status);
+      else if (msg.done) { settled = true; resolve({ full: msg.full, avoided: Array.isArray(msg.avoided) ? msg.avoided : [] }); finish(); }
       else if (msg.error) { settled = true; const err = new Error(msg.error); err.code = msg.code; reject(err); finish(); }
     });
     port.onDisconnect.addListener(() => { if (activePort === port) activePort = null; if (!settled) reject(new Error("The extension may be reloading. Refresh this page and try again.")); });
@@ -93,7 +98,7 @@ function modelMeta(m) {
   return [ctx, priceStr].filter(Boolean).join(" · ");
 }
 
-export function openPanel({ anchorButton, field, mode, draft, settings, onInsert }) {
+export function openPanel({ anchorButton, field, mode, draft, settings, language, onLanguageChange, onTurnOffSite, showWhatsNew, onWhatsNewShown, onWhatsNewDismiss, onInsert }) {
   closePanel();
 
   const savedPrompts = settings.savedPrompts || [];
@@ -112,6 +117,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   let captured = null;                    // { text, source } | null
   let consentNeeded = mode === "reply" && !settings.replyConsent;
   let lastGen = null;                     // payload of the last generate, for Regenerate
+  let currentLanguage = isLanguage(language) ? language : AUTO_LANGUAGE; // "Write in"
 
   // ── Build DOM ─────────────────────────────────────────────────────────
   const panel = document.createElement("div");
@@ -132,11 +138,16 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   const mname = el("span", "reply-better-mname");
   const mchev = el("span", "reply-better-mchev"); mchev.innerHTML = CHEV_SVG;
   modelTrigger.append(mav, mname, mchev);
+  const offBtn = document.createElement("button");
+  offBtn.type = "button"; offBtn.className = "reply-better-panel-close reply-better-panel-off";
+  offBtn.setAttribute("aria-label", "Turn off on this site");
+  offBtn.title = "Turn off on this site";
+  offBtn.innerHTML = OFF_SVG;
   const closeBtn = document.createElement("button");
   closeBtn.type = "button"; closeBtn.className = "reply-better-panel-close";
   closeBtn.setAttribute("aria-label", "Close"); closeBtn.innerHTML = CLOSE_SVG;
   closeBtn.addEventListener("click", () => closePanel());
-  head.append(mark, title, modelTrigger, closeBtn);
+  head.append(mark, title, modelTrigger, offBtn, closeBtn);
 
   const modelMenu = document.createElement("div");
   modelMenu.className = "reply-better-models"; modelMenu.setAttribute("role", "listbox");
@@ -152,9 +163,44 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   privTxt.innerHTML = "Heads up: <b>Reply Better</b> sends the text you select to your chosen AI engine to draft a reply. With the on-device engine it stays on your device. Nothing is stored.";
   privacyEl.appendChild(privTxt);
 
+  // One-time "New in 1.8" line (see lib/whats-new.js). Static markup only.
+  const newEl = el("div", "reply-better-whatsnew");
+  const newTxt = el("span", "reply-better-whatsnew-txt");
+  const newRules = document.createElement("button");
+  newRules.type = "button"; newRules.className = "reply-better-whatsnew-link"; newRules.textContent = "Writing rules";
+  newTxt.append(
+    Object.assign(el("b"), { textContent: "New: " }),
+    document.createTextNode("pick a language in “Write in” to translate as you write. The eye icon turns Reply Better AI off on a site. Ban words you never use in "),
+    newRules,
+    document.createTextNode("."),
+  );
+  const newClose = document.createElement("button");
+  newClose.type = "button"; newClose.className = "reply-better-whatsnew-close";
+  newClose.setAttribute("aria-label", "Dismiss"); newClose.innerHTML = CLOSE_SVG;
+  newEl.append(newTxt, newClose);
+
   // Style label + chips
+  const labelRow = el("div", "reply-better-label-row");
   const styleLbl = el("span", "reply-better-style-label");
   styleLbl.textContent = mode === "improve" ? "How should I rewrite it?" : "How should I reply?";
+  // "Write in": output language. Auto keeps the draft's (or the instruction's)
+  // language; picking one translates. Remembered per site by the caller.
+  const langWrap = el("label", "reply-better-lang");
+  const langTxt = el("span", "reply-better-lang-txt"); langTxt.textContent = "Write in";
+  const langSelect = document.createElement("select");
+  langSelect.className = "reply-better-lang-select";
+  langSelect.setAttribute("aria-label", "Write in language");
+  langSelect.title = mode === "improve"
+    ? "Auto keeps the language you wrote in. Pick a language to translate."
+    : "Auto replies in the language of your instruction or the conversation.";
+  for (const { code, label } of [{ code: AUTO_LANGUAGE, label: "Auto" }, ...LANGUAGES]) {
+    const opt = document.createElement("option");
+    opt.value = code; opt.textContent = label;
+    langSelect.appendChild(opt);
+  }
+  langSelect.value = currentLanguage;
+  langWrap.append(langTxt, langSelect);
+  labelRow.append(styleLbl, langWrap);
   const stylesRow = el("div", "reply-better-styles");
   stylesRow.setAttribute("role", "group");
 
@@ -192,7 +238,10 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   seg.append(segResult, segDiff);
   const preview = el("div", "reply-better-preview");
   const diffBox = el("div", "reply-better-diff-box");
-  body.append(errorEl, seg, preview, diffBox);
+  // Status / warning line under the result ("never use" fix pass and leftovers).
+  const noteEl = el("div", "reply-better-note");
+  noteEl.setAttribute("role", "status");
+  body.append(errorEl, seg, preview, diffBox, noteEl);
 
   // Footer: regenerate + version + insert
   const foot = el("div", "reply-better-panel-foot");
@@ -205,9 +254,13 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   insert.innerHTML = `${CHECK_SVG}<span>Insert</span>`;
   foot.append(regen, vari, insert);
 
-  panel.append(head, modelMenu, contextEl);
+  panel.append(head, modelMenu);
+  // Never stack it on top of the first-run privacy notice; that one matters more.
+  const whatsNewVisible = !!showWhatsNew && !consentNeeded;
+  if (whatsNewVisible) panel.append(newEl);
+  panel.append(contextEl);
   if (mode === "reply" && consentNeeded) panel.append(privacyEl);
-  panel.append(styleLbl, stylesRow, instructWrap, body, foot);
+  panel.append(labelRow, stylesRow, instructWrap, body, foot);
   document.body.appendChild(panel);
 
   // ── Helpers ─────────────────────────────────────────────────────────
@@ -345,6 +398,45 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
     }
   });
 
+  // ── Write in (output language) ──────────────────────────────────────
+  langSelect.addEventListener("change", e => {
+    if (!fromUser(e)) { langSelect.value = currentLanguage; return; }
+    currentLanguage = isLanguage(langSelect.value) ? langSelect.value : AUTO_LANGUAGE;
+    onLanguageChange?.(currentLanguage);
+    if (hasResult && lastGen) {
+      // Same as a model switch: abort what's streaming and redo it in the new language.
+      if (busy && activePort) { try { activePort.disconnect(); } catch {} activePort = null; busy = false; }
+      run(lastGen, false);
+    }
+  });
+
+  // ── Turn off on this site ───────────────────────────────────────────
+  offBtn.addEventListener("click", e => {
+    e.stopPropagation();
+    if (!fromUser(e)) return;
+    onTurnOffSite?.();
+  });
+
+  // ── "New" line ──────────────────────────────────────────────────────
+  newClose.addEventListener("click", e => {
+    e.stopPropagation();
+    if (!fromUser(e)) return;
+    newEl.remove();
+    onWhatsNewDismiss?.();
+    position();
+  });
+  newRules.addEventListener("click", e => {
+    e.stopPropagation();
+    if (!fromUser(e)) return;
+    browser.runtime.sendMessage({ action: "openOptions", tab: "card-rules" }).catch(() => {});
+  });
+
+  function setNote(text, warn = false) {
+    noteEl.textContent = text || "";
+    noteEl.classList.toggle("reply-better-note-show", !!text);
+    noteEl.classList.toggle("reply-better-note-warn", !!text && warn);
+  }
+
   // ── Context (reply mode) ────────────────────────────────────────────
   function captureSelection() {
     const sel = window.getSelection();
@@ -438,7 +530,9 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
       const ctx = captured?.text || "";
       const instr = instructBox.value.trim();
       if (!ctx && !instr) { flashNeedContext(); return; }
-      run({ mode: "reply", text: ctx || instr, tone: c.dataset.style, instruction: instr, model: currentModelId }, false);
+      // No captured conversation: the instruction is all there is, so it goes in
+      // as the text and its language decides the reply's (see buildReplyPrompt).
+      run({ mode: "reply", text: ctx || instr, tone: c.dataset.style, instruction: instr, hasConversation: !!ctx, model: currentModelId }, false);
     }
   }
   function markChip(active) {
@@ -499,19 +593,25 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
     const cursor = el("span", "reply-better-cursor"); preview.appendChild(cursor);
     position();
     if (!isRegen) variations.length = 0;
+    setNote("");
+    const sent = { ...payload, language: currentLanguage === AUTO_LANGUAGE ? undefined : currentLanguage };
     try {
-      const full = await streamThroughWorker(payload, delta => {
+      const { full, avoided } = await streamThroughWorker(sent, delta => {
         if (myToken !== runToken) return;
         cursor.remove(); preview.textContent += delta; preview.appendChild(cursor); preview.scrollTop = preview.scrollHeight;
       }, used => {
         if (myToken !== runToken) return;
         lastUsedModelId = used;
         reflectModel(); // Auto mode: show which model actually answered
+      }, status => {
+        if (myToken !== runToken) return;
+        if (status === "fixing") { setNote("Removing words you asked me not to use…"); position(); }
       });
       if (myToken !== runToken) return;          // a newer run superseded this one
       cursor.remove();
       result = full;
       preview.textContent = full;
+      setNote(avoided.length ? `Still contains: ${avoided.map(p => `“${p}”`).join(", ")}. Try Regenerate.` : "", true);
       variations.push(full); variIndex = variations.length - 1;
       if (mode === "improve") renderDiff(inputText, full);
       vari.textContent = variations.length > 1 ? `${variIndex + 1} / ${variations.length}` : "";
@@ -532,6 +632,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
   }
 
   function showError(err) {
+    setNote("");
     const code = err?.code;
     // In Auto mode OpenRouter already tried several free models, so a rate/
     // provider error means they're all busy — say that, and point to a paid model.
@@ -608,6 +709,7 @@ export function openPanel({ anchorButton, field, mode, draft, settings, onInsert
     .then(d => { if (d && d.id) { activeEngine = d; reflectModel(); position(); } })
     .catch(() => {});
   buildChips();
+  if (whatsNewVisible) onWhatsNewShown?.();
   if (mode === "reply") { captured = captureSelection(); renderContext(); }
   position();
   requestAnimationFrame(() => { panel.classList.add("reply-better-open"); position(); });

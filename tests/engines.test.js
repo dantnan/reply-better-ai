@@ -9,9 +9,12 @@ vi.mock("../src/lib/browser.js", () => ({
   },
 }));
 
-const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, engineModelSummary, ENGINES, orderedEngines } = await import("../src/engines/index.js");
+const { resolveEngineId, engineKeyVisibility, engineUsesModelPicker, engineModelSummary, ENGINES, orderedEngines, resolveActiveEngine } = await import("../src/engines/index.js");
 const mockBrowser = (await import("../src/lib/browser.js")).default;
-const { onDeviceEngine } = await import("../src/engines/ondevice.js");
+const { onDeviceEngine, resetOnDeviceAvailabilityCache, AVAILABILITY_TIMEOUT_MS } = await import("../src/engines/ondevice.js");
+
+// availability() caches its answer for a while; every test starts clean.
+afterEach(() => resetOnDeviceAvailabilityCache());
 
 describe("resolveEngineId", () => {
   it("honors an explicit, registered engine setting", () => {
@@ -101,10 +104,46 @@ describe("onDeviceEngine.availability", () => {
   it("maps Chrome availability states", async () => {
     globalThis.LanguageModel = { availability: async () => "available" };
     expect(await onDeviceEngine.availability()).toBe("ready");
+    resetOnDeviceAvailabilityCache();
     globalThis.LanguageModel = { availability: async () => "downloadable" };
     expect(await onDeviceEngine.availability()).toBe("downloadable");
+    resetOnDeviceAvailabilityCache();
     globalThis.LanguageModel = { availability: async () => "unavailable" };
     expect(await onDeviceEngine.availability()).toBe("unsupported");
+  });
+
+  it("gives up on an availability() that never answers", async () => {
+    vi.useFakeTimers();
+    try {
+      globalThis.LanguageModel = { availability: () => new Promise(() => {}) };
+      const pending = onDeviceEngine.availability();
+      await vi.advanceTimersByTimeAsync(AVAILABILITY_TIMEOUT_MS + 10);
+      expect(await pending).toBe("unsupported");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("shares one wait between callers asking at the same time", async () => {
+    vi.useFakeTimers();
+    try {
+      const availability = vi.fn(() => new Promise(() => {}));
+      globalThis.LanguageModel = { availability };
+      const both = Promise.all([onDeviceEngine.availability(), onDeviceEngine.availability()]);
+      await vi.advanceTimersByTimeAsync(AVAILABILITY_TIMEOUT_MS + 10);
+      expect(await both).toEqual(["unsupported", "unsupported"]);
+      expect(availability).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("asks the browser once and reuses the answer for a while", async () => {
+    const availability = vi.fn().mockResolvedValue("available");
+    globalThis.LanguageModel = { availability };
+    expect(await onDeviceEngine.availability()).toBe("ready");
+    expect(await onDeviceEngine.availability()).toBe("ready");
+    expect(availability).toHaveBeenCalledTimes(1);
   });
 
   it("treats a thrown availability() as unsupported", async () => {
@@ -142,6 +181,15 @@ describe("orderedEngines respects an explicit choice", () => {
     globalThis.LanguageModel = { availability: async () => "available" };
     mockBrowser.storage.local.get.mockResolvedValue({ engine: "ondevice", groqApiKey: "gsk_x", apiKey: "sk-or-x" });
     expect((await orderedEngines()).map(e => e.id)).toEqual(["ondevice"]);
+  });
+
+  it("does not ask for on-device availability when an engine is picked", async () => {
+    const availability = vi.fn(() => new Promise(() => {})); // would hang
+    globalThis.LanguageModel = { availability };
+    mockBrowser.storage.local.get.mockResolvedValue({ engine: "groq", groqApiKey: "gsk_x" });
+    expect((await resolveActiveEngine()).id).toBe("groq");
+    expect((await orderedEngines()).map(e => e.id)).toEqual(["groq"]);
+    expect(availability).not.toHaveBeenCalled();
   });
 
   it("still chains fallbacks on auto", async () => {
