@@ -17,7 +17,7 @@ providers:
     label: haiku-5.5
     config: { showThinking: false, max_tokens: 4000 }
   - id: openrouter:meta-llama/llama-3.3-70b-instruct
-    label: llama-3.3-70b (Groq tier)
+    label: llama-3.3-70b
     config: { showThinking: false, max_tokens: 4000 }
   - id: openrouter:google/gemini-3.6-flash
     label: gemini-3.6-flash
